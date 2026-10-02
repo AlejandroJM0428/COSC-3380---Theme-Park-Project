@@ -57,8 +57,13 @@ create table Ticket(
 TicketID int unsigned auto_increment primary key,
 ParkID int unsigned not null,
 TicketPrice decimal(3,2) not null default 0.00,
-IsMembership bool not null
-
+IsMembership bool not null default false,
+CONSTRAINT FK_Ticket_Park
+        FOREIGN KEY (ParkID) REFERENCES Park(ParkID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_Ticket_Customer
+        FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+        ON DELETE CASCADE
 );
 create table Ride(
 RideID int unsigned auto_increment primary key,
@@ -101,10 +106,23 @@ CustomerID int unsigned auto_increment primary key,
 ParkID int unsigned not null,
 FirstName varchar(50) not null,
 LastName varchar(50) not null,
-DOB date not null
+DOB date not null,
+CONSTRAINT FK_Customer_Park
+	FOREIGN KEY (ParkID) REFERENCES Park(ParkID)
+	ON DELETE CASCADE
 );
 create table Shift(
 ShiftID int unsigned auto_increment primary key,
-ParkID int unsigned not null,
-EmployeeID int unsigned not null
+ParkID     INT UNSIGNED NOT NULL,
+EmployeeID INT UNSIGNED NOT NULL,
+ClockIn   DATETIME     NOT NULL,                  -- was missing
+ClockOut  DATETIME     NULL, 
+CONSTRAINT FK_Shift_Park
+	FOREIGN KEY (ParkID) REFERENCES Park(ParkID)
+	ON DELETE CASCADE,
+CONSTRAINT FK_Shift_Employee
+	FOREIGN KEY (EmployeeID) REFERENCES Employees(EmployeeID)
+	ON DELETE CASCADE,
+CONSTRAINT Shift_Time_CHK
+	CHECK (ClockOut IS NULL OR ClockOut > ClockIn)
 )
