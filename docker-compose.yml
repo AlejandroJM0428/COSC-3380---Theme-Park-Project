@@ -1,0 +1,54 @@
+# One command: sudo docker compose up -d --build
+# Reads secrets from a root .env (copy .env.example). Never commit .env.
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=40
+      - --performance-schema=OFF
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Init scripts run once, on an empty data volume, in file-name order.
+      # They are renamed here because "theme-park-schema.sql" would sort after "01_" and "02_".
+      - ./SQL/theme-park-schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
+      - ./SQL/01_park_and_reference.sql:/docker-entrypoint-initdb.d/01_park_and_reference.sql:ro
+      - ./SQL/02_test_data.sql:/docker-entrypoint-initdb.d/02_test_data.sql:ro
+      - ./SQL/views_extra.sql:/docker-entrypoint-initdb.d/03_views_extra.sql:ro
+    # No "ports:" on purpose: MySQL is reachable only from the app container.
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+
+  app:
+    build: .
+    restart: unless-stopped
+    mem_limit: 256m
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-3100}:3100"
+    environment:
+      PORT: "3100"
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: theme_park
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_MANAGER_PASSWORD: ${SEED_MANAGER_PASSWORD:-}
+      SEED_CASHIER_PASSWORD: ${SEED_CASHIER_PASSWORD:-}
+
+volumes:
+  mysql_data:
