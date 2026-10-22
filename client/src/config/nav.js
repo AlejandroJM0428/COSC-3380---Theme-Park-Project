@@ -2,6 +2,16 @@ import { REPORTS } from './reports.js'
 
 // ASSUMPTION: these role permissions are a first guess. Agree on them with your
 // team (and the professor) and edit here - the menu and route guards follow this file.
+export const PARK_NAME = 'Thunder Valley Adventure Park'
+export const PARK_SHORT = 'Thunder Valley'
+
+// What each role is called around the park. Shown on the staff badge and the dashboard.
+export const ROLE_INFO = {
+  Admin: { title: 'Control room', blurb: 'Every report, live check and setting in the park.' },
+  Manager: { title: 'Operations desk', blurb: 'Reports, live checks and day-to-day records.' },
+  Cashier: { title: 'Ticket booth', blurb: 'Sell tickets, take refunds and record purchases.' },
+}
+
 export const ALL_ROLES = ['Admin', 'Manager', 'Cashier']
 export const MANAGEMENT = ['Admin', 'Manager']
 
@@ -23,11 +33,27 @@ export const FORM_PAGES = [
 
 export const NAV_SECTIONS = [
   {
-    title: 'Reports',
-    items: REPORTS.map((r) => ({ to: `/reports/${r.key}`, label: r.title, roles: MANAGEMENT })),
+    title: 'Live database',
+    zone: 'var(--lagoon)',
+    items: [
+      { to: '/queries', label: 'Run Queries', note: 'Run a saved SQL query and see the rows.', roles: MANAGEMENT },
+      { to: '/trigger-demos', label: 'Trigger Demos', note: 'Try a bad insert and read the database\'s own refusal.', roles: MANAGEMENT },
+    ],
   },
   {
-    title: 'Operations',
+    title: 'Reports',
+    zone: 'var(--sun)',
+    items: REPORTS.map((r) => ({
+      to: `/reports/${r.key}`,
+      label: r.title,
+      note: r.description,
+      required: r.required,
+      roles: MANAGEMENT,
+    })),
+  },
+  {
+    title: 'Park operations',
+    zone: 'var(--coral)',
     items: FORM_PAGES.map((f) => ({ to: `/${f.path}`, label: f.label, roles: f.roles })),
   },
 ]

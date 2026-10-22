@@ -14,14 +14,14 @@ function Chart({ chart, rows }) {
     <div className="chart-box">
       <ResponsiveContainer width="100%" height={320}>
         <Plot data={rows}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={chart.x} />
-          <YAxis />
+          <CartesianGrid stroke="#d5e1dd" strokeDasharray="3 3" />
+          <XAxis dataKey={chart.x} tick={{ fill: '#4a6663', fontSize: 12 }} />
+          <YAxis tick={{ fill: '#4a6663', fontSize: 12 }} />
           <Tooltip />
           {chart.type === 'line' ? (
-            <Line type="monotone" dataKey={chart.y} stroke="#4f46e5" />
+            <Line type="monotone" dataKey={chart.y} stroke="#f26b4f" strokeWidth={3} />
           ) : (
-            <Bar dataKey={chart.y} fill="#4f46e5" />
+            <Bar dataKey={chart.y} fill="#1c9aa8" radius={[3, 3, 0, 0]} />
           )}
         </Plot>
       </ResponsiveContainer>
@@ -68,7 +68,7 @@ export default function ReportPage() {
       )}
       <ErrorBanner message={error} onClose={() => setError('')} />
       {loading ? (
-        <p>Loading…</p>
+        <p className="muted">Loading report…</p>
       ) : (
         <>
           {report.summary && <p className="summary">{report.summary(rows)}</p>}
