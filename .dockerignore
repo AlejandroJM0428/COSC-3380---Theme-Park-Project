@@ -1,0 +1,11 @@
+.git
+.env
+**/.env
+**/node_modules
+**/dist
+*.log
+cookies.txt
+*.zip
+# the big test-data file is loaded by MySQL from the host, not needed in the app image
+SQL/02_test_data.sql
+SQL/tools

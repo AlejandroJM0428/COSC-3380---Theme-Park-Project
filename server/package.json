@@ -1,0 +1,17 @@
+{
+  "name": "themepark-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "seed": "node scripts/seed-users.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "mysql2": "^3.14.0"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true
+  }
+}

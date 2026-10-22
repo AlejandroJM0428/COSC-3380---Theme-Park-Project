@@ -4,5 +4,5 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: { proxy: { '/api': { target: 'http://localhost:3001', changeOrigin: true } } }
+  server: { proxy: { '/api': { target: 'http://localhost:3100', changeOrigin: true } } }
 })
