@@ -1,3 +1,4 @@
+import './App.css'
 import { Route, Routes } from 'react-router-dom'
 import RequireAuth from './auth/RequireAuth.jsx'
 import Layout from './components/Layout.jsx'

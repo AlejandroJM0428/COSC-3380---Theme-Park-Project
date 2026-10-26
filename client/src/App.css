@@ -182,3 +182,254 @@
     border-right-color: var(--border);
   }
 }
+
+/* THUNDER VALLEY HOMEPAGE */
+
+.thunder-home {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #17234a;
+}
+
+.thunder-hero {
+  min-height: 440px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  padding: 55px 7%;
+  overflow: hidden;
+  position: relative;
+  background:
+    linear-gradient(90deg, rgba(10, 22, 67, .94), rgba(21, 47, 105, .42)),
+    url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1800&q=85')
+    center/cover;
+  box-shadow: 0 15px 35px rgba(20, 39, 90, .18);
+}
+
+.thunder-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 650px;
+  color: white;
+}
+
+.thunder-eyebrow {
+  color: #ffdd48;
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 13px;
+}
+
+.thunder-hero h1 {
+  font-size: clamp(36px, 5vw, 66px);
+  font-weight: 900;
+  line-height: 1.08;
+  margin: 18px 0;
+  color: #fff;
+}
+
+.thunder-hero p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #e8eeff;
+  margin-bottom: 28px;
+}
+
+.thunder-button {
+  display: inline-block;
+  background: linear-gradient(135deg, #ff8a00, #ff3d54);
+  color: white;
+  padding: 15px 28px;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 800;
+  transition: transform .25s, box-shadow .25s;
+}
+
+.thunder-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 25px rgba(255, 88, 43, .35);
+}
+
+.thunder-intro {
+  text-align: center;
+  padding: 55px 15px 30px;
+  scroll-margin-top: 24px;
+}
+
+.thunder-section-label {
+  color: #fa5a2a;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.thunder-intro h2 {
+  font-size: clamp(28px, 4vw, 42px);
+  margin: 12px 0;
+  color: #142b70;
+}
+
+.thunder-intro p {
+  color: #65728d;
+}
+
+.thunder-section {
+  margin: 25px 0 50px;
+}
+
+.thunder-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.thunder-section-number {
+  background: linear-gradient(135deg, #ffca28, #ff6535);
+  color: #17234a;
+  font-size: 20px;
+  font-weight: 900;
+  padding: 13px;
+  border-radius: 15px;
+}
+
+.thunder-section-heading h2 {
+  color: #152c73;
+  margin: 0;
+  font-size: 27px;
+}
+
+.thunder-section-heading p {
+  color: #69758d;
+  margin: 5px 0 0;
+}
+
+.thunder-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.thunder-card {
+  display: block;
+  background: white;
+  border: 1px solid #e4e9f5;
+  border-top: 5px solid #ffb92e;
+  border-radius: 18px;
+  padding: 25px;
+  min-height: 220px;
+  text-decoration: none;
+  color: #1a2d57;
+  box-shadow: 0 6px 18px rgba(24, 47, 93, .07);
+  transition: transform .25s, box-shadow .25s;
+}
+
+.thunder-card:nth-child(4n+2) { border-top-color: #19b9cd; }
+.thunder-card:nth-child(4n+3) { border-top-color: #ff5e70; }
+.thunder-card:nth-child(4n+4) { border-top-color: #8d5cf6; }
+
+.thunder-card:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 16px 35px rgba(24, 47, 93, .16);
+}
+
+.thunder-card-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+}
+
+.thunder-card h3 {
+  font-size: 18px;
+  color: #172b68;
+  margin: 0 0 10px;
+}
+
+.thunder-card p {
+  color: #68758b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.thunder-required {
+  display: inline-block;
+  background: #fff0c0;
+  color: #845400;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 20px;
+}
+
+.thunder-card-link {
+  display: block;
+  color: #f45c34;
+  font-weight: 800;
+  margin-top: 20px;
+}
+
+.thunder-featured {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 25px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #ffb62d, #ff633c);
+  color: #19294e;
+  text-decoration: none;
+  margin-bottom: 30px;
+}
+
+.thunder-featured-icon {
+  font-size: 40px;
+}
+
+.thunder-featured h3 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.thunder-featured p {
+  margin: 5px 0 0;
+}
+
+.thunder-arrow {
+  margin-left: auto;
+  font-size: 30px;
+}
+
+.thunder-footer {
+  margin-top: 60px;
+  background: #14275e;
+  border-radius: 20px;
+  padding: 35px;
+  text-align: center;
+  color: white;
+}
+
+.thunder-footer h2 {
+  color: #ffce38;
+}
+
+.thunder-footer p {
+  color: #e0e7ff;
+}
+
+.thunder-footer span {
+  font-size: 12px;
+  color: #aab8e1;
+}
+
+@media (max-width: 650px) {
+  .thunder-hero {
+    min-height: 360px;
+    padding: 35px 22px;
+  }
+
+  .thunder-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .thunder-section-heading h2 {
+    font-size: 22px;
+  }
+}
