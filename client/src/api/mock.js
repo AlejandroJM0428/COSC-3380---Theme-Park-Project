@@ -5,6 +5,8 @@ const USERS = {
   admin: { username: 'admin', role: 'Admin' },
   manager: { username: 'manager', role: 'Manager' },
   cashier: { username: 'cashier', role: 'Cashier' },
+  customer: { username: 'customer', role: 'Customer' },
+  
 }
 
 export async function login(username, password) {
