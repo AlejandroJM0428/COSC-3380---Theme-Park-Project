@@ -10,6 +10,7 @@ export const ROLE_INFO = {
   Admin: { title: 'Control room', blurb: 'Every report, live check and setting in the park.' },
   Manager: { title: 'Operations desk', blurb: 'Reports, live checks and day-to-day records.' },
   Cashier: { title: 'Ticket booth', blurb: 'Sell tickets, take refunds and record purchases.' },
+  Customer: { title: 'Customer account', blurb: 'Explore rides, manage your tickets, and view your membership' },
 }
 
 export const ALL_ROLES = ['Admin', 'Manager', 'Cashier']
