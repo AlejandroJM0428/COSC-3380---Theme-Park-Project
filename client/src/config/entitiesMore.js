@@ -1,8 +1,8 @@
 // Data-entry pages that used to say "not built yet". Same idea as config/entities.js: one config object per page,
 // shown by <RecordManager entity={...} />. Server routes are in server/routes (customers.js, memberships.js, ...).
 //
-// Pages for permanent records (purchases, game plays, ride log) have no Edit or Delete button on purpose:
-// the database refuses edits to them with a trigger. A mistake is corrected by adding a new row.
+// Pages for guest activity (purchases, game plays, ride log) have no Edit button on purpose: the database
+// refuses edits to them with a trigger. Managers can Delete an entry, then add it again to correct a mistake.
 
 const toInput = (s) => (s ? s.replace(' ', 'T').slice(0, 16) : '')
 const shortDate = (s) => (s ? s.slice(0, 16) : '—')
@@ -129,13 +129,13 @@ export const MEMBERSHIPS = {
 export const PURCHASES = {
   title: 'Food & Shop Purchases',
   intro:
-    'Revenue records for food, drinks and merchandise. Add what a guest bought on their ticket. The database fills in the price. Purchases are permanent: to fix a mistake, add a correcting entry.',
+    'Revenue records for food, drinks and merchandise. Add what a guest bought on their ticket. The database fills in the price. The database does not allow edits: to fix a mistake, delete the entry and add it again.',
   resource: 'purchases',
   idKey: 'PurchaseID',
   noun: 'purchase',
-  deleteRoles: [],
+  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
   canEditRow: () => false,
-  canDeleteRow: () => false,
   columns: [
     { key: 'PurchaseID', label: 'Purchase #' },
     { key: 'PurchasedAt', label: 'When', format: shortDate },
@@ -180,13 +180,13 @@ export const PURCHASES = {
 export const GAME_PLAYS = {
   title: 'Game Plays',
   intro:
-    'Revenue records for midway games. Add a play on a guest\'s ticket. The database fills in the price and refuses games that are retired or under maintenance. Game plays are permanent.',
+    'Revenue records for midway games. Add a play on a guest\'s ticket. The database fills in the price and refuses games that are retired or under maintenance. The database does not allow edits: to fix a mistake, delete the play and add it again.',
   resource: 'game-plays',
   idKey: 'GamePlayID',
   noun: 'game play',
-  deleteRoles: [],
+  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
   canEditRow: () => false,
-  canDeleteRow: () => false,
   columns: [
     { key: 'GamePlayID', label: 'Play #' },
     { key: 'PlayedAt', label: 'When', format: shortDate },
@@ -220,13 +220,13 @@ export const GAME_PLAYS = {
 export const RIDE_LOG = {
   title: 'Ride Log',
   intro:
-    'Ride activity. A boarding records a guest getting on a ride. A wait reading records the posted wait time. The database refuses boardings on rides under maintenance, closed by weather, or above the guest\'s height. Entries are permanent.',
+    'Ride activity. A boarding records a guest getting on a ride. A wait reading records the posted wait time. The database refuses boardings on rides under maintenance, closed by weather, or above the guest\'s height. The database does not allow edits: to fix a mistake, delete the entry and add it again.',
   resource: 'ride-log',
   idKey: 'RideLogID',
   noun: 'ride log entry',
-  deleteRoles: [],
+  deleteRoles: ['Admin', 'Manager'],
+  deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
   canEditRow: () => false,
-  canDeleteRow: () => false,
   filters: [
     {
       key: 'type',
