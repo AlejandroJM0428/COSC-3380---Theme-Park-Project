@@ -20,75 +20,8 @@ export default function Dashboard() {
 
   return (
     <div className="thunder-home">
-      <div className="thunder-hero">
-        <div className="thunder-hero-content">
-          <span className="thunder-eyebrow">⚡ WELCOME TO THUNDER VALLEY</span>
-          <h1>Feel the Thunder. Live the Adventure.</h1>
-          <p>
-            Big thrills, unforgettable experiences, and endless excitement.
-            Welcome back, {user.username}!
-          </p>
-          <a href="#park-dashboard" className="thunder-button">
-            Explore the Park ↓
-          </a>
-        </div>
-      </div>
-
-
-      {/* Featured park attractions */}
-      <section className="attractions-section" aria-labelledby="attractions-title">
-        <div className="attractions-heading">
-          <span className="thunder-section-label">DISCOVER THE EXCITEMENT</span>
-          <h2 id="attractions-title">Explore Our Attractions</h2>
-          <p>Every corner of Thunder Valley brings a new adventure.</p>
-        </div>
-
-        <div className="attractions-grid">
-          <article className="attraction-card">
-            <div className="attraction-image">
-              <img src="/images/thrill-rides.jpg" alt="Thrilling roller coaster" loading="lazy" />
-              <span className="attraction-tag">ADRENALINE</span>
-            </div>
-            <div className="attraction-info">
-              <h3>Thrill Rides</h3>
-              <p>Big drops, wild twists, and unforgettable excitement.</p>
-            </div>
-          </article>
-
-          <article className="attraction-card">
-            <div className="attraction-image">
-              <img src="/images/family-rides.jpg" alt="Colorful Ferris wheel" loading="lazy" />
-              <span className="attraction-tag">ALL AGES</span>
-            </div>
-            <div className="attraction-info">
-              <h3>Family Attractions</h3>
-              <p>Share magical moments and create lasting memories.</p>
-            </div>
-          </article>
-
-          
-<article className="attraction-card">
-  <div className="attraction-image">
-    <img
-      src="/images/kids-rides.jpg"
-      alt="Children's amusement park rides"
-      loading="lazy"
-    />
-    <span className="attraction-tag">LITTLE EXPLORERS</span>
-  </div>
-
-  <div className="attraction-info">
-    <h3>Kids' Adventures</h3>
-    <p>Discover Little Dino Dash, Mini Carousel, and more family-friendly fun.</p>
-  </div>
-</article>
-
-        </div>
-      </section>
-
-
       <div className="thunder-intro" id="park-dashboard">
-        <span className="thunder-section-label">YOUR ADVENTURE STARTS HERE</span>
+        <span className="thunder-section-label">Welcome back, {user.username}</span>
         <h2>{info.title}</h2>
         <p>{info.blurb}</p>
       </div>
@@ -150,12 +83,6 @@ export default function Dashboard() {
           </section>
         )
       })}
-
-      <footer className="thunder-footer">
-        <h2>⚡ THUNDER VALLEY</h2>
-        <p>Where the adventure never ends.</p>
-        <span>© 2026 Thunder Valley Theme Park</span>
-      </footer>
     </div>
   )
 }
