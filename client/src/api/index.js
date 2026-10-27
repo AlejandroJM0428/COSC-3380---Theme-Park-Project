@@ -2,6 +2,7 @@
 // Whatever the team decides about how the site reaches MySQL, only this file changes.
 import { http } from './http.js'
 import * as mock from './mock.js'
+import * as visitorMock from './visitorMock.js'
 
 // Mock mode is ON unless .env says VITE_USE_MOCK=false
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
@@ -50,3 +51,27 @@ export function createTicket(data) {
 
 // Day 3+: add one function per form here, e.g.
 // export function createTicket(data) { return http('/tickets', { method: 'POST', body: data }) }
+
+
+// Visitor/customer portal baseline. Its preview mode is independent of staff mock/live mode,
+// so the clearly labeled sample portal can be previewed in the Docker build too.
+function needVisitorBackend() {
+  if (import.meta.env.VITE_VISITOR_DEMO === 'false') {
+    throw new Error('Live customer authentication and ticket endpoints are not wired yet. Set VITE_VISITOR_DEMO=true to use the labeled portal preview.')
+  }
+}
+
+export function getVisitorDashboard() {
+  needVisitorBackend()
+  return visitorMock.getVisitorDashboard()
+}
+
+export function buyVisitorTicket(data) {
+  needVisitorBackend()
+  return visitorMock.buyVisitorTicket(data)
+}
+
+export function refundVisitorTicket(ticketId) {
+  needVisitorBackend()
+  return visitorMock.refundVisitorTicket(ticketId)
+}

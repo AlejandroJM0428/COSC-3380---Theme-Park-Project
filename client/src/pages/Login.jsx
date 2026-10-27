@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { USE_MOCK } from '../api/index.js'
 import { useAuth } from '../auth/context.js'
 import ErrorBanner from '../components/ErrorBanner.jsx'
@@ -34,10 +34,10 @@ export default function Login() {
         <div className="awning" />
       </div>
       <main className="login-main">
-        <form className="ticket" onSubmit={handleSubmit}>
+          <form className="ticket" onSubmit={handleSubmit}>
           <div className="ticket-head">
             <h1>{PARK_NAME}</h1>
-            <p className="muted">Staff sign in</p>
+            <p className="muted">Account sign in</p>
           </div>
           <div className="ticket-tear" />
           <div className="ticket-body">
@@ -51,11 +51,12 @@ export default function Login() {
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </label>
             <button type="submit" disabled={busy}>
-              {busy ? 'Signing in…' : 'Sign in'}
+            {busy ? 'Signing in…' : 'Sign in'}
             </button>
             {USE_MOCK && (
-              <p className="muted">Demo mode: log in as admin, manager, or cashier with password "password".</p>
+              <p className="muted">Demo mode: log in as admin, manager, cashier, or customer with password "password".</p>
             )}
+            <p className="visitor-login-link">Visiting the park? <Link to="/visitor">Open the visitor portal preview →</Link></p>
           </div>
         </form>
       </main>
