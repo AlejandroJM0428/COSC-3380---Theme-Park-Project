@@ -23,7 +23,7 @@ export default function Dashboard() {
       <div className="thunder-hero">
         <div className="thunder-hero-content">
           <span className="thunder-eyebrow">⚡ WELCOME TO THUNDER VALLEY</span>
-          <h1>Where Every Day Is An Adventure!</h1>
+          <h1>Feel the Thunder. Live the Adventure.</h1>
           <p>
             Big thrills, unforgettable experiences, and endless excitement.
             Welcome back, {user.username}!

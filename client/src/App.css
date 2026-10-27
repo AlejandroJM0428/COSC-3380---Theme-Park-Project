@@ -614,3 +614,48 @@
     transition: none;
   }
 }
+
+
+/* Thunder Valley roller coaster hero */
+
+.thunder-home .thunder-hero {
+  position: relative;
+  min-height: 460px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(9, 20, 57, 0.94) 0%,
+      rgba(12, 26, 73, 0.78) 48%,
+      rgba(12, 26, 73, 0.2) 100%
+    ),
+    url('/images/roller-coaster.jpg');
+
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.thunder-home .thunder-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.thunder-home .thunder-hero h1 {
+  color: #ffffff;
+  text-shadow: 0 3px 16px rgba(0, 0, 0, 0.3);
+}
+
+.thunder-home .thunder-hero p {
+  color: #eef3ff;
+}
+
+@media (max-width: 700px) {
+  .thunder-home .thunder-hero {
+    min-height: 400px;
+    background-position: 60% center;
+  }
+}
