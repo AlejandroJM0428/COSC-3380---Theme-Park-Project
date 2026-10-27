@@ -4,6 +4,7 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { DEMOS } from '../demos/definitions.js';
 import './triggers.js'; // registers GET /api/triggers (the Triggers page)
+import './dataentry.js'; // registers the customers, memberships, purchases, game plays, ride log and weather routes
 
 route(
   'GET',
