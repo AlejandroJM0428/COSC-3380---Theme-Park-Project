@@ -15,14 +15,14 @@ route('POST', '/api/auth/login', async (ctx) => {
   }
 
   const [rows] = await pool.query(
-    'SELECT UserID, Username, PasswordHash, Role, CustomerID FROM AppUser WHERE Username = ? AND IsActive = 1',
+    'SELECT UserID, Username, PasswordHash, Role, CustomerID, EmployeeID FROM AppUser WHERE Username = ? AND IsActive = 1',
     [username],
   );
   const user = rows[0];
   const ok = await bcrypt.compare(password, user ? user.PasswordHash : DUMMY_HASH);
   if (!user || !ok) throw new HttpError(401, BAD_LOGIN);
 
-  createSession(ctx.res, { userId: user.UserID, username: user.Username, role: user.Role, CustomerID: user.CustomerID });
+  createSession(ctx.res, { userId: user.UserID, username: user.Username, role: user.Role, CustomerID: user.CustomerID, EmployeeID: user.EmployeeID });
   return { username: user.Username, role: user.Role };
 });
 

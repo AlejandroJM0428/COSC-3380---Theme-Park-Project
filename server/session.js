@@ -38,6 +38,7 @@ export function createSession(res, user) {
     username: user.username,
     role: user.role,
     CustomerID: user.CustomerID ?? null,
+    EmployeeID: user.EmployeeID ?? null,
     expires: Date.now() + MAX_AGE_MS,
   });
   const flags = ['HttpOnly', 'SameSite=Lax', 'Path=/', `Max-Age=${MAX_AGE_MS / 1000}`];
