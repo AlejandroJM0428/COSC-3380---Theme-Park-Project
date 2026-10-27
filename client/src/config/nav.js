@@ -37,7 +37,7 @@ export const FORM_PAGES = [
   { path: 'ride-log',    label: 'Ride Log',               roles: OPS_ROLES },
   { path: 'weather',     label: 'Weather Log',            roles: OPS_ROLES },
   { path: 'maintenance', label: 'Maintenance',            roles: [...OPS_ROLES, 'MaintenanceManager'] },
-  { path: 'employees',   label: 'Employees & Shifts',     roles: [...OPS_ROLES, 'HRManager'] },
+  { path: 'employees',   label: 'Shift Ratings',          roles: [...OPS_ROLES, 'HRManager'] },
   { path: 'facilities',  label: 'Rides, Games & Venues',  roles: ['Admin'] },
   { path: 'users',       label: 'App Users',              roles: ['Admin'] },
 ]

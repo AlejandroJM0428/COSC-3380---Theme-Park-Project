@@ -178,3 +178,70 @@ export const TICKETS = {
   }),
   describe: (row) => `ticket #${row.TicketID} (${row.CustomerName}, ${row.VisitDate})`,
 }
+
+// Employee performance: shifts with a 1 to 5 rating and notes. The performance reports read these rows.
+export const SHIFTS = {
+  title: 'Shift Ratings',
+  intro:
+    'Employee performance records. Log a shift, then rate it from 1 to 5 once it has ended. The database refuses overlapping shifts and shifts before the hire date.',
+  resource: 'shifts',
+  idKey: 'ShiftID',
+  noun: 'shift',
+  deleteRoles: ['Admin', 'HRManager'],
+  filters: [
+    {
+      key: 'status',
+      label: 'Show',
+      options: [
+        ['', 'All shifts'],
+        ['open', 'Open shifts (no clock-out)'],
+        ['unrated', 'Ended, not rated yet'],
+        ['rated', 'Rated shifts'],
+      ],
+    },
+  ],
+  columns: [
+    { key: 'ShiftID', label: 'Shift #' },
+    { key: 'EmployeeName', label: 'Employee' },
+    { key: 'JobTitle', label: 'Job' },
+    { key: 'ClockIn', label: 'Clock in', format: shortDate },
+    { key: 'ClockOut', label: 'Clock out', format: (v) => (v ? shortDate(v) : 'Open') },
+    { key: 'HoursWorked', label: 'Hours', format: (v) => v ?? '—' },
+    { key: 'ShiftRating', label: 'Rating', format: (v) => (v ? `${v} / 5` : '—') },
+    { key: 'ShiftNotes', label: 'Notes' },
+  ],
+  fields: [
+    {
+      key: 'employeeId',
+      label: 'Employee',
+      type: 'select',
+      required: true,
+      optionsFrom: (form, lookups) => (lookups?.employees ?? []).map((x) => [String(x.id), x.name]),
+    },
+    { key: 'clockIn', label: 'Clock in', type: 'datetime', required: true },
+    { key: 'clockOut', label: 'Clock out (leave empty while the shift is open)', type: 'datetime' },
+    {
+      key: 'rating',
+      label: 'Rating (after the shift ends)',
+      type: 'select',
+      options: [['', '— not rated —'], ['1', '1 (poor)'], ['2', '2'], ['3', '3 (good)'], ['4', '4'], ['5', '5 (excellent)']],
+    },
+    { key: 'notes', label: 'Notes', type: 'text', maxLength: 255, wide: true },
+  ],
+  blank: () => ({ employeeId: '', clockIn: '', clockOut: '', rating: '', notes: '' }),
+  fromRecord: (rec) => ({
+    employeeId: String(rec.EmployeeID),
+    clockIn: toInput(rec.ClockIn),
+    clockOut: toInput(rec.ClockOut),
+    rating: rec.ShiftRating ? String(rec.ShiftRating) : '',
+    notes: rec.ShiftNotes ?? '',
+  }),
+  toPayload: (form) => ({
+    employeeId: Number(form.employeeId),
+    clockIn: form.clockIn,
+    clockOut: form.clockOut || null,
+    rating: form.rating === '' ? null : Number(form.rating),
+    notes: form.notes.trim(),
+  }),
+  describe: (row) => `shift #${row.ShiftID} (${row.EmployeeName}, ${row.ClockIn?.slice(0, 16)})`,
+}
