@@ -1,0 +1,40 @@
+/* Extras for DataTable: sortable headers, right-aligned numbers, the "Show all" footer. Every class starts with dt- so nothing else is affected. */
+
+.dt-sort {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.dt-sort:hover,
+.dt-sort:focus-visible {
+  text-decoration: underline;
+}
+
+.dt-arrow {
+  font-size: 0.7em;
+}
+
+th.dt-num,
+td.dt-num {
+  text-align: right;
+}
+
+.dt-more {
+  margin: 8px 0 0;
+}
+
+.dt-toggle {
+  margin-left: 10px;
+  padding: 4px 10px;
+  border: 1px solid var(--line, #d5e1dd);
+  border-radius: 6px;
+  background: var(--panel, #fff);
+  font: inherit;
+  cursor: pointer;
+}

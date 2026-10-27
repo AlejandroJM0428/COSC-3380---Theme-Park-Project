@@ -69,6 +69,28 @@
   color: var(--muted, #4a6663);
 }
 
+.rp-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 6px;
+}
+
+.rp-export {
+  padding: 7px 12px;
+  border: 1px solid var(--line, #d5e1dd);
+  border-radius: 6px;
+  background: var(--panel, #fff);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rp-export:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 600px) {
   .rp-filters label,
   .rp-filters select,

@@ -50,6 +50,28 @@ function safely(fn, fallback) {
   }
 }
 
+// One CSV cell: quote it when needed, and defuse text a spreadsheet would run as a formula (=, +, @, or a '-' that is not a number).
+function csvCell(v) {
+  if (v === null || v === undefined) return ''
+  let s = String(v)
+  if (typeof v === 'string' && (/^[=+@]/.test(s) || (/^-/.test(s) && !Number.isFinite(Number(s))))) s = `'${s}`
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+// Download the rows as a .csv file (opens in Excel / LibreOffice Calc).
+function downloadCsv(name, columns, rows) {
+  const lines = [columns.map(csvCell).join(','), ...rows.map((r) => columns.map((c) => csvCell(r[c])).join(','))]
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${name}-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
 // One page for EVERY report: it looks up its settings in config/reports.js.
 export default function ReportPage() {
   const { key } = useParams()
@@ -186,7 +208,18 @@ export default function ReportPage() {
 
           {report.summary && <p className="summary">{safely(() => report.summary(filtered), '')}</p>}
           <Chart chart={report.chart} rows={chartRows} />
-          <DataTable rows={filtered} columns={report.columns} />
+          <div className="rp-actions">
+            <span className="muted">{filtered.length.toLocaleString('en-US')} rows</span>
+            <button
+              type="button"
+              className="rp-export"
+              disabled={filtered.length === 0}
+              onClick={() => downloadCsv(report.key, report.columns ?? Object.keys(filtered[0]), filtered)}
+            >
+              Download CSV
+            </button>
+          </div>
+          <DataTable key={report.key} rows={filtered} columns={report.columns} />
         </>
       )}
     </div>
