@@ -104,7 +104,8 @@ export function updateRecord(resource, id, data) {
   return http(`/${resource}/${id}`, { method: 'PUT', body: data })
 }
 
-export function deleteRecord(resource, id) {
+export function deleteRecord(resource, id, query = {}) {
   needLive()
-  return http(`/${resource}/${id}`, { method: 'DELETE' })
+  const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '' && v != null)).toString()
+  return http(`/${resource}/${id}${qs ? `?${qs}` : ''}`, { method: 'DELETE' })
 }

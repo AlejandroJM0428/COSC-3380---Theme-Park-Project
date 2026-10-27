@@ -83,13 +83,25 @@ export default function RecordManager({ entity }) {
     }
   }
 
+  // Optional entity settings: deleteLabel ('Void'), deletePast ('Voided'), askReason (prompt sent as ?reason=),
+  // canEditRow(row) and canDeleteRow(row) to hide the buttons on rows that are already finished.
+  const deleteLabel = entity.deleteLabel ?? 'Delete'
+  const deletePast = entity.deletePast ?? 'Deleted'
+
   async function remove(row) {
-    if (!window.confirm(`Delete ${entity.describe(row)}? This cannot be undone.`)) return
+    let query = {}
+    if (entity.askReason) {
+      const reason = window.prompt(`${deleteLabel} ${entity.describe(row)}? Enter a reason (optional):`)
+      if (reason === null) return // pressed Cancel
+      query = { reason: reason.trim() }
+    } else if (!window.confirm(`${deleteLabel} ${entity.describe(row)}? ${entity.deleteNote ?? 'This cannot be undone.'}`)) {
+      return
+    }
     setError('')
     setNotice('')
     try {
-      await deleteRecord(entity.resource, row[entity.idKey])
-      setNotice(`Deleted ${entity.describe(row)}.`)
+      await deleteRecord(entity.resource, row[entity.idKey], query)
+      setNotice(`${deletePast} ${entity.describe(row)}.`)
       setReload((n) => n + 1)
     } catch (err) {
       setError(err.message)
@@ -226,12 +238,14 @@ export default function RecordManager({ entity }) {
                     <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
                   ))}
                   <td className="rm-actions">
-                    <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
-                      Edit
-                    </button>
-                    {canDelete && (
+                    {(entity.canEditRow?.(row) ?? true) && (
+                      <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
+                        Edit
+                      </button>
+                    )}
+                    {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
                       <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null}>
-                        Delete
+                        {deleteLabel}
                       </button>
                     )}
                   </td>
