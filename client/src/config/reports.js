@@ -476,17 +476,18 @@ const ALL_REPORTS = [
     chart: { type: 'bar', x: 'RideName', y: 'AvgWaitMinutes', yLabel: 'Average wait (min)', angle: true },
   },
 
-  // ---- Weather: hidden on purpose ----
+  // ---- Weather ----
   // The TAs said not to build a weather report, but the professor's list includes "Rain-outs per month".
-  // Both are kept here with hidden: true. Remove `hidden` to show them again.
+  // So Rain-outs per Month is shown (Admin and Manager only, under Ride reports) and the broader
+  // Weather Impact report stays hidden. Put `hidden: true` back on Rain-outs to hide it again.
   {
     key: 'rainouts-per-month',
+    group: 'Ride reports',
     endpoint: 'weather-impact',
     view: 'v_WeatherImpact (grouped by month here)',
     title: 'Rain-outs per Month',
     description: 'Rain or storm events that closed outdoor rides, per month.',
     required: true,
-    hidden: true,
     roles: ADMINS,
     prepare: (rows) =>
       countByMonth(
