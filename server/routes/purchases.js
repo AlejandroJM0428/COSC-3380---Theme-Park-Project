@@ -4,13 +4,14 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, needInt, optDateTime, recordId } from '../validate.js';
 
-// Food and shop purchases (revenue): list, get, add.
-// Purchases are permanent records. trg_Purchase_BU refuses edits, so there is no PUT, and money records
-// are not deleted here. The browser never sends the price: trg_Purchase_BI copies it from the item.
+// Food and shop purchases (revenue): list, get, add, delete.
+// trg_Purchase_BU refuses edits, so there is no PUT. A mistake is fixed by deleting the entry (managers only)
+// and adding it again. The browser never sends the price: trg_Purchase_BI copies it from the item.
 // trg_Purchase_BI also refuses retired items and venues under maintenance (errno 1644 -> handleError).
 
 const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
 const CAN_WRITE = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
+const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
 
 const SELECT_PURCHASE = `
   SELECT p.PurchaseID, p.TicketID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
@@ -85,5 +86,21 @@ route(
     } catch (err) {
       throw friendlyDbError(err, { 1452: 'Ticket ID or item does not exist' });
     }
+  }),
+);
+
+// DELETE removes the row for good. Nothing else points at a purchase.
+route(
+  'DELETE',
+  '/api/purchases/:id',
+  requireRole(...CAN_DELETE)(async (ctx) => {
+    const id = recordId(ctx, 'Purchase');
+    await loadPurchase(id); // 404 if missing
+    try {
+      await pool.query('DELETE FROM Purchase WHERE PurchaseID = ?', [id]);
+    } catch (err) {
+      throw friendlyDbError(err);
+    }
+    return { deleted: id };
   }),
 );

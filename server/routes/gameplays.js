@@ -4,12 +4,14 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, optDateTime, recordId } from '../validate.js';
 
-// Game plays (revenue): list, get, add.
-// Permanent records: trg_GamePlay_BU refuses edits, so there is no PUT. The browser never sends the amount:
+// Game plays (revenue): list, get, add, delete.
+// trg_GamePlay_BU refuses edits, so there is no PUT. A mistake is fixed by deleting the entry (managers only)
+// and adding it again. The browser never sends the amount:
 // trg_GamePlay_BI copies it from Game.PlayPrice and refuses games that are retired or under maintenance.
 
 const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
 const CAN_WRITE = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
+const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
 
 const SELECT_PLAY = `
   SELECT gp.GamePlayID, gp.TicketID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
@@ -79,5 +81,21 @@ route(
     } catch (err) {
       throw friendlyDbError(err, { 1452: 'Ticket ID or game does not exist' });
     }
+  }),
+);
+
+// DELETE removes the row for good. Nothing else points at a game play.
+route(
+  'DELETE',
+  '/api/game-plays/:id',
+  requireRole(...CAN_DELETE)(async (ctx) => {
+    const id = recordId(ctx, 'Game play');
+    await loadPlay(id); // 404 if missing
+    try {
+      await pool.query('DELETE FROM GamePlay WHERE GamePlayID = ?', [id]);
+    } catch (err) {
+      throw friendlyDbError(err);
+    }
+    return { deleted: id };
   }),
 );

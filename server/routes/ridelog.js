@@ -4,8 +4,9 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, needInt, oneOf, optDateTime, recordId } from '../validate.js';
 
-// Ride log: list, get, add. A row is either a Boarding (has a ticket) or a Wait Reading (has wait minutes).
-// Permanent records: trg_RideLog_BU refuses edits, so there is no PUT. trg_RideLog_BI refuses retired rides,
+// Ride log: list, get, add, delete. A row is either a Boarding (has a ticket) or a Wait Reading (has wait minutes).
+// trg_RideLog_BU refuses edits, so there is no PUT. A mistake is fixed by deleting the entry and adding it again.
+// trg_RideLog_BI refuses retired rides,
 // rides under maintenance, closed outdoor rides, guests under the height limit and bad Express use.
 // Those messages (errno 1644) reach the browser through handleError().
 
@@ -85,5 +86,21 @@ route(
         1062: 'A wait reading for this ride at this exact time already exists',
       });
     }
+  }),
+);
+
+// DELETE removes the row for good. Nothing else points at a ride log entry.
+route(
+  'DELETE',
+  '/api/ride-log/:id',
+  requireRole(...CAN_WRITE)(async (ctx) => {
+    const id = recordId(ctx, 'Ride log');
+    await loadLog(id); // 404 if missing
+    try {
+      await pool.query('DELETE FROM RideLog WHERE RideLogID = ?', [id]);
+    } catch (err) {
+      throw friendlyDbError(err);
+    }
+    return { deleted: id };
   }),
 );
