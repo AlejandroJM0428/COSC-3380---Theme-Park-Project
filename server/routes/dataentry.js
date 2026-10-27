@@ -7,3 +7,5 @@ import './purchases.js';
 import './gameplays.js';
 import './ridelog.js';
 import './weather.js';
+import './facilities.js';
+import './users.js';
