@@ -2,7 +2,6 @@
 // Whatever the team decides about how the site reaches MySQL, only this file changes.
 import { http } from './http.js'
 import * as mock from './mock.js'
-import * as visitorMock from './visitorMock.js'
 
 // Mock mode is ON unless .env says VITE_USE_MOCK=false
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
@@ -58,27 +57,21 @@ export function createTicket(data) {
 // export function createTicket(data) { return http('/tickets', { method: 'POST', body: data }) }
 
 
-// Visitor/customer portal baseline. Its preview mode is independent of staff mock/live mode,
-// so the clearly labeled sample portal can be previewed in the Docker build too.
-function needVisitorBackend() {
-  if (import.meta.env.VITE_VISITOR_DEMO === 'false') {
-    throw new Error('Live customer authentication and ticket endpoints are not wired yet. Set VITE_VISITOR_DEMO=true to use the labeled portal preview.')
-  }
-}
-
+// Visitor portal. Live database only: the member's name, membership and tickets come from the
+// server, which looks them up with the CustomerID of the logged-in session.
 export function getVisitorDashboard() {
-  needVisitorBackend()
-  return visitorMock.getVisitorDashboard()
+  needLive()
+  return http('/visitor/dashboard')
 }
 
 export function buyVisitorTicket(data) {
-  needVisitorBackend()
-  return visitorMock.buyVisitorTicket(data)
+  needLive()
+  return http('/visitor/tickets', { method: 'POST', body: data })
 }
 
 export function refundVisitorTicket(ticketId) {
-  needVisitorBackend()
-  return visitorMock.refundVisitorTicket(ticketId)
+  needLive()
+  return http(`/visitor/tickets/${ticketId}/refund`, { method: 'POST', body: {} })
 }
 
 // Generic data entry, used by components/RecordManager.jsx. `resource` is the API path, e.g. 'maintenance'.

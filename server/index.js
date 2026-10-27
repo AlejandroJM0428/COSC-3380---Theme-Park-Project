@@ -15,6 +15,7 @@ import './routes/tickets.js';
 import './routes/maintenance.js';
 import './routes/shifts.js';
 import './routes/notifications.js';
+import './routes/visitor.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',

@@ -93,14 +93,14 @@ export default function VisitorPortal({ mode = 'public' }) {
   }
 
   async function handleRefund(ticket) {
-    const approved = window.confirm(`Refund ticket #${ticket.ticketId} for ${formatDate(ticket.visitDate)}? This is a demo action and will not charge or refund real money.`)
+    const approved = window.confirm(`Refund ticket #${ticket.ticketId} for ${formatDate(ticket.visitDate)}? No real money is moved in this prototype.`)
     if (!approved) return
     setError('')
     setSuccess('')
     setRefundBusy(ticket.ticketId)
     try {
       const result = await refundVisitorTicket(ticket.ticketId)
-      setSuccess(`Ticket #${result.ticketId} has been marked refunded in the demo.`)
+      setSuccess(`Ticket #${result.ticketId} has been refunded.`)
       await refresh()
     } catch (err) {
       setError(err.message || 'Refund failed.')
@@ -153,12 +153,11 @@ export default function VisitorPortal({ mode = 'public' }) {
             <span className="ticket-overline">VISITOR PASS</span>
             <span className="ticket-spark" aria-hidden="true">✳</span>
           </div>
-          <div className="hero-avatar" aria-hidden="true">{dashboard?.customer ? `${dashboard.customer.firstName[0]}${dashboard.customer.lastName[0]}` : '…'}</div>
+          <div className="hero-avatar" aria-hidden="true">{dashboard?.customer ? `${dashboard.customer.firstName[0] ?? ''}${dashboard.customer.lastName[0] ?? ''}`.toUpperCase() : '…'}</div>
           <p className="hero-welcome">WELCOME BACK</p>
           <h2>{loading ? 'Loading your pass…' : dashboard?.customer ? `${dashboard.customer.firstName} ${dashboard.customer.lastName}` : 'Visitor'}</h2>
           <div className="hero-ticket-rule" />
           <div className="hero-ticket-bottom"><span>MEMBER TIER</span><strong>{membership?.tier ?? '—'}</strong></div>
-          <p className="hero-demo-note">Sample profile · not a live account</p>
         </div>
         ) : (
         <div className="hero-ticket" aria-label="Member sign in">
@@ -177,7 +176,7 @@ export default function VisitorPortal({ mode = 'public' }) {
       <div className="visitor-content">
         <div className="visitor-page-intro">
           <div><p className="eyebrow">THE IMPORTANT DETAILS</p><h2>{isMember ? 'Your park at a glance' : 'The park at a glance'}</h2></div>
-          <button className="text-button" type="button" onClick={refresh} disabled={loading}>↻ Refresh demo data</button>
+          <button className="text-button" type="button" onClick={refresh} disabled={loading}>↻ Refresh</button>
         </div>
 
         {error && <div className="visitor-alert error" role="alert"><strong>Something needs attention</strong><span>{error}</span></div>}
@@ -230,19 +229,19 @@ export default function VisitorPortal({ mode = 'public' }) {
                 <strong>{isPremier ? 'Included' : `+${money(expressPrice)}`}</strong>
               </label>
               <div className="purchase-total"><span>Due today</span><strong>{money(totalPrice)}</strong></div>
-              <p className="fine-print">Demo only: ticket actions update sample data in this browser, not the live database or a payment processor.</p>
-              <button className="visitor-primary-button" type="submit" disabled={purchasing || loading}>{purchasing ? 'Booking ticket…' : 'Confirm demo ticket'} <span aria-hidden="true">→</span></button>
+              <p className="fine-print">No payment is taken in this prototype. Tickets are saved to the park database.</p>
+              <button className="visitor-primary-button" type="submit" disabled={purchasing || loading}>{purchasing ? 'Booking ticket…' : 'Confirm ticket'} <span aria-hidden="true">→</span></button>
             </form>
 
             <div className="ticket-list-card">
-              <div className="ticket-list-head"><div><h3>Upcoming tickets</h3><p>Refunds are available for future visits in this demo.</p></div><span className="ticket-count">{upcomingTickets.length}</span></div>
+              <div className="ticket-list-head"><div><h3>Upcoming tickets</h3><p>Refunds are available for future visits.</p></div><span className="ticket-count">{upcomingTickets.length}</span></div>
               {loading ? <p className="empty-state">Loading your tickets…</p> : upcomingTickets.length === 0 ? <div className="empty-state"><span aria-hidden="true">▧</span><strong>No upcoming tickets</strong><p>Pick a date to start planning your visit.</p></div> : (
                 <div className="customer-ticket-list">
                   {[...upcomingTickets].sort((a, b) => a.visitDate.localeCompare(b.visitDate)).map((ticket) => (
                     <article className="customer-ticket" key={ticket.ticketId}>
                       <div className="ticket-date-block"><span>{new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(`${ticket.visitDate}T12:00:00`)).toUpperCase()}</span><strong>{new Date(`${ticket.visitDate}T12:00:00`).getDate()}</strong><small>{new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(new Date(`${ticket.visitDate}T12:00:00`))}</small></div>
                       <div className="customer-ticket-main"><div className="ticket-title-line"><strong>Park admission</strong><span className={`ticket-status ${ticket.status.toLowerCase()}`}>{ticket.status}</span></div><span>Ticket #{ticket.ticketId} · {ticket.hasExpress ? 'Express access' : 'Standard queues'}</span><strong>{money(ticket.ticketPrice)}</strong></div>
-                      <button className="refund-button" type="button" onClick={() => handleRefund(ticket)} disabled={refundBusy === ticket.ticketId || ticket.visitDate <= localDate(0)} title={ticket.visitDate <= localDate(0) ? 'Refunds are only available before the visit date in this demo.' : 'Refund this ticket'}>{refundBusy === ticket.ticketId ? 'Refunding…' : ticket.visitDate <= localDate(0) ? 'Visit day' : 'Refund'}</button>
+                      <button className="refund-button" type="button" onClick={() => handleRefund(ticket)} disabled={refundBusy === ticket.ticketId || ticket.visitDate <= localDate(0)} title={ticket.visitDate <= localDate(0) ? 'Refunds are only available before the visit date.' : 'Refund this ticket'}>{refundBusy === ticket.ticketId ? 'Refunding…' : ticket.visitDate <= localDate(0) ? 'Visit day' : 'Refund'}</button>
                     </article>
                   ))}
                 </div>
@@ -266,7 +265,7 @@ export default function VisitorPortal({ mode = 'public' }) {
         <section className="visitor-section rides-section" id="rides">
           <div className="section-heading rides-heading">
             <div><p className="eyebrow">BEFORE YOU JOIN THE LINE</p><h2>Ride board</h2><p>Check availability and estimated queue times before crossing the park.</p></div>
-            <span className="section-step">02 / LIVE-DATA TARGET</span>
+            <span className="section-step">02 / RIDE BOARD</span>
           </div>
           <div className="ride-toolbar">
             <div className="ride-filters" role="group" aria-label="Filter rides">
@@ -284,7 +283,7 @@ export default function VisitorPortal({ mode = 'public' }) {
             ))}
           </div>
           {!loading && visibleRides.length === 0 && <div className="empty-state ride-empty">No rides match those filters. Try a different search.</div>}
-          <p className="ride-disclaimer"><span aria-hidden="true">ⓘ</span> This version uses illustrative demo values. Live availability can be calculated from <code>v_RideAvailability</code>; the most recent queue reading should come from <code>RideLog</code> (EventType = “Wait Reading”). The existing wait-time view reports historical aggregates, not a guaranteed live wait.</p>
+          <p className="ride-disclaimer"><span aria-hidden="true">ⓘ</span> Open or closed status comes from the park’s live ride status. Wait times are the most recent posted queue reading, not a guarantee.</p>
         </section>
 
         <footer className="visitor-footer"><Link to="/staff/login">Staff sign in</Link><span>Thunder Valley Adventure Park · Visitor portal prototype</span><a href="#top" onClick={(event) => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</a></footer>
