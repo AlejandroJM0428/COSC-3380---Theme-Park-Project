@@ -14,6 +14,7 @@ import TicketSalesPage from './pages/TicketSalesPage.jsx'
 import ShiftRatingsPage from './pages/ShiftRatingsPage.jsx'
 import MyWork from './pages/MyWork.jsx'
 import NotificationsPage from './pages/NotificationsPage.jsx'
+import { CustomersPage, GamePlaysPage, MembershipsPage, PurchasesPage, RideLogPage, WeatherPage } from './pages/DataEntryPages.jsx'
 import Placeholder from './pages/Placeholder.jsx'
 import NotFound from './pages/NotFound.jsx'
 import VisitorPortal from './pages/VisitorPortal.jsx'
@@ -21,7 +22,20 @@ import { FORM_PAGES, MANAGEMENT, STAFF_ROLES } from './config/nav.js'
 
 // When you build a real page, import it here and add ONE line to this map
 // (key = the `path` in config/nav.js). Until then the Placeholder is shown.
-const PAGE_COMPONENTS = { tickets: SellTicket, refunds: TicketSalesPage, maintenance: MaintenancePage, employees: ShiftRatingsPage, notifications: NotificationsPage, 'my-work': MyWork }
+const PAGE_COMPONENTS = {
+  tickets: SellTicket,
+  refunds: TicketSalesPage,
+  maintenance: MaintenancePage,
+  employees: ShiftRatingsPage,
+  notifications: NotificationsPage,
+  'my-work': MyWork,
+  customers: CustomersPage,
+  memberships: MembershipsPage,
+  purchases: PurchasesPage,
+  'game-plays': GamePlaysPage,
+  'ride-log': RideLogPage,
+  weather: WeatherPage,
+}
 
 export default function App() {
   return (
