@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import RequireAuth from './auth/RequireAuth.jsx'
 import Layout from './components/Layout.jsx'
 import Login from './pages/Login.jsx'
+import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import ReportPage from './pages/ReportPage.jsx'
 import QueryPage from './pages/QueryPage.jsx'
@@ -28,6 +29,7 @@ export default function App() {
 
       {/* 2. Member (customer) login + account */}
       <Route path="/member/login" element={<Login audience="member" />} />
+      <Route path="/member/register" element={<Register />} />
       <Route element={<RequireAuth roles={['Customer']} loginPath="/member/login" />}>
         <Route path="/member" element={<VisitorPortal mode="member" />} />
       </Route>

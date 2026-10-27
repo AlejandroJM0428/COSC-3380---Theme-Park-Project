@@ -22,10 +22,17 @@ export default function AuthProvider({ children }) {
     return loggedIn
   }
 
+  async function register(data) {
+    const created = await api.register(data) // { username, role: 'Customer' }
+    setUser(created)
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(created))
+    return created
+  }
+
   function logout() {
     setUser(null)
     sessionStorage.removeItem(STORAGE_KEY)
   }
 
-  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, login, register, logout }}>{children}</AuthContext.Provider>
 }

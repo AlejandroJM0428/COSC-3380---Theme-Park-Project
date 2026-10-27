@@ -13,6 +13,11 @@ export function login(username, password) {
     : http('/auth/login', { method: 'POST', body: { username, password } })
 }
 
+// Member self sign-up. Logs the new member in (server sets the session cookie).
+export function register(data) {
+  return USE_MOCK ? mock.register(data) : http('/auth/register', { method: 'POST', body: data })
+}
+
 export function getReport(endpoint) {
   return USE_MOCK ? mock.getReport(endpoint) : http(`/reports/${endpoint}`)
 }

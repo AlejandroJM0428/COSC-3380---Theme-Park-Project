@@ -67,6 +67,11 @@ export default function Login({ audience = 'staff' }) {
             {USE_MOCK && (
               <p className="muted">Demo mode: {isMember ? 'sign in as customer' : 'sign in as admin, manager, or cashier'} with password "password".</p>
             )}
+            {isMember && (
+              <p className="muted">
+                New here? <Link to="/member/register">Create a member account</Link>
+              </p>
+            )}
             <p className="visitor-login-link">
               <Link to="/">← Back to the park home</Link>
               {' · '}
