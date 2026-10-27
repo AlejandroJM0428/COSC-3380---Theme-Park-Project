@@ -43,8 +43,8 @@ export const FORM_PAGES = [
   { path: 'weather',     label: 'Weather Log',            roles: OPS_ROLES, ready: true },
   { path: 'maintenance', label: 'Maintenance',            roles: [...OPS_ROLES, 'MaintenanceManager'], ready: true },
   { path: 'employees',   label: 'Shift Ratings',          roles: [...OPS_ROLES, 'HRManager'], ready: true },
-  { path: 'facilities',  label: 'Rides, Games & Venues',  roles: ['Admin'] },
-  { path: 'users',       label: 'App Users',              roles: ['Admin'] },
+  { path: 'facilities',  label: 'Rides, Games & Venues',  roles: ['Admin'], ready: true },
+  { path: 'users',       label: 'App Users',              roles: ['Admin'], ready: true },
 ]
 
 // One menu section per report group (Revenue, Maintenance, ...). Groups with no reports are skipped.

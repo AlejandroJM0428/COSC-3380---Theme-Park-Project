@@ -14,7 +14,7 @@ import TicketSalesPage from './pages/TicketSalesPage.jsx'
 import ShiftRatingsPage from './pages/ShiftRatingsPage.jsx'
 import MyWork from './pages/MyWork.jsx'
 import NotificationsPage from './pages/NotificationsPage.jsx'
-import { CustomersPage, GamePlaysPage, MembershipsPage, PurchasesPage, RideLogPage, WeatherPage } from './pages/DataEntryPages.jsx'
+import { CustomersPage, FacilitiesPage, GamePlaysPage, MembershipsPage, PurchasesPage, RideLogPage, UsersPage, WeatherPage } from './pages/DataEntryPages.jsx'
 import Placeholder from './pages/Placeholder.jsx'
 import NotFound from './pages/NotFound.jsx'
 import VisitorPortal from './pages/VisitorPortal.jsx'
@@ -35,6 +35,8 @@ const PAGE_COMPONENTS = {
   'game-plays': GamePlaysPage,
   'ride-log': RideLogPage,
   weather: WeatherPage,
+  facilities: FacilitiesPage,
+  users: UsersPage,
 }
 
 export default function App() {
