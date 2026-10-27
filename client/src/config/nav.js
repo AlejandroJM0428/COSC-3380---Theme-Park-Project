@@ -43,6 +43,8 @@ export const FORM_PAGES = [
   { path: 'weather',     label: 'Weather Log',            roles: OPS_ROLES, ready: true },
   { path: 'maintenance', label: 'Maintenance',            roles: [...OPS_ROLES, 'MaintenanceManager'], ready: true },
   { path: 'employees',   label: 'Shift Ratings',          roles: [...OPS_ROLES, 'HRManager'], ready: true },
+  { path: 'notifications', label: 'Promos & Notices',     roles: ['Admin', 'Manager', 'RetailManager'], ready: true },
+  { path: 'my-work',     label: 'My Work',                roles: ['MaintenanceWorker', 'RestaurantWorker'], ready: true },
   { path: 'facilities',  label: 'Rides, Games & Venues',  roles: ['Admin'], ready: true },
   { path: 'users',       label: 'App Users',              roles: ['Admin'], ready: true },
 ]
