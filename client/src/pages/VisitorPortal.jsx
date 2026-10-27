@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { buyVisitorTicket, getVisitorDashboard, refundVisitorTicket } from '../api/index.js'
@@ -44,17 +44,28 @@ export default function VisitorPortal({ mode = 'public' }) {
   const [rideFilter, setRideFilter] = useState('All rides')
   const [rideSearch, setRideSearch] = useState('')
 
+  // logout/navigate change identity every render; keep them in a ref so refresh stays stable.
+  const exitRef = useRef(null)
+  useEffect(() => { exitRef.current = () => { logout(); navigate('/member/login', { replace: true }) } })
+
   const refresh = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      setDashboard(await getVisitorDashboard())
+      const data = await getVisitorDashboard()
+      // The browser remembers who signed in, but the server forgets sessions when it restarts.
+      // No customer back means the server does not see us as signed in, so ask for a fresh sign-in.
+      if (isMember && !data.customer) {
+        exitRef.current()
+        return
+      }
+      setDashboard(data)
     } catch (err) {
       setError(err.message || 'Could not load the visitor portal.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [isMember])
 
   useEffect(() => { refresh() }, [refresh])
 
