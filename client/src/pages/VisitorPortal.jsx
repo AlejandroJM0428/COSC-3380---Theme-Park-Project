@@ -134,6 +134,7 @@ export default function VisitorPortal({ mode = 'public' }) {
         ) : (
           <span className="visitor-auth">
             <Link to="/member/login" className="text-button">Member sign in</Link>
+            <Link to="/member/register" className="text-button">Join</Link>
             <Link to="/staff/login" className="text-button">Staff portal</Link>
           </span>
         )}
@@ -166,6 +167,7 @@ export default function VisitorPortal({ mode = 'public' }) {
           <p className="hero-welcome">Sign in to see your membership and manage tickets.</p>
           <div className="hero-ticket-rule" />
           <Link to="/member/login" className="visitor-primary-button">Member sign in <span aria-hidden="true">→</span></Link>
+          <p className="hero-ticket-secondary">New here? <Link to="/member/register">Create a member account</Link></p>
         </div>
         )}
         <div className="hero-decoration hero-decoration-one" aria-hidden="true" />
