@@ -433,3 +433,184 @@
     font-size: 22px;
   }
 }
+
+
+/* ===================================
+   THUNDER VALLEY - SIDEBAR REDESIGN
+   =================================== */
+
+.app-shell .sidebar {
+  background: linear-gradient(
+    180deg,
+    #101f55 0%,
+    #172e70 55%,
+    #28175e 100%
+  );
+  color: #ffffff;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 5px 0 25px rgba(15, 25, 70, 0.12);
+}
+
+/* Brand / Logo */
+
+.sidebar .brand {
+  padding: 25px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.sidebar .brand-name {
+  display: block;
+  font-size: 22px;
+  font-weight: 900;
+  color: #ffd348;
+  letter-spacing: -0.5px;
+}
+
+.sidebar .brand-sub {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  color: #b6c5ef;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Navigation links */
+
+.sidebar nav a {
+  display: block;
+  color: #dce6ff;
+  text-decoration: none;
+  border-radius: 10px;
+  margin: 4px 10px;
+  padding: 11px 13px;
+  font-size: 14px;
+  font-weight: 500;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sidebar nav a:hover {
+  background: rgba(255,255,255,0.12);
+  color: #ffffff;
+  transform: translateX(3px);
+}
+
+/* Selected page */
+
+.sidebar nav a.active {
+  background: linear-gradient(
+    90deg,
+    #445ec2,
+    #6554d7
+  );
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  border-left: 3px solid #ffd348;
+}
+
+/* Section headings */
+
+.sidebar .nav-section h2 {
+  color: #ffd348;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin: 22px 20px 10px;
+}
+
+.sidebar .nav-section:nth-of-type(3n+2) h2 {
+  color: #55e2ed;
+}
+
+.sidebar .nav-section:nth-of-type(3n+3) h2 {
+  color: #ff9bba;
+}
+
+/* User information */
+
+.sidebar .stub {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  margin: 20px 12px;
+  padding: 14px;
+}
+
+.sidebar .stub-role {
+  color: #ffd348;
+  font-weight: 800;
+}
+
+.sidebar .stub-user {
+  color: #dce6ff;
+  font-size: 12px;
+}
+
+/* Logout button */
+
+.sidebar .stub-out {
+  background: linear-gradient(
+    135deg,
+    #ff9342,
+    #ff4768
+  );
+  color: white;
+  border: none;
+  border-radius: 9px;
+  padding: 10px 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.sidebar .stub-out:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+/* Scrollbar */
+
+.sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #6b79ca transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #6b79ca;
+  border-radius: 10px;
+}
+
+/* Mobile menu button */
+
+.sidebar .menu-toggle {
+  background: #ffd348;
+  color: #142457;
+  border: none;
+  border-radius: 9px;
+  font-weight: 800;
+  padding: 10px 16px;
+}
+
+/* Keyboard accessibility */
+
+.sidebar a:focus-visible,
+.sidebar button:focus-visible {
+  outline: 3px solid #ffd348;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar nav a,
+  .sidebar .stub-out {
+    transition: none;
+  }
+}
