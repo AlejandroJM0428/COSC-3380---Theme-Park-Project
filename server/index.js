@@ -13,6 +13,7 @@ import './routes/queries.js';
 import './routes/demos.js';
 import './routes/tickets.js';
 import './routes/maintenance.js';
+import './routes/notifications.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
