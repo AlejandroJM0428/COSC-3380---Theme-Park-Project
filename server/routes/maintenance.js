@@ -179,6 +179,21 @@ route(
   }),
 );
 
+// Dropdown choices for the maintenance form. Registered BEFORE /api/maintenance/:id so "lookups" is not read as an id.
+route(
+  'GET',
+  '/api/maintenance/lookups',
+  requireRole(...CAN_READ)(async () => {
+    const [rides] = await pool.query("SELECT RideID AS id, CONCAT(RideName, IF(IsActive, '', ' (retired)')) AS name FROM Ride ORDER BY RideName");
+    const [games] = await pool.query("SELECT GameID AS id, CONCAT(GameName, IF(IsActive, '', ' (retired)')) AS name FROM Game ORDER BY GameName");
+    const [venues] = await pool.query("SELECT VenueID AS id, CONCAT(VenueName, IF(IsActive, '', ' (closed)')) AS name FROM Venue ORDER BY VenueName");
+    const [technicians] = await pool.query(
+      "SELECT EmployeeID AS id, CONCAT(FirstName, ' ', LastName) AS name FROM Employee WHERE JobTitle = 'Technician' AND IsActive = 1 ORDER BY LastName, FirstName",
+    );
+    return { rides, games, venues, technicians };
+  }),
+);
+
 route(
   'GET',
   '/api/maintenance/:id',
