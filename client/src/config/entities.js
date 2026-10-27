@@ -121,3 +121,60 @@ export const MAINTENANCE = {
   },
   describe: (row) => `job #${row.MaintenanceID} (${row.FacilityName}, ${row.MaintType})`,
 }
+
+// Revenue: ticket sales. "Void" adds a permanent refund row, so money records are never erased.
+export const TICKETS = {
+  title: 'Ticket Sales & Refunds',
+  intro:
+    'Revenue records. Add a ticket sale, correct its guest, membership, visit date or Express add-on, or void it. The database sets the price. Voiding keeps the record and marks it refunded.',
+  resource: 'tickets',
+  idKey: 'TicketID',
+  noun: 'ticket',
+  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  deleteLabel: 'Void',
+  deletePast: 'Voided',
+  askReason: true,
+  canEditRow: (row) => !row.IsVoided,
+  canDeleteRow: (row) => !row.IsVoided,
+  filters: [
+    {
+      key: 'status',
+      label: 'Show',
+      options: [
+        ['', 'All tickets'],
+        ['active', 'Active tickets'],
+        ['voided', 'Voided tickets'],
+      ],
+    },
+  ],
+  columns: [
+    { key: 'TicketID', label: 'Ticket #' },
+    { key: 'CustomerName', label: 'Guest' },
+    { key: 'MembershipID', label: 'Membership', format: (v) => (v ? `#${v}` : '—') },
+    { key: 'VisitDate', label: 'Visit date' },
+    { key: 'HasExpress', label: 'Express', format: (v) => (Number(v) ? 'Yes' : 'No') },
+    { key: 'TicketPrice', label: 'Price', format: money },
+    { key: 'PurchaseDate', label: 'Bought', format: shortDate },
+    { key: 'IsVoided', label: 'Status', format: (v, row) => (Number(v) ? `Voided: ${row.RefundReason}` : 'Active') },
+  ],
+  fields: [
+    { key: 'customerId', label: 'Customer ID', type: 'number', required: true, min: 1, step: '1' },
+    { key: 'membershipId', label: 'Membership ID (optional)', type: 'number', min: 1, step: '1' },
+    { key: 'visitDate', label: 'Visit date', type: 'date', required: true },
+    { key: 'hasExpress', label: 'Express add-on', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
+  ],
+  blank: () => ({ customerId: '', membershipId: '', visitDate: '', hasExpress: 'no' }),
+  fromRecord: (rec) => ({
+    customerId: String(rec.CustomerID),
+    membershipId: rec.MembershipID ? String(rec.MembershipID) : '',
+    visitDate: rec.VisitDate,
+    hasExpress: Number(rec.HasExpress) ? 'yes' : 'no',
+  }),
+  toPayload: (form) => ({
+    customerId: Number(form.customerId),
+    membershipId: form.membershipId === '' ? null : Number(form.membershipId),
+    visitDate: form.visitDate,
+    hasExpress: form.hasExpress === 'yes',
+  }),
+  describe: (row) => `ticket #${row.TicketID} (${row.CustomerName}, ${row.VisitDate})`,
+}

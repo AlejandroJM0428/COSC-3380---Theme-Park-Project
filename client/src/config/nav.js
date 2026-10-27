@@ -28,8 +28,8 @@ export const OPS_ROLES = ['Admin', 'Manager']
 
 // One entry per data-entry page. `path` is the URL (/tickets), `label` is the menu text.
 export const FORM_PAGES = [
-  { path: 'tickets',     label: 'Sell Ticket',            roles: ALL_ROLES },
-  { path: 'refunds',     label: 'Refunds',                roles: ALL_ROLES },
+  { path: 'tickets',     label: 'Sell Ticket',            roles: [...ALL_ROLES, 'RetailManager'] },
+  { path: 'refunds',     label: 'Ticket Sales & Refunds', roles: [...ALL_ROLES, 'RetailManager'] },
   { path: 'purchases',   label: 'Food & Shop Purchases',  roles: ALL_ROLES },
   { path: 'game-plays',  label: 'Game Plays',             roles: ALL_ROLES },
   { path: 'customers',   label: 'Customers',              roles: ALL_ROLES },

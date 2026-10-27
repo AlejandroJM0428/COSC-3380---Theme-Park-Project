@@ -9,6 +9,7 @@ import QueryPage from './pages/QueryPage.jsx'
 import TriggerDemo from './pages/TriggerDemo.jsx'
 import SellTicket from './pages/SellTicket.jsx'
 import MaintenancePage from './pages/MaintenancePage.jsx'
+import TicketSalesPage from './pages/TicketSalesPage.jsx'
 import Placeholder from './pages/Placeholder.jsx'
 import NotFound from './pages/NotFound.jsx'
 import VisitorPortal from './pages/VisitorPortal.jsx'
@@ -16,7 +17,7 @@ import { FORM_PAGES, MANAGEMENT } from './config/nav.js'
 
 // When you build a real page, import it here and add ONE line to this map
 // (key = the `path` in config/nav.js). Until then the Placeholder is shown.
-const PAGE_COMPONENTS = { tickets: SellTicket, maintenance: MaintenancePage }
+const PAGE_COMPONENTS = { tickets: SellTicket, refunds: TicketSalesPage, maintenance: MaintenancePage }
 
 export default function App() {
   return (
