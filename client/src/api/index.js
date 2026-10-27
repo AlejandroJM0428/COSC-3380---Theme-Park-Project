@@ -107,3 +107,25 @@ export function deleteRecord(resource, id, query = {}) {
   const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '' && v != null)).toString()
   return http(`/${resource}/${id}${qs ? `?${qs}` : ''}`, { method: 'DELETE' })
 }
+
+// Employee portal (Maintenance Worker, Restaurant Worker): the server uses the EmployeeID of the session.
+export function getMyWork() {
+  needLive()
+  return http('/me/work')
+}
+
+// Notifications. The list is public (homepage); mock mode just shows none.
+export function listNotifications() {
+  return USE_MOCK ? Promise.resolve([]) : http('/notifications')
+}
+
+export function createNotification(data) {
+  needLive()
+  return http('/notifications', { method: 'POST', body: data })
+}
+
+// "Delete" = dismiss (IsActive = 0 on the server).
+export function dismissNotification(id) {
+  needLive()
+  return http(`/notifications/${id}`, { method: 'DELETE' })
+}
