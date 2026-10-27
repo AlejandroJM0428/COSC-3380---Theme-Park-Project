@@ -659,3 +659,119 @@
     background-position: 60% center;
   }
 }
+
+/* Thunder Valley attraction showcase */
+
+.attractions-section {
+  padding: 65px 25px;
+}
+
+.attractions-heading {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.attractions-heading h2 {
+  font-size: clamp(28px, 3.5vw, 42px);
+  color: #192d70;
+  margin: 12px 0;
+}
+
+.attractions-heading p {
+  color: #69758d;
+  font-size: 16px;
+}
+
+.attractions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.attraction-card {
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(20, 35, 80, 0.1);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.attraction-card:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 18px 38px rgba(20, 35, 80, 0.18);
+}
+
+.attraction-image {
+  height: 210px;
+  position: relative;
+  overflow: hidden;
+}
+
+.attraction-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.attraction-card:hover img {
+  transform: scale(1.08);
+}
+
+.attraction-tag {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: #ffd348;
+  color: #142457;
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.attraction-info {
+  padding: 22px;
+}
+
+.attraction-info h3 {
+  color: #192d70;
+  font-size: 21px;
+  margin: 0 0 10px;
+}
+
+.attraction-info p {
+  color: #69758d;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 1050px) {
+  .attractions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .attractions-section {
+    padding: 45px 12px;
+  }
+
+  .attractions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .attraction-image {
+    height: 230px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attraction-card,
+  .attraction-image img {
+    transition: none;
+  }
+}

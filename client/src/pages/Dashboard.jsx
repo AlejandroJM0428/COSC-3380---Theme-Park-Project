@@ -34,6 +34,59 @@ export default function Dashboard() {
         </div>
       </div>
 
+
+      {/* Featured park attractions */}
+      <section className="attractions-section" aria-labelledby="attractions-title">
+        <div className="attractions-heading">
+          <span className="thunder-section-label">DISCOVER THE EXCITEMENT</span>
+          <h2 id="attractions-title">Explore Our Attractions</h2>
+          <p>Every corner of Thunder Valley brings a new adventure.</p>
+        </div>
+
+        <div className="attractions-grid">
+          <article className="attraction-card">
+            <div className="attraction-image">
+              <img src="/images/thrill-rides.jpg" alt="Thrilling roller coaster" loading="lazy" />
+              <span className="attraction-tag">ADRENALINE</span>
+            </div>
+            <div className="attraction-info">
+              <h3>Thrill Rides</h3>
+              <p>Big drops, wild twists, and unforgettable excitement.</p>
+            </div>
+          </article>
+
+          <article className="attraction-card">
+            <div className="attraction-image">
+              <img src="/images/family-rides.jpg" alt="Colorful Ferris wheel" loading="lazy" />
+              <span className="attraction-tag">ALL AGES</span>
+            </div>
+            <div className="attraction-info">
+              <h3>Family Attractions</h3>
+              <p>Share magical moments and create lasting memories.</p>
+            </div>
+          </article>
+
+          
+<article className="attraction-card">
+  <div className="attraction-image">
+    <img
+      src="/images/kids-rides.jpg"
+      alt="Children's amusement park rides"
+      loading="lazy"
+    />
+    <span className="attraction-tag">LITTLE EXPLORERS</span>
+  </div>
+
+  <div className="attraction-info">
+    <h3>Kids' Adventures</h3>
+    <p>Discover Little Dino Dash, Mini Carousel, and more family-friendly fun.</p>
+  </div>
+</article>
+
+        </div>
+      </section>
+
+
       <div className="thunder-intro" id="park-dashboard">
         <span className="thunder-section-label">YOUR ADVENTURE STARTS HERE</span>
         <h2>{info.title}</h2>
