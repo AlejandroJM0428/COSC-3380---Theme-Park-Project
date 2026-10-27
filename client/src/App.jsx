@@ -10,6 +10,7 @@ import TriggerDemo from './pages/TriggerDemo.jsx'
 import SellTicket from './pages/SellTicket.jsx'
 import Placeholder from './pages/Placeholder.jsx'
 import NotFound from './pages/NotFound.jsx'
+import VisitorPortal from './pages/VisitorPortal.jsx'
 import { FORM_PAGES, MANAGEMENT } from './config/nav.js'
 
 // When you build a real page, import it here and add ONE line to this map
@@ -20,6 +21,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/visitor" element={<VisitorPortal />} />
 
       {/* everything below requires a logged-in user */}
       <Route element={<RequireAuth />}>
