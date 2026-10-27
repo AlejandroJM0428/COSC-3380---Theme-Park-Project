@@ -1,0 +1,123 @@
+// One entry per data-entry page. <RecordManager entity={...} /> turns an entry into a table plus an
+// add / edit / delete form, so a new page is one config object and a few lines (see pages/MaintenancePage.jsx).
+//
+// fields:    what the form shows. type = text | number | datetime | select | multicheck.
+//            select options come from `options` ([value, label] pairs) or `optionsFrom(form, lookups)`.
+// columns:   what the table shows. `format(value, row)` is optional.
+// toPayload: form state -> the JSON body the server expects. The browser never sends ids, prices or roles.
+// fromRecord: server record -> form state (used when you press Edit).
+
+const MAINT_TYPES = ['Routine Inspection', 'Preventive Service', 'Refurbishment', 'Emergency Repair', 'Safety Recall']
+const OUTCOMES = ['Fixed', 'Partially Fixed', 'Not Fixed']
+
+// "2026-10-27 08:00:00" -> "2026-10-27T08:00" (what <input type="datetime-local"> wants).
+const toInput = (s) => (s ? s.replace(' ', 'T').slice(0, 16) : '')
+const shortDate = (s) => (s ? s.slice(0, 16) : '—')
+const money = (v) => (v === null || v === undefined ? '—' : `$${Number(v).toFixed(2)}`)
+
+const kindOf = (rec) => (rec.RideID ? 'Ride' : rec.GameID ? 'Game' : 'Venue')
+const LOOKUP_FOR_KIND = { Ride: 'rides', Game: 'games', Venue: 'venues' }
+
+export const MAINTENANCE = {
+  title: 'Maintenance',
+  intro:
+    'Log repair and inspection jobs. To close a job, fill in the end time, the outcome and the repair cost together. The database refuses to close a job without a cost.',
+  resource: 'maintenance',
+  idKey: 'MaintenanceID',
+  noun: 'job',
+  deleteRoles: ['Admin', 'MaintenanceManager'],
+  filters: [
+    {
+      key: 'status',
+      label: 'Show',
+      options: [
+        ['', 'All jobs'],
+        ['open', 'Open jobs'],
+        ['closed', 'Closed jobs'],
+      ],
+    },
+  ],
+  columns: [
+    { key: 'MaintenanceID', label: 'Job #' },
+    { key: 'FacilityName', label: 'Where' },
+    { key: 'MaintType', label: 'Type' },
+    { key: 'StartDate', label: 'Started', format: shortDate },
+    { key: 'EndDate', label: 'Closed', format: (v) => (v ? shortDate(v) : 'Open') },
+    { key: 'Outcome', label: 'Outcome', format: (v) => v ?? '—' },
+    { key: 'RepairCost', label: 'Repair cost', format: money },
+    { key: 'HoursWorked', label: 'Hours', format: (v) => v ?? '—' },
+    { key: 'Reason', label: 'Reason' },
+  ],
+  fields: [
+    { key: 'maintType', label: 'Type of job', type: 'select', required: true, options: MAINT_TYPES.map((t) => [t, t]) },
+    { key: 'facilityKind', label: 'What is being worked on', type: 'select', required: true, options: [['Ride', 'A ride'], ['Game', 'A game'], ['Venue', 'A shop or restaurant']] },
+    {
+      key: 'facilityId',
+      label: 'Which one',
+      type: 'select',
+      required: true,
+      optionsFrom: (form, lookups) => (lookups?.[LOOKUP_FOR_KIND[form.facilityKind]] ?? []).map((x) => [String(x.id), x.name]),
+    },
+    { key: 'startDate', label: 'Started', type: 'datetime', required: true },
+    { key: 'reason', label: 'Reason', type: 'text', required: true, maxLength: 100, wide: true },
+    { key: 'endDate', label: 'Closed (leave empty while the job is open)', type: 'datetime' },
+    { key: 'outcome', label: 'Outcome', type: 'select', options: [['', '— not closed yet —'], ...OUTCOMES.map((o) => [o, o])] },
+    { key: 'repairCost', label: 'Repair cost ($)', type: 'number', min: 0, step: '0.01' },
+    {
+      key: 'crewLead',
+      label: 'Crew lead (technician)',
+      type: 'select',
+      optionsFrom: (form, lookups) => [['', '— none —'], ...(lookups?.technicians ?? []).map((x) => [String(x.id), x.name])],
+    },
+    {
+      key: 'crewAssistants',
+      label: 'Assistants',
+      type: 'multicheck',
+      wide: true,
+      optionsFrom: (form, lookups) => (lookups?.technicians ?? []).map((x) => [String(x.id), x.name]),
+    },
+  ],
+  blank: () => ({
+    maintType: 'Routine Inspection',
+    facilityKind: 'Ride',
+    facilityId: '',
+    startDate: '',
+    reason: '',
+    endDate: '',
+    outcome: '',
+    repairCost: '',
+    crewLead: '',
+    crewAssistants: [],
+  }),
+  fromRecord: (rec) => ({
+    maintType: rec.MaintType,
+    facilityKind: kindOf(rec),
+    facilityId: String(rec.RideID ?? rec.GameID ?? rec.VenueID ?? ''),
+    startDate: toInput(rec.StartDate),
+    reason: rec.Reason ?? '',
+    endDate: toInput(rec.EndDate),
+    outcome: rec.Outcome ?? '',
+    repairCost: rec.RepairCost ?? '',
+    crewLead: String((rec.crew ?? []).find((c) => c.CrewRole === 'Lead')?.EmployeeID ?? ''),
+    crewAssistants: (rec.crew ?? []).filter((c) => c.CrewRole === 'Assistant').map((c) => String(c.EmployeeID)),
+  }),
+  toPayload: (form) => {
+    const id = form.facilityId === '' ? null : Number(form.facilityId)
+    const crew = []
+    if (form.crewLead) crew.push({ employeeId: Number(form.crewLead), crewRole: 'Lead' })
+    for (const a of form.crewAssistants) if (a !== form.crewLead) crew.push({ employeeId: Number(a), crewRole: 'Assistant' })
+    return {
+      maintType: form.maintType,
+      rideId: form.facilityKind === 'Ride' ? id : null,
+      gameId: form.facilityKind === 'Game' ? id : null,
+      venueId: form.facilityKind === 'Venue' ? id : null,
+      startDate: form.startDate,
+      endDate: form.endDate || null,
+      outcome: form.outcome || null,
+      repairCost: form.repairCost === '' ? null : Number(form.repairCost),
+      reason: form.reason.trim(),
+      crew,
+    }
+  },
+  describe: (row) => `job #${row.MaintenanceID} (${row.FacilityName}, ${row.MaintType})`,
+}

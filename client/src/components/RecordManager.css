@@ -1,0 +1,22 @@
+.rm-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 12px 0; }
+.rm-filter { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+
+.rm-form { margin: 12px 0 16px; display: grid; gap: 14px; }
+.rm-form h2 { margin: 0; font-size: 1.15rem; }
+.rm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.rm-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; min-width: 0; }
+.rm-field input, .rm-field select, .rm-filter select { font: inherit; padding: 7px 8px; border: 1.5px solid var(--line); border-radius: 4px; background: #fff; min-width: 0; }
+.rm-wide { grid-column: 1 / -1; }
+
+.rm-check-group { border: 1.5px solid var(--line); border-radius: 4px; padding: 8px 10px; margin: 0; flex-direction: row; flex-wrap: wrap; gap: 6px 16px; }
+.rm-check-group legend { padding: 0 4px; }
+.rm-check { flex-direction: row; align-items: center; gap: 6px; }
+.rm-check input { width: auto; }
+
+.rm-actions { white-space: nowrap; }
+.rm-actions button { padding: 4px 10px; margin-right: 6px; font-size: 0.85rem; }
+.rm-danger { color: var(--bad); border-color: var(--bad); }
+
+@media (max-width: 600px) {
+  .rm-grid { grid-template-columns: 1fr; }
+}
