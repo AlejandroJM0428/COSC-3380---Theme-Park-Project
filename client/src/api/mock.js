@@ -5,6 +5,8 @@ const USERS = {
   admin: { username: 'admin', role: 'Admin' },
   manager: { username: 'manager', role: 'Manager' },
   cashier: { username: 'cashier', role: 'Cashier' },
+  customer: { username: 'customer', role: 'Customer' },
+  
 }
 
 export async function login(username, password) {
@@ -12,6 +14,14 @@ export async function login(username, password) {
   const user = USERS[String(username).trim().toLowerCase()]
   if (!user || password !== 'password') throw new Error('Invalid username or password')
   return user
+}
+
+export async function register({ username }) {
+  await delay()
+  const key = String(username).trim().toLowerCase()
+  if (USERS[key]) throw new Error('That username is already taken')
+  USERS[key] = { username: String(username).trim(), role: 'Customer' }
+  return USERS[key]
 }
 
 const reports = {

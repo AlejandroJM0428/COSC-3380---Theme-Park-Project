@@ -2,10 +2,16 @@ import { useState } from 'react'
 import { createTicket } from '../api'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 
+// Local date as YYYY-MM-DD.
+function today() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function SellTicket() {
   const [customerId, setCustomerId] = useState('')
   const [membershipId, setMembershipId] = useState('')
-  const [visitDate, setVisitDate] = useState('')
+  const [visitDate, setVisitDate] = useState(today)
   const [hasExpress, setHasExpress] = useState(false)
   const [saved, setSaved] = useState(null)
   const [error, setError] = useState('')
@@ -43,7 +49,7 @@ export default function SellTicket() {
         </label>
         <label>
           Visit date
-          <input type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} required />
+          <input type="date" min={today()} value={visitDate} onChange={(e) => setVisitDate(e.target.value)} required />
         </label>
         <label className="check">
           <input type="checkbox" checked={hasExpress} onChange={(e) => setHasExpress(e.target.checked)} />

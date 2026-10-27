@@ -13,7 +13,7 @@ export default function Layout() {
 
   function handleLogout() {
     logout()
-    navigate('/login')
+    navigate('/')
   }
 
   return (
@@ -21,7 +21,7 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-name">{PARK_SHORT}</span>
-          <span className="brand-sub">Park operations</span>
+          <span className="brand-sub">Transaction portal</span>
         </div>
         <button
           type="button"
@@ -33,7 +33,7 @@ export default function Layout() {
         </button>
         <div className={menuOpen ? 'menu open' : 'menu'}>
           <nav onClick={() => setMenuOpen(false)}>
-            <NavLink to="/" end>
+            <NavLink to="/staff" end>
               Dashboard
             </NavLink>
             {NAV_SECTIONS.map((section) => {
@@ -43,7 +43,7 @@ export default function Layout() {
                 <div key={section.title} className="nav-section" style={{ '--zone': section.zone }}>
                   <h2>{section.title}</h2>
                   {items.map((item) => (
-                    <NavLink key={item.to} to={item.to}>
+                    <NavLink key={item.to} to={`/staff${item.to}`}>
                       {item.label}
                     </NavLink>
                   ))}

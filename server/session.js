@@ -37,9 +37,12 @@ export function createSession(res, user) {
     userId: user.userId,
     username: user.username,
     role: user.role,
+    CustomerID: user.CustomerID ?? null,
+    EmployeeID: user.EmployeeID ?? null,
     expires: Date.now() + MAX_AGE_MS,
   });
   const flags = ['HttpOnly', 'SameSite=Lax', 'Path=/', `Max-Age=${MAX_AGE_MS / 1000}`];
+  
   if (config.production) flags.push('Secure');
   res.setHeader('Set-Cookie', `${COOKIE}=${id}.${sign(id)}; ${flags.join('; ')}`);
 }
