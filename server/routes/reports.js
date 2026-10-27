@@ -3,31 +3,45 @@ import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 
-// Whitelist: endpoint name (what client/src/config/reports.js asks for) -> view name.
-// SQL is never built from the URL.
-const REPORT_VIEWS = {
-  'customers-per-month': 'v_CustomersPerMonth',
-  'daily-attendance': 'v_DailyAttendance',
-  'maintenance-history': 'v_MaintenanceHistory',
-  'ride-traffic-by-month': 'v_RideTrafficByMonth', // created in Step 4 (SQL/views_extra.sql); name may change
-  'weather-impact': 'v_WeatherImpact',
-  'ride-availability': 'v_RideAvailability',
-  'zone-ride-traffic': 'v_ZoneRideTraffic',
-  'wait-time-by-ride': 'v_WaitTimeByRide',
-  'revenue-by-source': 'v_RevenueBySource',
-  'visit-spending': 'v_VisitSpending',
-  'membership-summary': 'v_MembershipSummary',
-  'staff-by-zone': 'v_StaffByZone',
+// Who may open which report. Keep these lists in step with `roles` in client/src/config/reports.js.
+// The server is what actually enforces access; the client only hides what you cannot open.
+const ADMINS = ['Admin', 'Manager'];
+const RETAIL = [...ADMINS, 'RetailManager'];
+const HR = [...ADMINS, 'HRManager'];
+const MAINTENANCE = [...ADMINS, 'MaintenanceManager'];
+const EVERY_MANAGER = [...ADMINS, 'RetailManager', 'HRManager', 'MaintenanceManager'];
+
+// Whitelist: endpoint name (what client/src/config/reports.js asks for) -> view name and allowed roles.
+// SQL is never built from the URL: only a view name from this list is ever put in the query.
+const REPORTS = {
+  'customers-per-month': { view: 'v_CustomersPerMonth', roles: RETAIL },
+  'daily-attendance': { view: 'v_DailyAttendance', roles: RETAIL },
+  'maintenance-history': { view: 'v_MaintenanceHistory', roles: MAINTENANCE },
+  'ride-traffic-by-month': { view: 'v_RideTrafficByMonth', roles: EVERY_MANAGER }, // SQL/views_extra.sql
+  'weather-impact': { view: 'v_WeatherImpact', roles: ADMINS },
+  'ride-availability': { view: 'v_RideAvailability', roles: EVERY_MANAGER },
+  'zone-ride-traffic': { view: 'v_ZoneRideTraffic', roles: EVERY_MANAGER },
+  'wait-time-by-ride': { view: 'v_WaitTimeByRide', roles: EVERY_MANAGER },
+  'revenue-by-source': { view: 'v_RevenueBySource', roles: RETAIL },
+  'visit-spending': { view: 'v_VisitSpending', roles: RETAIL },
+  'membership-summary': { view: 'v_MembershipSummary', roles: RETAIL },
+  'staff-by-zone': { view: 'v_StaffByZone', roles: HR },
+  // New views from SQL/06_report_and_portal_views.sql
+  'maintenance-cost': { view: 'v_MaintenanceCostByFacility', roles: MAINTENANCE },
+  'open-maintenance': { view: 'v_OpenMaintenance', roles: MAINTENANCE },
+  'employee-performance': { view: 'v_EmployeePerformance', roles: HR },
+  'retail-sales': { view: 'v_RetailSalesByVenue', roles: RETAIL },
 };
 
 route(
   'GET',
   '/api/reports/:name',
-  requireRole('Admin', 'Manager')(async (ctx) => {
-    const view = Object.hasOwn(REPORT_VIEWS, ctx.params.name) ? REPORT_VIEWS[ctx.params.name] : null;
-    if (!view) throw new HttpError(404, 'Unknown report');
+  requireRole(...EVERY_MANAGER)(async (ctx) => {
+    const report = Object.hasOwn(REPORTS, ctx.params.name) ? REPORTS[ctx.params.name] : null;
+    if (!report) throw new HttpError(404, 'Unknown report');
+    if (!report.roles.includes(ctx.session.role)) throw new HttpError(403, 'Your role cannot open this report');
     try {
-      const [rows] = await pool.query(`SELECT * FROM \`${view}\``);
+      const [rows] = await pool.query(`SELECT * FROM \`${report.view}\``);
       return rows;
     } catch (err) {
       if (err.errno === 1146) throw new HttpError(404, 'This report is not available yet');

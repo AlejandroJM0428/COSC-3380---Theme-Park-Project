@@ -1,49 +1,161 @@
+
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { NAV_SECTIONS, ROLE_INFO } from '../config/nav.js'
 
-// Same menu data as the sidebar, shown as tiles. The cashier gets one big "Sell a ticket" button first.
 export default function Dashboard() {
   const { user } = useAuth()
   const info = ROLE_INFO[user.role] ?? { title: 'Dashboard', blurb: '' }
-  const sections = NAV_SECTIONS.map((s) => ({ ...s, items: s.items.filter((i) => i.roles.includes(user.role)) })).filter(
-    (s) => s.items.length > 0,
-  )
-  const featured = user.role === 'Cashier' ? sections.flatMap((s) => s.items).find((i) => i.to === '/tickets') : null
+
+  const sections = NAV_SECTIONS
+    .map((s) => ({
+      ...s,
+      items: s.items.filter((i) => i.roles.includes(user.role)),
+    }))
+    .filter((s) => s.items.length > 0)
+
+  const featured = user.role === 'Cashier'
+    ? sections.flatMap((s) => s.items).find((i) => i.to === '/tickets')
+    : null
 
   return (
-    <div>
-      <h1>{info.title}</h1>
-      <p className="muted">
-        {info.blurb} Signed in as {user.username}.
-      </p>
+    <div className="thunder-home">
+      <div className="thunder-hero">
+        <div className="thunder-hero-content">
+          <span className="thunder-eyebrow">⚡ WELCOME TO THUNDER VALLEY</span>
+          <h1>Feel the Thunder. Live the Adventure.</h1>
+          <p>
+            Big thrills, unforgettable experiences, and endless excitement.
+            Welcome back, {user.username}!
+          </p>
+          <a href="#park-dashboard" className="thunder-button">
+            Explore the Park ↓
+          </a>
+        </div>
+      </div>
+
+
+      {/* Featured park attractions */}
+      <section className="attractions-section" aria-labelledby="attractions-title">
+        <div className="attractions-heading">
+          <span className="thunder-section-label">DISCOVER THE EXCITEMENT</span>
+          <h2 id="attractions-title">Explore Our Attractions</h2>
+          <p>Every corner of Thunder Valley brings a new adventure.</p>
+        </div>
+
+        <div className="attractions-grid">
+          <article className="attraction-card">
+            <div className="attraction-image">
+              <img src="/images/thrill-rides.jpg" alt="Thrilling roller coaster" loading="lazy" />
+              <span className="attraction-tag">ADRENALINE</span>
+            </div>
+            <div className="attraction-info">
+              <h3>Thrill Rides</h3>
+              <p>Big drops, wild twists, and unforgettable excitement.</p>
+            </div>
+          </article>
+
+          <article className="attraction-card">
+            <div className="attraction-image">
+              <img src="/images/family-rides.jpg" alt="Colorful Ferris wheel" loading="lazy" />
+              <span className="attraction-tag">ALL AGES</span>
+            </div>
+            <div className="attraction-info">
+              <h3>Family Attractions</h3>
+              <p>Share magical moments and create lasting memories.</p>
+            </div>
+          </article>
+
+          
+<article className="attraction-card">
+  <div className="attraction-image">
+    <img
+      src="/images/kids-rides.jpg"
+      alt="Children's amusement park rides"
+      loading="lazy"
+    />
+    <span className="attraction-tag">LITTLE EXPLORERS</span>
+  </div>
+
+  <div className="attraction-info">
+    <h3>Kids' Adventures</h3>
+    <p>Discover Little Dino Dash, Mini Carousel, and more family-friendly fun.</p>
+  </div>
+</article>
+
+        </div>
+      </section>
+
+
+      <div className="thunder-intro" id="park-dashboard">
+        <span className="thunder-section-label">YOUR ADVENTURE STARTS HERE</span>
+        <h2>{info.title}</h2>
+        <p>{info.blurb}</p>
+      </div>
 
       {featured && (
-        <Link to={featured.to} className="featured">
-          <strong>Sell a ticket</strong>
-          <span>Start a new sale</span>
+        <Link to={`/staff${featured.to}`} className="thunder-featured">
+          <span className="thunder-featured-icon">🎟️</span>
+          <div>
+            <h3>Sell a Ticket</h3>
+            <p>Start a new ticket sale</p>
+          </div>
+          <span className="thunder-arrow">→</span>
         </Link>
       )}
 
-      {sections.map((section) => {
+      {sections.map((section, index) => {
         const items = section.items.filter((i) => i !== featured)
         if (items.length === 0) return null
+
         return (
-          <section key={section.title} className="tile-section" style={{ '--zone': section.zone }}>
-            <h2>{section.title}</h2>
-            <div className="tile-grid">
-              {items.map((item) => (
-                <Link key={item.to} to={item.to} className="tile">
-                  <h3>
-                    {item.label} {item.required && <span className="tag">Required</span>}
-                  </h3>
+          <section
+            key={section.title}
+            className="thunder-section"
+            style={{ '--section-accent': section.zone }}
+          >
+            <div className="thunder-section-heading">
+              <span className="thunder-section-number">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <div>
+                <h2>{section.title}</h2>
+                <p>Discover everything in {section.title.toLowerCase()}</p>
+              </div>
+            </div>
+
+            <div className="thunder-card-grid">
+              {items.map((item, itemIndex) => (
+                <Link
+                  key={item.to}
+                  to={`/staff${item.to}`}
+                  className="thunder-card"
+                >
+                  <div className="thunder-card-icon">
+                    {['🎢', '🎡', '🎟️', '🎠', '🌈', '⚡', '🎪', '🎯'][
+                      itemIndex % 8
+                    ]}
+                  </div>
+                  <h3>{item.label}</h3>
+                  {item.required && (
+                    <span className="thunder-required">Required</span>
+                  )}
                   {item.note && <p>{item.note}</p>}
+                  <span className="thunder-card-link">
+                    Explore <span>→</span>
+                  </span>
                 </Link>
               ))}
             </div>
           </section>
         )
       })}
+
+      <footer className="thunder-footer">
+        <h2>⚡ THUNDER VALLEY</h2>
+        <p>Where the adventure never ends.</p>
+        <span>© 2026 Thunder Valley Theme Park</span>
+      </footer>
     </div>
   )
 }

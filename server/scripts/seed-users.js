@@ -2,12 +2,17 @@ import bcrypt from 'bcrypt';
 import { randomBytes } from 'node:crypto';
 import { pool } from '../db.js';
 
-// Safe to run twice: three rows, no duplicates. An existing account keeps its password
+// Safe to run twice: one row per account, no duplicates. An existing account keeps its password
 // unless you set the matching SEED_*_PASSWORD variable.
 const ACCOUNTS = [
   { username: 'admin', role: 'Admin', env: 'SEED_ADMIN_PASSWORD' },
   { username: 'manager', role: 'Manager', env: 'SEED_MANAGER_PASSWORD' },
   { username: 'cashier', role: 'Cashier', env: 'SEED_CASHIER_PASSWORD' },
+  { username: 'retail', role: 'RetailManager', env: 'SEED_RETAIL_PASSWORD' },
+  { username: 'hr', role: 'HRManager', env: 'SEED_HR_PASSWORD' },
+  { username: 'maintmgr', role: 'MaintenanceManager', env: 'SEED_MAINTMGR_PASSWORD' },
+  { username: 'tech', role: 'MaintenanceWorker', env: 'SEED_TECH_PASSWORD' },
+  { username: 'cook', role: 'RestaurantWorker', env: 'SEED_COOK_PASSWORD' },
 ];
 
 for (const account of ACCOUNTS) {

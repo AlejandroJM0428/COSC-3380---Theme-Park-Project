@@ -1,6 +1,31 @@
+# env: ignore real ones, keep the examples
 .env
+.env.*
+!.env.example
+
+# deps / build output
 node_modules
 dist
+.vite
+
+# logs / local junk
 *.log
+npm-debug.log*
 cookies.txt
+
+# editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# archives and patches
 *.zip
+*.patch
+
+# local helper scripts
+zip-project.sh
+zipitup.sh
+db-inventory.sh
+check.sh
+project-audit.sh

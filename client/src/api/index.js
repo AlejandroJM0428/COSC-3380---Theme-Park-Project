@@ -13,6 +13,11 @@ export function login(username, password) {
     : http('/auth/login', { method: 'POST', body: { username, password } })
 }
 
+// Member self sign-up. Logs the new member in (server sets the session cookie).
+export function register(data) {
+  return USE_MOCK ? mock.register(data) : http('/auth/register', { method: 'POST', body: data })
+}
+
 export function getReport(endpoint) {
   return USE_MOCK ? mock.getReport(endpoint) : http(`/reports/${endpoint}`)
 }
@@ -74,4 +79,38 @@ export function buyVisitorTicket(data) {
 export function refundVisitorTicket(ticketId) {
   needVisitorBackend()
   return visitorMock.refundVisitorTicket(ticketId)
+}
+
+// Generic data entry, used by components/RecordManager.jsx. `resource` is the API path, e.g. 'maintenance'.
+export function listRecords(resource, query = {}) {
+  needLive()
+  const params = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '' && v != null))
+  const qs = params.toString()
+  return http(`/${resource}${qs ? `?${qs}` : ''}`)
+}
+
+export function getRecord(resource, id) {
+  needLive()
+  return http(`/${resource}/${id}`)
+}
+
+export function getLookups(resource) {
+  needLive()
+  return http(`/${resource}/lookups`)
+}
+
+export function createRecord(resource, data) {
+  needLive()
+  return http(`/${resource}`, { method: 'POST', body: data })
+}
+
+export function updateRecord(resource, id, data) {
+  needLive()
+  return http(`/${resource}/${id}`, { method: 'PUT', body: data })
+}
+
+export function deleteRecord(resource, id, query = {}) {
+  needLive()
+  const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '' && v != null)).toString()
+  return http(`/${resource}/${id}${qs ? `?${qs}` : ''}`, { method: 'DELETE' })
 }

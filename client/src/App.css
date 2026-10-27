@@ -182,3 +182,596 @@
     border-right-color: var(--border);
   }
 }
+
+/* THUNDER VALLEY HOMEPAGE */
+
+.thunder-home {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #17234a;
+}
+
+.thunder-hero {
+  min-height: 440px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  padding: 55px 7%;
+  overflow: hidden;
+  position: relative;
+  background:
+    linear-gradient(90deg, rgba(10, 22, 67, .94), rgba(21, 47, 105, .42)),
+    url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1800&q=85')
+    center/cover;
+  box-shadow: 0 15px 35px rgba(20, 39, 90, .18);
+}
+
+.thunder-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 650px;
+  color: white;
+}
+
+.thunder-eyebrow {
+  color: #ffdd48;
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 13px;
+}
+
+.thunder-hero h1 {
+  font-size: clamp(36px, 5vw, 66px);
+  font-weight: 900;
+  line-height: 1.08;
+  margin: 18px 0;
+  color: #fff;
+}
+
+.thunder-hero p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #e8eeff;
+  margin-bottom: 28px;
+}
+
+.thunder-button {
+  display: inline-block;
+  background: linear-gradient(135deg, #ff8a00, #ff3d54);
+  color: white;
+  padding: 15px 28px;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 800;
+  transition: transform .25s, box-shadow .25s;
+}
+
+.thunder-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 25px rgba(255, 88, 43, .35);
+}
+
+.thunder-intro {
+  text-align: center;
+  padding: 55px 15px 30px;
+  scroll-margin-top: 24px;
+}
+
+.thunder-section-label {
+  color: #fa5a2a;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.thunder-intro h2 {
+  font-size: clamp(28px, 4vw, 42px);
+  margin: 12px 0;
+  color: #142b70;
+}
+
+.thunder-intro p {
+  color: #65728d;
+}
+
+.thunder-section {
+  margin: 25px 0 50px;
+}
+
+.thunder-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.thunder-section-number {
+  background: linear-gradient(135deg, #ffca28, #ff6535);
+  color: #17234a;
+  font-size: 20px;
+  font-weight: 900;
+  padding: 13px;
+  border-radius: 15px;
+}
+
+.thunder-section-heading h2 {
+  color: #152c73;
+  margin: 0;
+  font-size: 27px;
+}
+
+.thunder-section-heading p {
+  color: #69758d;
+  margin: 5px 0 0;
+}
+
+.thunder-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.thunder-card {
+  display: block;
+  background: white;
+  border: 1px solid #e4e9f5;
+  border-top: 5px solid #ffb92e;
+  border-radius: 18px;
+  padding: 25px;
+  min-height: 220px;
+  text-decoration: none;
+  color: #1a2d57;
+  box-shadow: 0 6px 18px rgba(24, 47, 93, .07);
+  transition: transform .25s, box-shadow .25s;
+}
+
+.thunder-card:nth-child(4n+2) { border-top-color: #19b9cd; }
+.thunder-card:nth-child(4n+3) { border-top-color: #ff5e70; }
+.thunder-card:nth-child(4n+4) { border-top-color: #8d5cf6; }
+
+.thunder-card:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 16px 35px rgba(24, 47, 93, .16);
+}
+
+.thunder-card-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+}
+
+.thunder-card h3 {
+  font-size: 18px;
+  color: #172b68;
+  margin: 0 0 10px;
+}
+
+.thunder-card p {
+  color: #68758b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.thunder-required {
+  display: inline-block;
+  background: #fff0c0;
+  color: #845400;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 20px;
+}
+
+.thunder-card-link {
+  display: block;
+  color: #f45c34;
+  font-weight: 800;
+  margin-top: 20px;
+}
+
+.thunder-featured {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 25px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #ffb62d, #ff633c);
+  color: #19294e;
+  text-decoration: none;
+  margin-bottom: 30px;
+}
+
+.thunder-featured-icon {
+  font-size: 40px;
+}
+
+.thunder-featured h3 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.thunder-featured p {
+  margin: 5px 0 0;
+}
+
+.thunder-arrow {
+  margin-left: auto;
+  font-size: 30px;
+}
+
+.thunder-footer {
+  margin-top: 60px;
+  background: #14275e;
+  border-radius: 20px;
+  padding: 35px;
+  text-align: center;
+  color: white;
+}
+
+.thunder-footer h2 {
+  color: #ffce38;
+}
+
+.thunder-footer p {
+  color: #e0e7ff;
+}
+
+.thunder-footer span {
+  font-size: 12px;
+  color: #aab8e1;
+}
+
+@media (max-width: 650px) {
+  .thunder-hero {
+    min-height: 360px;
+    padding: 35px 22px;
+  }
+
+  .thunder-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .thunder-section-heading h2 {
+    font-size: 22px;
+  }
+}
+
+
+/* ===================================
+   THUNDER VALLEY - SIDEBAR REDESIGN
+   =================================== */
+
+.app-shell .sidebar {
+  background: linear-gradient(
+    180deg,
+    #101f55 0%,
+    #172e70 55%,
+    #28175e 100%
+  );
+  color: #ffffff;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 5px 0 25px rgba(15, 25, 70, 0.12);
+}
+
+/* Brand / Logo */
+
+.sidebar .brand {
+  padding: 25px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.sidebar .brand-name {
+  display: block;
+  font-size: 22px;
+  font-weight: 900;
+  color: #ffd348;
+  letter-spacing: -0.5px;
+}
+
+.sidebar .brand-sub {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  color: #b6c5ef;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Navigation links */
+
+.sidebar nav a {
+  display: block;
+  color: #dce6ff;
+  text-decoration: none;
+  border-radius: 10px;
+  margin: 4px 10px;
+  padding: 11px 13px;
+  font-size: 14px;
+  font-weight: 500;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sidebar nav a:hover {
+  background: rgba(255,255,255,0.12);
+  color: #ffffff;
+  transform: translateX(3px);
+}
+
+/* Selected page */
+
+.sidebar nav a.active {
+  background: linear-gradient(
+    90deg,
+    #445ec2,
+    #6554d7
+  );
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  border-left: 3px solid #ffd348;
+}
+
+/* Section headings */
+
+.sidebar .nav-section h2 {
+  color: #ffd348;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin: 22px 20px 10px;
+}
+
+.sidebar .nav-section:nth-of-type(3n+2) h2 {
+  color: #55e2ed;
+}
+
+.sidebar .nav-section:nth-of-type(3n+3) h2 {
+  color: #ff9bba;
+}
+
+/* User information */
+
+.sidebar .stub {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  margin: 20px 12px;
+  padding: 14px;
+}
+
+.sidebar .stub-role {
+  color: #ffd348;
+  font-weight: 800;
+}
+
+.sidebar .stub-user {
+  color: #dce6ff;
+  font-size: 12px;
+}
+
+/* Logout button */
+
+.sidebar .stub-out {
+  background: linear-gradient(
+    135deg,
+    #ff9342,
+    #ff4768
+  );
+  color: white;
+  border: none;
+  border-radius: 9px;
+  padding: 10px 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.sidebar .stub-out:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+/* Scrollbar */
+
+.sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #6b79ca transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #6b79ca;
+  border-radius: 10px;
+}
+
+/* Mobile menu button */
+
+.sidebar .menu-toggle {
+  background: #ffd348;
+  color: #142457;
+  border: none;
+  border-radius: 9px;
+  font-weight: 800;
+  padding: 10px 16px;
+}
+
+/* Keyboard accessibility */
+
+.sidebar a:focus-visible,
+.sidebar button:focus-visible {
+  outline: 3px solid #ffd348;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar nav a,
+  .sidebar .stub-out {
+    transition: none;
+  }
+}
+
+
+/* Thunder Valley roller coaster hero */
+
+.thunder-home .thunder-hero {
+  position: relative;
+  min-height: 460px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(9, 20, 57, 0.94) 0%,
+      rgba(12, 26, 73, 0.78) 48%,
+      rgba(12, 26, 73, 0.2) 100%
+    ),
+    url('/images/roller-coaster.jpg');
+
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.thunder-home .thunder-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.thunder-home .thunder-hero h1 {
+  color: #ffffff;
+  text-shadow: 0 3px 16px rgba(0, 0, 0, 0.3);
+}
+
+.thunder-home .thunder-hero p {
+  color: #eef3ff;
+}
+
+@media (max-width: 700px) {
+  .thunder-home .thunder-hero {
+    min-height: 400px;
+    background-position: 60% center;
+  }
+}
+
+/* Thunder Valley attraction showcase */
+
+.attractions-section {
+  padding: 65px 25px;
+}
+
+.attractions-heading {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.attractions-heading h2 {
+  font-size: clamp(28px, 3.5vw, 42px);
+  color: #192d70;
+  margin: 12px 0;
+}
+
+.attractions-heading p {
+  color: #69758d;
+  font-size: 16px;
+}
+
+.attractions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.attraction-card {
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(20, 35, 80, 0.1);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.attraction-card:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 18px 38px rgba(20, 35, 80, 0.18);
+}
+
+.attraction-image {
+  height: 210px;
+  position: relative;
+  overflow: hidden;
+}
+
+.attraction-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.attraction-card:hover img {
+  transform: scale(1.08);
+}
+
+.attraction-tag {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: #ffd348;
+  color: #142457;
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.attraction-info {
+  padding: 22px;
+}
+
+.attraction-info h3 {
+  color: #192d70;
+  font-size: 21px;
+  margin: 0 0 10px;
+}
+
+.attraction-info p {
+  color: #69758d;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 1050px) {
+  .attractions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .attractions-section {
+    padding: 45px 12px;
+  }
+
+  .attractions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .attraction-image {
+    height: 230px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attraction-card,
+  .attraction-image img {
+    transition: none;
+  }
+}

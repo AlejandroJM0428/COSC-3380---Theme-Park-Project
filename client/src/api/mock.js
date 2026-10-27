@@ -16,6 +16,14 @@ export async function login(username, password) {
   return user
 }
 
+export async function register({ username }) {
+  await delay()
+  const key = String(username).trim().toLowerCase()
+  if (USERS[key]) throw new Error('That username is already taken')
+  USERS[key] = { username: String(username).trim(), role: 'Customer' }
+  return USERS[key]
+}
+
 const reports = {
   'customers-per-month': [
     { VisitYear: 2026, VisitMonth: 4, Customers: 640 },
