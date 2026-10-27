@@ -94,7 +94,7 @@ export default function Dashboard() {
       </div>
 
       {featured && (
-        <Link to={featured.to} className="thunder-featured">
+        <Link to={`/staff${featured.to}`} className="thunder-featured">
           <span className="thunder-featured-icon">🎟️</span>
           <div>
             <h3>Sell a Ticket</h3>
@@ -128,7 +128,7 @@ export default function Dashboard() {
               {items.map((item, itemIndex) => (
                 <Link
                   key={item.to}
-                  to={item.to}
+                  to={`/staff${item.to}`}
                   className="thunder-card"
                 >
                   <div className="thunder-card-icon">

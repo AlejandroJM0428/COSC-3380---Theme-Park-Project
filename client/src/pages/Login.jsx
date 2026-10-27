@@ -5,8 +5,10 @@ import { useAuth } from '../auth/context.js'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 import { PARK_NAME } from '../config/nav.js'
 
-export default function Login() {
-  const { login } = useAuth()
+// audience="staff" -> transaction portal login; audience="member" -> customer login
+export default function Login({ audience = 'staff' }) {
+  const isMember = audience === 'member'
+  const { login, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [username, setUsername] = useState('')
@@ -19,8 +21,17 @@ export default function Login() {
     setBusy(true)
     setError('')
     try {
-      await login(username, password)
-      navigate(location.state?.from?.pathname ?? '/', { replace: true })
+      const who = await login(username, password)
+      const isCustomer = who.role === 'Customer'
+      if (isMember && !isCustomer) {
+        logout()
+        throw new Error('That is a staff account. Please use the staff sign in.')
+      }
+      if (!isMember && isCustomer) {
+        logout()
+        throw new Error('That is a member account. Please use the member sign in.')
+      }
+      navigate(location.state?.from?.pathname ?? (isMember ? '/member' : '/staff'), { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -37,7 +48,7 @@ export default function Login() {
           <form className="ticket" onSubmit={handleSubmit}>
           <div className="ticket-head">
             <h1>{PARK_NAME}</h1>
-            <p className="muted">Account sign in</p>
+            <p className="muted">{isMember ? 'Member sign in' : 'Staff transaction portal'}</p>
           </div>
           <div className="ticket-tear" />
           <div className="ticket-body">
@@ -54,9 +65,13 @@ export default function Login() {
             {busy ? 'Signing in…' : 'Sign in'}
             </button>
             {USE_MOCK && (
-              <p className="muted">Demo mode: log in as admin, manager, cashier, or customer with password "password".</p>
+              <p className="muted">Demo mode: {isMember ? 'sign in as customer' : 'sign in as admin, manager, or cashier'} with password "password".</p>
             )}
-            <p className="visitor-login-link">Visiting the park? <Link to="/visitor">Open the visitor portal preview →</Link></p>
+            <p className="visitor-login-link">
+              <Link to="/">← Back to the park home</Link>
+              {' · '}
+              {isMember ? <Link to="/staff/login">Staff sign in</Link> : <Link to="/member/login">Member sign in</Link>}
+            </p>
           </div>
         </form>
       </main>

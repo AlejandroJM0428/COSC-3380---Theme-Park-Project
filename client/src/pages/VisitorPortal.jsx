@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth/context.js'
 import { buyVisitorTicket, getVisitorDashboard, refundVisitorTicket } from '../api/index.js'
 import './VisitorPortal.css'
 
@@ -26,7 +27,12 @@ function statusTone(status) {
   return 'closed'
 }
 
-export default function VisitorPortal() {
+// mode="public": anyone can browse (ride board, prices, sign-in links).
+// mode="member": signed-in customers also get their membership, tickets and booking.
+export default function VisitorPortal({ mode = 'public' }) {
+  const isMember = mode === 'member'
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -110,25 +116,37 @@ export default function VisitorPortal() {
   return (
     <main className="visitor-portal">
       <header className="visitor-header">
-        <Link to="/visitor" className="visitor-brand" aria-label="Thunder Valley visitor portal home">
+        <Link to="/" className="visitor-brand" aria-label="Thunder Valley home">
           <span className="brand-mark" aria-hidden="true">TV</span>
           <span><strong>Thunder Valley</strong><small>Adventure Park</small></span>
         </Link>
         <nav className="visitor-nav" aria-label="Visitor portal navigation">
-          <a href="#my-membership">Membership</a>
-          <a href="#my-tickets">My tickets</a>
+          {isMember && <a href="#my-membership">Membership</a>}
+          {isMember && <a href="#my-tickets">My tickets</a>}
           <a href="#rides">Rides & waits</a>
+          {!isMember && <a href="#visit">Plan a visit</a>}
         </nav>
-        <span className="demo-pill"><span /> Demo preview</span>
+        {isMember ? (
+          <span className="visitor-auth">
+            <span className="demo-pill"><span /> {user?.username}</span>
+            <button type="button" className="text-button" onClick={() => { logout(); navigate('/') }}>Sign out</button>
+          </span>
+        ) : (
+          <span className="visitor-auth">
+            <Link to="/member/login" className="text-button">Member sign in</Link>
+            <Link to="/staff/login" className="text-button">Staff portal</Link>
+          </span>
+        )}
       </header>
 
       <section className="visitor-hero">
         <div className="hero-copy">
-          <p className="eyebrow">YOUR PARK DAY, SORTED</p>
+          <p className="eyebrow">{isMember ? 'YOUR PARK DAY, SORTED' : 'WELCOME TO THUNDER VALLEY'}</p>
           <h1>More thrills.<br /><em>Less waiting.</em></h1>
-          <p className="hero-summary">Your membership, tickets, ride status, and estimated queues—all in one place.</p>
+          <p className="hero-summary">{isMember ? 'Your membership, tickets, ride status, and estimated queues—all in one place.' : 'Check which rides are open, see estimated queues, and plan your day at Thunder Valley.'}</p>
           <a href="#rides" className="hero-link">Explore today’s ride board <span aria-hidden="true">↓</span></a>
         </div>
+        {isMember ? (
         <div className="hero-ticket" aria-label="Visitor profile preview">
           <div className="hero-ticket-top">
             <span className="ticket-overline">VISITOR PASS</span>
@@ -141,19 +159,30 @@ export default function VisitorPortal() {
           <div className="hero-ticket-bottom"><span>MEMBER TIER</span><strong>{membership?.tier ?? '—'}</strong></div>
           <p className="hero-demo-note">Sample profile · not a live account</p>
         </div>
+        ) : (
+        <div className="hero-ticket" aria-label="Member sign in">
+          <div className="hero-ticket-top"><span className="ticket-overline">MEMBERS</span><span className="ticket-spark" aria-hidden="true">✳</span></div>
+          <h2>Already a member?</h2>
+          <p className="hero-welcome">Sign in to see your membership and manage tickets.</p>
+          <div className="hero-ticket-rule" />
+          <Link to="/member/login" className="visitor-primary-button">Member sign in <span aria-hidden="true">→</span></Link>
+        </div>
+        )}
         <div className="hero-decoration hero-decoration-one" aria-hidden="true" />
         <div className="hero-decoration hero-decoration-two" aria-hidden="true" />
       </section>
 
       <div className="visitor-content">
         <div className="visitor-page-intro">
-          <div><p className="eyebrow">THE IMPORTANT DETAILS</p><h2>Your park at a glance</h2></div>
+          <div><p className="eyebrow">THE IMPORTANT DETAILS</p><h2>{isMember ? 'Your park at a glance' : 'The park at a glance'}</h2></div>
           <button className="text-button" type="button" onClick={refresh} disabled={loading}>↻ Refresh demo data</button>
         </div>
 
         {error && <div className="visitor-alert error" role="alert"><strong>Something needs attention</strong><span>{error}</span></div>}
         {success && <div className="visitor-alert success" role="status"><strong>All set</strong><span>{success}</span><button type="button" aria-label="Dismiss message" onClick={() => setSuccess('')}>×</button></div>}
 
+        {isMember ? (
+        <>
         <section className="overview-grid" aria-label="Park summary">
           <article className="overview-card membership-overview" id="my-membership">
             <div className="overview-card-top"><span className="mini-icon gold-icon" aria-hidden="true">✦</span><span className="subtle-label">YOUR MEMBERSHIP</span><span className="tier-chip">{membership?.tier ?? '—'} TIER</span></div>
@@ -221,6 +250,17 @@ export default function VisitorPortal() {
           </div>
         </section>
 
+        </>
+        ) : (
+        <section className="visitor-section" id="visit">
+          <div className="section-heading">
+            <div><p className="eyebrow">PLAN YOUR VISIT</p><h2>Tickets &amp; memberships</h2><p>Day passes are {money(passPrice)}; Express queue access is +{money(expressPrice)}. Members get their admission built in.</p></div>
+          </div>
+          <p><Link to="/member/login" className="visitor-primary-button">Sign in to book or manage tickets <span aria-hidden="true">→</span></Link></p>
+        </section>
+
+        )}
+
         <section className="visitor-section rides-section" id="rides">
           <div className="section-heading rides-heading">
             <div><p className="eyebrow">BEFORE YOU JOIN THE LINE</p><h2>Ride board</h2><p>Check availability and estimated queue times before crossing the park.</p></div>
@@ -245,7 +285,7 @@ export default function VisitorPortal() {
           <p className="ride-disclaimer"><span aria-hidden="true">ⓘ</span> This version uses illustrative demo values. Live availability can be calculated from <code>v_RideAvailability</code>; the most recent queue reading should come from <code>RideLog</code> (EventType = “Wait Reading”). The existing wait-time view reports historical aggregates, not a guaranteed live wait.</p>
         </section>
 
-        <footer className="visitor-footer"><Link to="/login">Staff sign in</Link><span>Thunder Valley Adventure Park · Visitor portal prototype</span><a href="#top" onClick={(event) => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</a></footer>
+        <footer className="visitor-footer"><Link to="/staff/login">Staff sign in</Link><span>Thunder Valley Adventure Park · Visitor portal prototype</span><a href="#top" onClick={(event) => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</a></footer>
       </div>
     </main>
   )

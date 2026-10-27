@@ -18,6 +18,9 @@ export const ROLE_INFO = {
   RestaurantWorker: { title: 'Restaurant team', blurb: 'Your shifts and venue sales.' },
 }
 
+// Everyone who may enter the staff transaction portal (Customer is NOT one of them).
+export const STAFF_ROLES = Object.keys(ROLE_INFO).filter((r) => r !== 'Customer')
+
 export const ALL_ROLES = ['Admin', 'Manager', 'Cashier']
 
 // Everyone who can open the reports area. Each report lists its own roles (config/reports.js).
