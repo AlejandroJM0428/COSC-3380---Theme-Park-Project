@@ -4,6 +4,7 @@
 //   view        the database view behind it (for your own reference)
 //   title       short name shown in the menu
 //   description the question this report answers
+//   group       which menu section it sits in (one of REPORT_GROUPS at the bottom of this file)
 //   roles       who may open it (the server enforces the same list in server/routes/reports.js)
 //   required    true = one of the reports the professor listed
 //   hidden      true = kept here but not shown anywhere (see the weather reports)
@@ -118,6 +119,7 @@ const ALL_REPORTS = [
   // ---- Revenue and retail ----
   {
     key: 'revenue',
+    group: 'Revenue reports',
     endpoint: 'revenue-by-source',
     view: 'v_RevenueBySource',
     title: 'Revenue by Source',
@@ -145,6 +147,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'retail-sales',
+    group: 'Revenue reports',
     endpoint: 'retail-sales',
     view: 'v_RetailSalesByVenue',
     title: 'Sales by Venue',
@@ -175,6 +178,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'visit-spending',
+    group: 'Revenue reports',
     endpoint: 'visit-spending',
     view: 'v_VisitSpending',
     title: 'Spending per Visit',
@@ -197,6 +201,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'memberships',
+    group: 'Revenue reports',
     endpoint: 'membership-summary',
     view: 'v_MembershipSummary',
     title: 'Membership Summary',
@@ -214,6 +219,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'customers-per-month',
+    group: 'Revenue reports',
     endpoint: 'customers-per-month',
     view: 'v_CustomersPerMonth',
     title: 'Customers per Month',
@@ -232,6 +238,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'attendance-spikes',
+    group: 'Revenue reports',
     endpoint: 'daily-attendance',
     view: 'v_DailyAttendance',
     title: 'Daily Attendance & Spikes',
@@ -254,6 +261,7 @@ const ALL_REPORTS = [
   // ---- Maintenance ----
   {
     key: 'maintenance-cost',
+    group: 'Maintenance reports',
     endpoint: 'maintenance-cost',
     view: 'v_MaintenanceCostByFacility',
     title: 'Repair Cost by Facility',
@@ -280,6 +288,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'open-maintenance',
+    group: 'Maintenance reports',
     endpoint: 'open-maintenance',
     view: 'v_OpenMaintenance',
     title: 'Open Repairs',
@@ -297,6 +306,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'maintenance-per-month',
+    group: 'Maintenance reports',
     endpoint: 'maintenance-history',
     view: 'v_MaintenanceHistory (grouped by month here)',
     title: 'Maintenance Jobs per Month',
@@ -315,6 +325,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'maintenance-history',
+    group: 'Maintenance reports',
     endpoint: 'maintenance-history',
     view: 'v_MaintenanceHistory',
     title: 'Maintenance History',
@@ -337,6 +348,7 @@ const ALL_REPORTS = [
   // ---- Employees ----
   {
     key: 'employee-performance',
+    group: 'Employee reports',
     endpoint: 'employee-performance',
     view: 'v_EmployeePerformance',
     title: 'Employee Performance',
@@ -372,6 +384,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'staff-by-zone',
+    group: 'Employee reports',
     endpoint: 'staff-by-zone',
     view: 'v_StaffByZone',
     title: 'Staff by Zone',
@@ -390,6 +403,7 @@ const ALL_REPORTS = [
   // ---- Rides and operations ----
   {
     key: 'ride-traffic-by-month',
+    group: 'Ride reports',
     endpoint: 'ride-traffic-by-month',
     view: 'v_RideTrafficByMonth',
     title: 'Most Ridden Rides per Month',
@@ -411,6 +425,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'ride-availability',
+    group: 'Ride reports',
     endpoint: 'ride-availability',
     view: 'v_RideAvailability',
     title: 'Ride Availability Now',
@@ -424,6 +439,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'zone-ride-traffic',
+    group: 'Ride reports',
     endpoint: 'zone-ride-traffic',
     view: 'v_ZoneRideTraffic',
     title: 'Ride Traffic by Zone',
@@ -442,6 +458,7 @@ const ALL_REPORTS = [
   },
   {
     key: 'wait-times',
+    group: 'Ride reports',
     endpoint: 'wait-time-by-ride',
     view: 'v_WaitTimeByRide',
     title: 'Wait Times by Ride',
@@ -493,3 +510,6 @@ const ALL_REPORTS = [
 
 // The rest of the app (menu, dashboard, report page) uses REPORTS, so hidden reports vanish everywhere.
 export const REPORTS = ALL_REPORTS.filter((r) => !r.hidden)
+
+// Menu sections for the reports, in the order they are shown (config/nav.js builds one section per entry).
+export const REPORT_GROUPS = ['Revenue reports', 'Maintenance reports', 'Employee reports', 'Ride reports']

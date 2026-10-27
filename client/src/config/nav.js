@@ -1,4 +1,4 @@
-import { REPORTS } from './reports.js'
+import { REPORTS, REPORT_GROUPS } from './reports.js'
 
 // ASSUMPTION: these role permissions are a first guess. Agree on them with your
 // team (and the professor) and edit here - the menu and route guards follow this file.
@@ -30,20 +30,35 @@ export const MANAGEMENT = ['Admin', 'Manager', 'RetailManager', 'HRManager', 'Ma
 export const OPS_ROLES = ['Admin', 'Manager']
 
 // One entry per data-entry page. `path` is the URL (/tickets), `label` is the menu text.
+// `ready: true` = the page is built (it is registered in PAGE_COMPONENTS in App.jsx).
+// Pages without it stay out of the menu and dashboard until someone sets the flag, so nobody lands on an empty "not built yet" page.
 export const FORM_PAGES = [
-  { path: 'tickets',     label: 'Sell Ticket',            roles: [...ALL_ROLES, 'RetailManager'] },
-  { path: 'refunds',     label: 'Ticket Sales & Refunds', roles: [...ALL_ROLES, 'RetailManager'] },
+  { path: 'tickets',     label: 'Sell Ticket',            roles: [...ALL_ROLES, 'RetailManager'], ready: true },
+  { path: 'refunds',     label: 'Ticket Sales & Refunds', roles: [...ALL_ROLES, 'RetailManager'], ready: true },
   { path: 'purchases',   label: 'Food & Shop Purchases',  roles: ALL_ROLES },
   { path: 'game-plays',  label: 'Game Plays',             roles: ALL_ROLES },
   { path: 'customers',   label: 'Customers',              roles: ALL_ROLES },
   { path: 'memberships', label: 'Memberships',            roles: ALL_ROLES },
   { path: 'ride-log',    label: 'Ride Log',               roles: OPS_ROLES },
   { path: 'weather',     label: 'Weather Log',            roles: OPS_ROLES },
-  { path: 'maintenance', label: 'Maintenance',            roles: [...OPS_ROLES, 'MaintenanceManager'] },
-  { path: 'employees',   label: 'Shift Ratings',          roles: [...OPS_ROLES, 'HRManager'] },
+  { path: 'maintenance', label: 'Maintenance',            roles: [...OPS_ROLES, 'MaintenanceManager'], ready: true },
+  { path: 'employees',   label: 'Shift Ratings',          roles: [...OPS_ROLES, 'HRManager'], ready: true },
   { path: 'facilities',  label: 'Rides, Games & Venues',  roles: ['Admin'] },
   { path: 'users',       label: 'App Users',              roles: ['Admin'] },
 ]
+
+// One menu section per report group (Revenue, Maintenance, ...). Groups with no reports are skipped.
+const REPORT_SECTIONS = REPORT_GROUPS.map((group) => ({
+  title: group,
+  zone: 'var(--sun)',
+  items: REPORTS.filter((r) => r.group === group).map((r) => ({
+    to: `/reports/${r.key}`,
+    label: r.title,
+    note: r.description,
+    required: r.required,
+    roles: r.roles ?? MANAGEMENT,
+  })),
+})).filter((s) => s.items.length > 0)
 
 export const NAV_SECTIONS = [
   {
@@ -54,20 +69,10 @@ export const NAV_SECTIONS = [
       { to: '/trigger-demos', label: 'Trigger Demos', note: 'Try a bad insert and read the database\'s own refusal.', roles: OPS_ROLES },
     ],
   },
-  {
-    title: 'Reports',
-    zone: 'var(--sun)',
-    items: REPORTS.map((r) => ({
-      to: `/reports/${r.key}`,
-      label: r.title,
-      note: r.description,
-      required: r.required,
-      roles: r.roles ?? MANAGEMENT,
-    })),
-  },
+  ...REPORT_SECTIONS,
   {
     title: 'Park operations',
     zone: 'var(--coral)',
-    items: FORM_PAGES.map((f) => ({ to: `/${f.path}`, label: f.label, roles: f.roles })),
+    items: FORM_PAGES.filter((f) => f.ready).map((f) => ({ to: `/${f.path}`, label: f.label, roles: f.roles })),
   },
 ]
