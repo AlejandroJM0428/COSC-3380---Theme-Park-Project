@@ -122,17 +122,17 @@ export const MAINTENANCE = {
   describe: (row) => `job #${row.MaintenanceID} (${row.FacilityName}, ${row.MaintType})`,
 }
 
-// Revenue: ticket sales. "Void" adds a permanent refund row, so money records are never erased.
+// Revenue: ticket sales. "Refund" adds a permanent refund row, so money records are never erased.
 export const TICKETS = {
   title: 'Ticket Sales & Refunds',
   intro:
-    'Revenue records. Add a ticket sale, correct its guest, membership, visit date or Express add-on, or void it. The database sets the price. Voiding keeps the record and marks it refunded.',
+    'Revenue records. Add a ticket sale, correct its guest, membership, visit date or Express add-on, or refund it. The database sets the price. Refunding keeps the record and marks it refunded.',
   resource: 'tickets',
   idKey: 'TicketID',
   noun: 'ticket',
   deleteRoles: ['Admin', 'Manager', 'RetailManager'],
-  deleteLabel: 'Void',
-  deletePast: 'Voided',
+  deleteLabel: 'Refund',
+  deletePast: 'Refunded',
   askReason: true,
   canEditRow: (row) => !row.IsVoided,
   canDeleteRow: (row) => !row.IsVoided,
@@ -143,7 +143,7 @@ export const TICKETS = {
       options: [
         ['', 'All tickets'],
         ['active', 'Active tickets'],
-        ['voided', 'Voided tickets'],
+        ['voided', 'Refunded tickets'],
       ],
     },
   ],
@@ -155,7 +155,8 @@ export const TICKETS = {
     { key: 'HasExpress', label: 'Express', format: (v) => (Number(v) ? 'Yes' : 'No') },
     { key: 'TicketPrice', label: 'Price', format: money },
     { key: 'PurchaseDate', label: 'Bought', format: shortDate },
-    { key: 'IsVoided', label: 'Status', format: (v, row) => (Number(v) ? `Voided: ${row.RefundReason}` : 'Active') },
+    { key: 'IsVoided', label: 'Status', format: (v, row) => (Number(v) ? `Refunded: ${row.RefundReason}` : 'Active') },
+    { key: 'RefundedAt', label: 'Refunded on', format: shortDate },
   ],
   fields: [
     { key: 'customerId', label: 'Customer ID', type: 'number', required: true, min: 1, step: '1' },
