@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { buyVisitorTicket, getVisitorDashboard, refundVisitorTicket } from '../api/index.js'
+import NotificationBar from '../components/NotificationBar.jsx'
 import './VisitorPortal.css'
 
 function localDate(offset = 0) {
@@ -150,6 +151,8 @@ export default function VisitorPortal({ mode = 'public' }) {
           </span>
         )}
       </header>
+
+      <NotificationBar />
 
       <section className="visitor-hero">
         <div className="hero-copy">

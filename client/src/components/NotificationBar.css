@@ -1,0 +1,4 @@
+.notice-bar { display: grid; gap: 6px; margin: 0 0 14px; }
+.notice { margin: 0; padding: 9px 14px; border-radius: 6px; border: 1px solid #b9d8dc; border-left: 6px solid #1c9aa8; background: #eaf6f7; color: #12302f; }
+.notice-warning { border-color: #f0d27a; border-left-color: #ffc233; background: #fff7dc; }
+.notice-alert { border-color: #e7b3b0; border-left-color: #a4161a; background: #fdecea; }
