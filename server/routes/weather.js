@@ -5,9 +5,8 @@ import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needDecimal, needInt, needDateTime, oneOf, optDateTime, recordId } from '../validate.js';
 
 // Weather log (data entry, not a report): list, get, add, edit, delete.
-// The browser never sends ClosesOutdoorRides: trg_WeatherLog_BI / trg_WeatherLog_BU work it out from the
-// readings and the park's limits. When a new reading closes outdoor rides, trg_WeatherLog_AI_Notify posts
-// a weather notice, so adding a Storm entry is a live demo of the notification trigger.
+// The browser never sends ClosesOutdoorRides. trg_WeatherLog_BI sets it on insert.
+// An edit sets it with fn_WeatherCloses, the same function the insert trigger uses.
 // Delete is a real delete (WeatherLog has no IsActive). The database refuses it when a refund uses the event.
 
 const CAN_READ = ['Admin', 'Manager'];
@@ -99,9 +98,10 @@ route(
     try {
       await pool.query(
         `UPDATE WeatherLog
-            SET WeatherType = ?, StartedAt = ?, EndedAt = ?, TemperatureF = ?, WindMph = ?, LightningMiles = ?
+            SET WeatherType = ?, StartedAt = ?, EndedAt = ?, TemperatureF = ?, WindMph = ?, LightningMiles = ?,
+                ClosesOutdoorRides = fn_WeatherCloses(ParkID, ?, ?, ?)
           WHERE WeatherID = ?`,
-        [w.weatherType, w.startedAt, w.endedAt, w.temperatureF, w.windMph, w.lightningMiles, id],
+        [w.weatherType, w.startedAt, w.endedAt, w.temperatureF, w.windMph, w.lightningMiles, w.temperatureF, w.windMph, w.lightningMiles, id],
       );
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);

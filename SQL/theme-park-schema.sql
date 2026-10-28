@@ -71,7 +71,7 @@ CREATE TABLE WeatherLog (
 -- RIDES
 
 -- [TABLE] Ride: attractions; MinHeightCm 0 = no requirement.
--- [RULE] Status is a trigger-maintained cache, re-synced every 15 minutes; boarding checks fn_UnderMaintenance().
+-- [RULE] Status is the label stored when the ride is added. Live availability is fn_UnderMaintenance() and v_RideAvailability.
 CREATE TABLE Ride (
     RideID            INT UNSIGNED NOT NULL AUTO_INCREMENT,
     ZoneID            INT UNSIGNED NOT NULL,
@@ -426,16 +426,6 @@ BEGIN
     RETURN (v_out IS NOT NULL AND v_out <> 'Fixed');
 END$$
 
--- [RULE] sp_RefreshRideStatus: sets Ride.Status from fn_UnderMaintenance at the current time.
-CREATE PROCEDURE sp_RefreshRideStatus(IN p_ride INT UNSIGNED)
-BEGIN
-    IF p_ride IS NOT NULL THEN
-        UPDATE Ride
-           SET Status = IF(fn_UnderMaintenance('Ride', p_ride, NOW()), 'Maintenance', 'Open')
-         WHERE RideID = p_ride;
-    END IF;
-END$$
-
 -- [RULE] sp_AssertTicketValid: ticket must exist, match the date, be unrefunded, and be used during park hours.
 CREATE PROCEDURE sp_AssertTicketValid(IN p_ticket INT UNSIGNED, IN p_at DATETIME)
 BEGIN
@@ -497,6 +487,7 @@ END$$
 
 -- [RULE] sp_AssertTicketRules: active customer, capacity, membership ownership, dates, weekday-only tiers.
 -- p_self = ticket being edited (0 for new); p_express = 1 when the tier includes Express.
+-- The Park row is locked first so two sales at once cannot both pass the capacity count.
 CREATE PROCEDURE sp_AssertTicketRules(IN p_customer INT UNSIGNED, IN p_membership INT UNSIGNED,
                                       IN p_visit DATE, IN p_self INT UNSIGNED, OUT p_express BOOL)
 BEGIN
@@ -512,7 +503,7 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Customer is inactive or does not exist';
     END IF;
 
-    SELECT MaxOccupancy INTO v_max FROM Park WHERE ParkID = 1;
+    SELECT MaxOccupancy INTO v_max FROM Park WHERE ParkID = 1 FOR UPDATE;
     IF v_max IS NULL THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Park is not set up';
     END IF;
@@ -609,16 +600,6 @@ BEGIN
     SET NEW.Price = v_price;
 END$$
 
--- [RULE] Membership update: no overlap; tier change re-prices from MembershipTier.
-CREATE TRIGGER trg_Membership_BU BEFORE UPDATE ON Membership
-FOR EACH ROW
-BEGIN
-    CALL sp_AssertNoMembershipOverlap(OLD.MembershipID, NEW.CustomerID, NEW.StartDate, NEW.EndDate);
-    IF NOT (NEW.Tier <=> OLD.Tier) THEN
-        SET NEW.Price = (SELECT AnnualPrice FROM MembershipTier WHERE Tier = NEW.Tier);
-    END IF;
-END$$
-
 -- [RULE] Ride log insert: retired rides rejected; boardings fully checked, wait readings otherwise stored as-is.
 CREATE TRIGGER trg_RideLog_BI BEFORE INSERT ON RideLog
 FOR EACH ROW
@@ -707,143 +688,11 @@ BEGIN
     SET NEW.UnitPrice = v_price;
 END$$
 
--- [RULE] Refund insert: not before purchase; a weather refund needs an event that closed rides on the visit date.
-CREATE TRIGGER trg_TicketRefund_BI BEFORE INSERT ON TicketRefund
-FOR EACH ROW
-BEGIN
-    DECLARE v_visit  DATE;
-    DECLARE v_bought DATETIME;
-    SELECT VisitDate, PurchaseDate INTO v_visit, v_bought FROM Ticket WHERE TicketID = NEW.TicketID;
-    IF NEW.RefundedAt < v_bought THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Refund is dated before the ticket was bought';
-    END IF;
-    IF NEW.WeatherID IS NOT NULL AND NOT EXISTS (
-           SELECT 1 FROM WeatherLog w
-            WHERE w.WeatherID = NEW.WeatherID
-              AND w.ClosesOutdoorRides = 1
-              AND DATE(w.StartedAt) <= v_visit
-              AND (w.EndedAt IS NULL OR DATE(w.EndedAt) >= v_visit)) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Weather event did not close rides on the visit date';
-    END IF;
-END$$
-
--- [RULE] Maintenance crew: active technicians only.
-CREATE TRIGGER trg_MaintCrew_BI BEFORE INSERT ON MaintenanceCrew
-FOR EACH ROW
-BEGIN
-    DECLARE v_title  VARCHAR(30);
-    DECLARE v_active BOOL;
-    SELECT JobTitle, IsActive INTO v_title, v_active FROM Employee WHERE EmployeeID = NEW.EmployeeID;
-    IF v_title <> 'Technician' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Only technicians can be on a maintenance crew';
-    END IF;
-    IF v_active = 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Employee is inactive';
-    END IF;
-END$$
-
--- [RULE] Maintenance insert: refresh Ride.Status.
-CREATE TRIGGER trg_Maint_AI AFTER INSERT ON Maintenance
-FOR EACH ROW
-BEGIN
-    CALL sp_RefreshRideStatus(NEW.RideID);
-END$$
-
--- [RULE] Maintenance update: refresh Ride.Status.
-CREATE TRIGGER trg_Maint_AU AFTER UPDATE ON Maintenance
-FOR EACH ROW
-BEGIN
-    CALL sp_RefreshRideStatus(NEW.RideID);
-END$$
-
--- [RULE] Ride certification: ride operators only, not before hire date.
-CREATE TRIGGER trg_RideCert_BI BEFORE INSERT ON RideCertification
-FOR EACH ROW
-BEGIN
-    DECLARE v_title VARCHAR(30);
-    DECLARE v_hired DATE;
-    SELECT JobTitle, HireDate INTO v_title, v_hired FROM Employee WHERE EmployeeID = NEW.EmployeeID;
-    IF v_title <> 'Ride Operator' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Only ride operators can be ride certified';
-    END IF;
-    IF NEW.CertifiedOn < v_hired THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Certification date is before the hire date';
-    END IF;
-END$$
-
--- [RULE] Shift insert: active employee, after hire date, no overlap.
-CREATE TRIGGER trg_Shift_BI BEFORE INSERT ON Shift
-FOR EACH ROW
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM Employee WHERE EmployeeID = NEW.EmployeeID AND IsActive = 1) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Employee is inactive or does not exist';
-    END IF;
-    CALL sp_AssertShift(0, NEW.EmployeeID, NEW.ClockIn, NEW.ClockOut);
-END$$
-
--- [RULE] Shift update (e.g. clock-out): after hire date, no overlap.
-CREATE TRIGGER trg_Shift_BU BEFORE UPDATE ON Shift
-FOR EACH ROW
-BEGIN
-    CALL sp_AssertShift(OLD.ShiftID, NEW.EmployeeID, NEW.ClockIn, NEW.ClockOut);
-END$$
-
--- [RULE] Weather update: closure flag always recomputed.
-CREATE TRIGGER trg_WeatherLog_BU BEFORE UPDATE ON WeatherLog
-FOR EACH ROW
-BEGIN
-    SET NEW.ClosesOutdoorRides = fn_WeatherCloses(NEW.ParkID, NEW.TemperatureF, NEW.WindMph, NEW.LightningMiles);
-END$$
-
--- [RULE] Ticket update: guest, membership and date locked once used; otherwise rechecked like a new ticket.
--- Price recomputed only when membership or Express changes.
-CREATE TRIGGER trg_Ticket_BU BEFORE UPDATE ON Ticket
-FOR EACH ROW
-BEGIN
-    DECLARE v_exp BOOL;
-    IF NOT (NEW.CustomerID <=> OLD.CustomerID
-        AND NEW.MembershipID <=> OLD.MembershipID
-        AND NEW.VisitDate <=> OLD.VisitDate) THEN
-        IF EXISTS (SELECT 1 FROM RideLog  WHERE TicketID = OLD.TicketID)
-        OR EXISTS (SELECT 1 FROM GamePlay WHERE TicketID = OLD.TicketID)
-        OR EXISTS (SELECT 1 FROM Purchase WHERE TicketID = OLD.TicketID) THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ticket has activity; guest, membership and date cannot change';
-        END IF;
-        CALL sp_AssertTicketRules(NEW.CustomerID, NEW.MembershipID, NEW.VisitDate, OLD.TicketID, v_exp);
-        IF v_exp THEN
-            SET NEW.HasExpress = 1;
-        END IF;
-    END IF;
-    IF NOT (NEW.MembershipID <=> OLD.MembershipID AND NEW.HasExpress <=> OLD.HasExpress) THEN
-        SET NEW.TicketPrice = fn_TicketPrice(NEW.MembershipID, NEW.HasExpress);
-    END IF;
-END$$
-
--- [RULE] Guest activity logs are permanent: no edits to RideLog, GamePlay, Purchase, TicketRefund.
-CREATE TRIGGER trg_RideLog_BU BEFORE UPDATE ON RideLog
-FOR EACH ROW
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ride log entries cannot be edited'$$
-
-CREATE TRIGGER trg_GamePlay_BU BEFORE UPDATE ON GamePlay
-FOR EACH ROW
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Game play entries cannot be edited'$$
-
-CREATE TRIGGER trg_Purchase_BU BEFORE UPDATE ON Purchase
-FOR EACH ROW
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Purchases cannot be edited'$$
-
-CREATE TRIGGER trg_TicketRefund_BU BEFORE UPDATE ON TicketRefund
-FOR EACH ROW
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Refunds cannot be edited'$$
-
 DELIMITER ;
 
--- [RULE] Every 15 minutes, re-sync Ride.Status so jobs scheduled for the future flip it when they start.
--- Needs event_scheduler = ON (the MySQL 8 default).
-CREATE EVENT ev_RefreshRideStatus
-    ON SCHEDULE EVERY 15 MINUTE
-    DO UPDATE Ride
-          SET Status = IF(fn_UnderMaintenance('Ride', RideID, NOW()), 'Maintenance', 'Open');
+-- The six triggers above are the whole set. SQL/08_simplify_triggers.sql drops older triggers
+-- on a database that was created before this simplification, and records which rules moved
+-- out of MySQL.
 
 -- REPORT VIEWS
 

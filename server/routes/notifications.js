@@ -11,7 +11,7 @@ route('GET', '/api/notifications', async () => {
   return rows;
 });
 
-// Promos are entered by hand (the triggers create SoldOut, Weather and MaintenanceClosed rows).
+// Promos are entered by hand. Triggers no longer create SoldOut, Weather or MaintenanceClosed rows.
 const SEVERITIES = ['Info', 'Warning', 'Alert'];
 
 route(

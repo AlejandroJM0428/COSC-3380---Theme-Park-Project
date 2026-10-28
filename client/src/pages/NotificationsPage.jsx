@@ -5,8 +5,7 @@ import ErrorBanner from '../components/ErrorBanner.jsx'
 
 const BLANK = { severity: 'Info', title: '', message: '', expiresAt: '' }
 
-// Promos and notices. Sold-out, weather and maintenance notices are created by database triggers;
-// here staff add promos and dismiss any notice (dismiss = soft delete, the row stays in the table).
+// Promos and notices. Staff add promos here and can dismiss any notice (dismiss = soft delete).
 export default function NotificationsPage() {
   const [rows, setRows] = useState(null)
   const [form, setForm] = useState(BLANK)
@@ -57,7 +56,7 @@ export default function NotificationsPage() {
     <div>
       <h1>Promos & notices</h1>
       <p>
-        Add a promo here. Sold-out, weather and maintenance notices appear on their own when the database detects them.
+        Add a promo here. It shows on the homepage until it is dismissed or it expires.
       </p>
       <ErrorBanner message={error} onClose={() => setError('')} />
       {notice && <p className="page-note">{notice}</p>}

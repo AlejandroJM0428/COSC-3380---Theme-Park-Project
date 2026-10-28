@@ -291,7 +291,7 @@ export const RIDE_LOG = {
 export const WEATHER = {
   title: 'Weather Log',
   intro:
-    'Weather readings. The database decides whether a reading closes outdoor rides, and posts a notice on the homepage when it does. Try adding a Storm with strong wind to see the notice appear.',
+    'Weather readings. On insert, the database decides whether a reading closes outdoor rides. An edit uses the same rule.',
   resource: 'weather',
   idKey: 'WeatherID',
   noun: 'weather entry',

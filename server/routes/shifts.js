@@ -4,8 +4,8 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 
 // Employee performance data entry: shifts with a rating (1 to 5) and notes. List, get, add, edit, delete.
-// Shift has nothing pointing at it, so delete removes the row. The overlap and hire-date rules live in the
-// database (trg_Shift_BI / trg_Shift_BU), and handleError() shows their messages (errno 1644) unchanged.
+// Shift has nothing pointing at it, so delete removes the row. Overlap and hire date are
+// sp_AssertShift, called here. An inactive employee is rejected here. MySQL no longer has a shift trigger.
 
 const CAN_READ = ['Admin', 'Manager', 'HRManager'];
 const CAN_WRITE = ['Admin', 'Manager', 'HRManager'];
@@ -75,6 +75,14 @@ async function loadShift(id) {
   return rows[0];
 }
 
+async function assertShift(self, s) {
+  const [rows] = await pool.query('SELECT IsActive FROM Employee WHERE EmployeeID = ?', [s.employeeId]);
+  if (rows.length === 0 || Number(rows[0].IsActive) !== 1) {
+    throw new HttpError(400, 'Employee is inactive or does not exist');
+  }
+  await pool.query('CALL sp_AssertShift(?, ?, ?, ?)', [self, s.employeeId, s.clockIn, s.clockOut]);
+}
+
 // GET /api/shifts?status=open|rated|unrated (optional). Newest first.
 route(
   'GET',
@@ -116,6 +124,7 @@ route(
   requireRole(...CAN_WRITE)(async (ctx) => {
     const s = parseShift(ctx.body);
     try {
+      await assertShift(0, s);
       const [result] = await pool.query(
         'INSERT INTO Shift (EmployeeID, ClockIn, ClockOut, ShiftRating, ShiftNotes) VALUES (?, ?, ?, ?, ?)',
         [s.employeeId, s.clockIn, s.clockOut, s.rating, s.notes],
@@ -137,6 +146,7 @@ route(
     const s = parseShift(ctx.body);
     await loadShift(id); // 404 if missing
     try {
+      await assertShift(id, s);
       await pool.query(
         'UPDATE Shift SET EmployeeID = ?, ClockIn = ?, ClockOut = ?, ShiftRating = ?, ShiftNotes = ? WHERE ShiftID = ?',
         [s.employeeId, s.clockIn, s.clockOut, s.rating, s.notes, id],

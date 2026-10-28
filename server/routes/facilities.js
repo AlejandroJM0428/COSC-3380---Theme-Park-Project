@@ -7,7 +7,7 @@ import { friendlyDbError, needId, needInt, needText, oneOf } from '../validate.j
 // Rides, Games & Venues (Admin only): list, get, add, edit, deactivate.
 // One page covers three tables, so each row has a key like "Ride-5" (kind + id).
 // "Delete" is a soft delete (IsActive = 0), because tickets, ride logs and maintenance point at these rows.
-// Ride.Status is kept by the database (a trigger plus a 15 minute re-sync), so this page never writes it.
+// Ride.Status is stored as Open when a ride is added. Live availability is v_RideAvailability, not this column.
 
 const CAN_USE = ['Admin'];
 const KINDS = ['Ride', 'Game', 'Venue'];

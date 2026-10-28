@@ -5,8 +5,7 @@ import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, needInt, optDateTime, recordId } from '../validate.js';
 
 // Food and shop purchases (revenue): list, get, add, delete.
-// trg_Purchase_BU refuses edits, so there is no PUT. A mistake is fixed by deleting the entry (managers only)
-// and adding it again. The browser never sends the price: trg_Purchase_BI copies it from the item.
+// There is no PUT. MySQL no longer blocks a direct UPDATE of a purchase. The browser never sends the price: trg_Purchase_BI copies it from the item.
 // trg_Purchase_BI also refuses retired items and venues under maintenance (errno 1644 -> handleError).
 
 const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
