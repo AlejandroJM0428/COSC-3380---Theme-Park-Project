@@ -123,7 +123,7 @@ h1 { font-size: 2rem; font-weight: 800; margin: 0 0 6px; }
 
 /* tables + charts */
 .chart-box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin: 16px 0; }
-.table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+.table-wrap { overflow: auto; max-height: 70vh; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
 table { border-collapse: collapse; width: 100%; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 8px 14px; border-bottom: 1px solid #dce6e3; white-space: nowrap; }
 th { background: var(--pine); color: #fff; font-weight: 600; position: sticky; top: 0; }
