@@ -40,7 +40,7 @@ export default function MyWork() {
     <div>
       <h1>My work</h1>
       <p>
-        {data.employee.Name} · {data.employee.JobTitle}
+        {data.employee.Name} · {data.employee.JobTitle} · Hired on: {data.employee.HireDate}
       </p>
 
       {data.jobs && (
