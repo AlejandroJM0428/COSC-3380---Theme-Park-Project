@@ -6,7 +6,7 @@ import { requireRole } from '../middleware/requireRole.js';
 // Maintenance data entry: list, get, add, edit, delete.
 // No framework: only route(), requireRole(), HttpError and the mysql2 pool.
 // The browser never sends the id or IsPlanned. MaintenanceID is auto-numbered and IsPlanned is generated.
-// trg_Maint_BU_Cost refuses to close a job without a repair cost (errno 1644), and handleError() shows that message.
+// Closing a job without a repair cost is rejected in parseJob. MySQL does not check it.
 
 const CAN_READ = ['Admin', 'Manager', 'MaintenanceManager'];
 const CAN_WRITE = ['Admin', 'Manager', 'MaintenanceManager'];
@@ -68,7 +68,7 @@ export function parseJob(body) {
     }
     repairCost = Math.round(repairCost * 100) / 100;
   }
-  // The cost rule is also enforced by the database trigger. Checking here gives the same message before the query runs.
+  // MySQL no longer has a trigger for this. This check is the rule.
   if (closing && repairCost === null) throw new HttpError(400, 'Repair cost is required to close a maintenance job');
 
   let crew = null; // null = leave the crew alone on edit
@@ -153,6 +153,11 @@ async function saveJob(job, id) {
     if (job.crew !== null) {
       await conn.query('DELETE FROM MaintenanceCrew WHERE MaintenanceID = ?', [jobIdValue]);
       for (const [employeeId, crewRole] of job.crew) {
+        const [emp] = await conn.query('SELECT JobTitle, IsActive FROM Employee WHERE EmployeeID = ?', [employeeId]);
+        if (emp.length === 0 || emp[0].JobTitle !== 'Technician') {
+          throw new HttpError(400, 'Only technicians can be on a maintenance crew');
+        }
+        if (Number(emp[0].IsActive) !== 1) throw new HttpError(400, 'Employee is inactive');
         await conn.query('INSERT INTO MaintenanceCrew (MaintenanceID, EmployeeID, CrewRole) VALUES (?, ?, ?)', [jobIdValue, employeeId, crewRole]);
       }
     }

@@ -5,7 +5,7 @@ import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, needInt, oneOf, optDateTime, recordId } from '../validate.js';
 
 // Ride log: list, get, add, delete. A row is either a Boarding (has a ticket) or a Wait Reading (has wait minutes).
-// trg_RideLog_BU refuses edits, so there is no PUT. A mistake is fixed by deleting the entry and adding it again.
+// There is no PUT. MySQL no longer blocks a direct UPDATE of a ride log row.
 // trg_RideLog_BI refuses retired rides,
 // rides under maintenance, closed outdoor rides, guests under the height limit and bad Express use.
 // Those messages (errno 1644) reach the browser through handleError().
@@ -56,7 +56,7 @@ route(
   '/api/ride-log/lookups',
   requireRole(...CAN_READ)(async () => {
     const [rides] = await pool.query(
-      "SELECT RideID AS id, CONCAT(RideName, IF(Status = 'Maintenance', ' (in maintenance)', '')) AS name FROM Ride WHERE IsActive = 1 ORDER BY RideName",
+      "SELECT RideID AS id, CONCAT(RideName, IF(fn_UnderMaintenance('Ride', RideID, NOW()), ' (in maintenance)', '')) AS name FROM Ride WHERE IsActive = 1 ORDER BY RideName",
     );
     return { rides };
   }),

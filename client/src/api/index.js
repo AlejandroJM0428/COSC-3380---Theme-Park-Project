@@ -43,9 +43,9 @@ export function listDemos() {
   return http('/demos')
 }
 
-export function runDemo(id, mode) {
+export function runDemo(id) {
   needLive()
-  return http(`/demos/${id}/run`, { method: 'POST', body: { mode } })
+  return http(`/demos/${id}/run`, { method: 'POST', body: {} })
 }
 
 export function createTicket(data) {

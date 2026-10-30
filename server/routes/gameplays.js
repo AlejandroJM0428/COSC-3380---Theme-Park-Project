@@ -5,8 +5,8 @@ import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, optDateTime, recordId } from '../validate.js';
 
 // Game plays (revenue): list, get, add, delete.
-// trg_GamePlay_BU refuses edits, so there is no PUT. A mistake is fixed by deleting the entry (managers only)
-// and adding it again. The browser never sends the amount:
+// There is no PUT. MySQL no longer blocks a direct UPDATE, so the stored price stays as the insert trigger set it
+// only while nobody edits the row in SQL. The browser never sends the amount:
 // trg_GamePlay_BI copies it from Game.PlayPrice and refuses games that are retired or under maintenance.
 
 const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];

@@ -20,13 +20,15 @@ services:
       - ./SQL/01_park_and_reference.sql:/docker-entrypoint-initdb.d/01_park_and_reference.sql:ro
       - ./SQL/02_test_data.sql:/docker-entrypoint-initdb.d/02_test_data.sql:ro
       - ./SQL/views_extra.sql:/docker-entrypoint-initdb.d/03_views_extra.sql:ro
-      # 03 to 07 were added after the first deploy. Files load in name order, after the seed data.
-      # On an existing database they do NOT run again: apply them by hand once (see execution.md WP10).
+      # 03 to 09 were added after the first deploy. Files load in name order, after the seed data.
+      # On an existing database they do NOT run again: apply them by hand once (see docs/DEV_SETUP.md).
       - ./SQL/03_Customer_view.sql:/docker-entrypoint-initdb.d/04_customer_view.sql:ro
       - ./SQL/04_staff_roles_and_costs.sql:/docker-entrypoint-initdb.d/05_staff_roles_and_costs.sql:ro
       - ./SQL/05_notifications.sql:/docker-entrypoint-initdb.d/06_notifications.sql:ro
       - ./SQL/06_report_and_portal_views.sql:/docker-entrypoint-initdb.d/07_report_and_portal_views.sql:ro
       - ./SQL/07_extra_maintenance_data.sql:/docker-entrypoint-initdb.d/08_extra_maintenance_data.sql:ro
+      - ./SQL/08_simplify_triggers.sql:/docker-entrypoint-initdb.d/09_simplify_triggers.sql:ro
+      - ./SQL/09_ride_maintenance_notice.sql:/docker-entrypoint-initdb.d/10_ride_maintenance_notice.sql:ro
     # No "ports:" on purpose: MySQL is reachable only from the app container.
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]

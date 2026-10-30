@@ -7,7 +7,8 @@ import { friendlyDbError, needDate, needId, oneOf, recordId } from '../validate.
 // Memberships (revenue): list, get, add, edit, delete.
 // The browser never sends the end date or the price.
 //   EndDate is worked out here: one year from the start date, minus a day (the database CHECK requires this).
-//   Price is set by trg_Membership_BI / trg_Membership_BU from the MembershipTier price list.
+//   Price is set by trg_Membership_BI on insert. An edit copies AnnualPrice and calls
+//   sp_AssertNoMembershipOverlap, which is what the removed update trigger used to do.
 // Delete is a real delete, because Membership has no IsActive column. The database refuses it when
 // tickets already use the membership (foreign key), and we turn that into a plain sentence.
 
@@ -117,12 +118,15 @@ route(
     if (m.customerId !== current.CustomerID) {
       throw new HttpError(400, 'A membership cannot be moved to another customer. Add a new one instead');
     }
+    const term = 'DATE_SUB(DATE_ADD(?, INTERVAL 1 YEAR), INTERVAL 1 DAY)';
     try {
+      await pool.query(`CALL sp_AssertNoMembershipOverlap(?, ?, ?, ${term})`, [id, m.customerId, m.startDate, m.startDate]);
       await pool.query(
         `UPDATE Membership
-            SET Tier = ?, StartDate = ?, EndDate = DATE_SUB(DATE_ADD(?, INTERVAL 1 YEAR), INTERVAL 1 DAY), AutoRenew = ?
+            SET Tier = ?, StartDate = ?, EndDate = ${term}, AutoRenew = ?,
+                Price = (SELECT AnnualPrice FROM MembershipTier WHERE Tier = ?)
           WHERE MembershipID = ?`,
-        [m.tier, m.startDate, m.startDate, m.autoRenew, id],
+        [m.tier, m.startDate, m.startDate, m.autoRenew, m.tier, id],
       );
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);

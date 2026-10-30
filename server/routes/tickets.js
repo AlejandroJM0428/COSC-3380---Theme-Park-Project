@@ -4,9 +4,10 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 
 // Ticket sales (Revenue data entry): list, get, add, edit, void.
-// "Void" adds a TicketRefund row (refunds are permanent records, never edited). Un-voiding is not offered.
-// trg_Ticket_BI / trg_Ticket_BU set the price. trg_TicketRefund_BI checks the refund date.
-// Trigger messages (errno 1644) reach the browser through handleError().
+// "Void" adds a TicketRefund row. There is no edit route for a refund.
+// trg_Ticket_BI sets the price and Express on insert. An edit calls the same procedures
+// (sp_AssertTicketRules, fn_TicketPrice) because the update trigger was removed.
+// A refund uses the current time and no weather id, so the old refund trigger is not required here.
 
 const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
 const CAN_WRITE = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
@@ -93,8 +94,13 @@ route(
   }),
 );
 
+function sameDay(value, iso) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10) === iso;
+  return String(value).slice(0, 10) === iso;
+}
+
 // PUT edits the guest, membership, visit date and Express. A voided ticket cannot be edited.
-// The database refuses guest/membership/date changes once a ticket has ride, game or purchase activity.
+// Guest, membership and date stay locked once the ticket has ride, game or purchase activity.
 route(
   'PUT',
   '/api/tickets/:id',
@@ -103,13 +109,46 @@ route(
     const t = parseTicket(ctx.body);
     const current = await loadTicket(id);
     if (current.IsVoided) throw new HttpError(409, 'This ticket has been voided and cannot be edited');
+    const identityChanged =
+      t.customerId !== current.CustomerID ||
+      (t.membershipId ?? null) !== (current.MembershipID ?? null) ||
+      !sameDay(current.VisitDate, t.visitDate);
+    let hasExpress = t.hasExpress;
+    const conn = await pool.getConnection();
     try {
-      await pool.query(
-        'UPDATE Ticket SET CustomerID = ?, MembershipID = ?, VisitDate = ?, HasExpress = ? WHERE TicketID = ?',
-        [t.customerId, t.membershipId, t.visitDate, t.hasExpress, id],
+      await conn.beginTransaction();
+      if (identityChanged) {
+        const [used] = await conn.query(
+          `SELECT (EXISTS (SELECT 1 FROM RideLog WHERE TicketID = ?)
+                OR EXISTS (SELECT 1 FROM GamePlay WHERE TicketID = ?)
+                OR EXISTS (SELECT 1 FROM Purchase WHERE TicketID = ?)) AS used`,
+          [id, id, id],
+        );
+        if (Number(used[0].used)) {
+          throw new HttpError(409, 'Ticket has activity; guest, membership and date cannot change');
+        }
+        await conn.query('CALL sp_AssertTicketRules(?, ?, ?, ?, @ticketExpress)', [
+          t.customerId,
+          t.membershipId,
+          t.visitDate,
+          id,
+        ]);
+        const [flag] = await conn.query('SELECT @ticketExpress AS express');
+        if (Number(flag[0].express) === 1) hasExpress = 1;
+      }
+      await conn.query(
+        `UPDATE Ticket
+            SET CustomerID = ?, MembershipID = ?, VisitDate = ?, HasExpress = ?,
+                TicketPrice = fn_TicketPrice(?, ?)
+          WHERE TicketID = ?`,
+        [t.customerId, t.membershipId, t.visitDate, hasExpress, t.membershipId, hasExpress, id],
       );
+      await conn.commit();
     } catch (err) {
+      await conn.rollback();
       throw friendly(err);
+    } finally {
+      conn.release();
     }
     return loadTicket(id);
   }),

@@ -68,7 +68,7 @@ export const NAV_SECTIONS = [
     zone: 'var(--lagoon)',
     items: [
       { to: '/queries', label: 'Run Queries', note: 'Run a saved SQL query and see the rows.', roles: OPS_ROLES },
-      { to: '/trigger-demos', label: 'Trigger Demos', note: 'Try a bad insert and read the database\'s own refusal.', roles: OPS_ROLES },
+      { to: '/trigger-demos', label: 'Trigger Demos', note: 'Run a real insert and see the trigger result. Nothing is saved.', roles: OPS_ROLES },
     ],
   },
   ...REPORT_SECTIONS,

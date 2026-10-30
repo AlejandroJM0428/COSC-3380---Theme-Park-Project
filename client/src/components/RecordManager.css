@@ -17,6 +17,23 @@
 .rm-actions button { padding: 4px 10px; margin-right: 6px; font-size: 0.85rem; }
 .rm-danger { color: var(--bad); border-color: var(--bad); }
 
+.corner-toast {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 40;
+  width: min(360px, calc(100vw - 32px));
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #f0d27a;
+  background: #fff8e6;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.corner-toast-bad { border-color: #f0b4b0; background: var(--bad-bg); color: var(--bad); }
+.corner-toast-top { display: flex; align-items: center; gap: 8px; }
+.corner-toast p { margin: 6px 0 0; }
+.corner-badge { font-size: .75rem; font-weight: 700; background: var(--bad); color: white; border-radius: 99px; padding: 1px 8px; }
+
 @media (max-width: 600px) {
   .rm-grid { grid-template-columns: 1fr; }
 }

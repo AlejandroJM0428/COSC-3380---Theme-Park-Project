@@ -70,7 +70,7 @@ export const CUSTOMERS = {
 export const MEMBERSHIPS = {
   title: 'Memberships',
   intro:
-    'Annual memberships. Pick the guest, the tier and the start date. The database sets the price from the tier list, and the membership ends one year later. A membership with tickets on it cannot be deleted.',
+    'Annual memberships. Pick the guest, the tier and the start date. The database sets the price from the tier list, and the membership ends one year later. If those dates overlap a membership this guest already has, MySQL rejects the save. A membership with tickets on it cannot be deleted.',
   resource: 'memberships',
   idKey: 'MembershipID',
   noun: 'membership',
@@ -116,6 +116,15 @@ export const MEMBERSHIPS = {
     startDate: rec.StartDate,
     autoRenew: Number(rec.AutoRenew) ? 'yes' : 'no',
   }),
+  rejectToast: (message) =>
+    message.includes('overlaps with the selected dates')
+      ? {
+          title: 'Membership Rejected',
+          message,
+          footnote: 'Database prevents invalid data from being saved.',
+          bad: true,
+        }
+      : null,
   toPayload: (form) => ({
     customerId: Number(form.customerId),
     tier: form.tier,
@@ -291,7 +300,7 @@ export const RIDE_LOG = {
 export const WEATHER = {
   title: 'Weather Log',
   intro:
-    'Weather readings. The database decides whether a reading closes outdoor rides, and posts a notice on the homepage when it does. Try adding a Storm with strong wind to see the notice appear.',
+    'Weather readings. On insert, the database decides whether a reading closes outdoor rides. An edit uses the same rule.',
   resource: 'weather',
   idKey: 'WeatherID',
   noun: 'weather entry',
@@ -358,7 +367,7 @@ export const WEATHER = {
 export const FACILITIES = {
   title: 'Rides, Games & Venues',
   intro:
-    'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Edit one to turn it back on. A ride\'s open or maintenance status is kept by the database, not set here.',
+    'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Edit one to turn it back on. Set a ride to Maintenance and save: MySQL adds a notice, a toast appears in the corner, and the notice stays on Promos & Notices.',
   resource: 'facilities',
   idKey: 'FacilityKey',
   noun: 'attraction',
@@ -393,7 +402,8 @@ export const FACILITIES = {
     { key: 'Name', label: 'Name' },
     { key: 'ZoneName', label: 'Zone' },
     { key: 'Details', label: 'Details' },
-    { key: 'IsActive', label: 'Status', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
+    { key: 'RideStatus', label: 'Operating status', format: (v) => v || '—' },
+    { key: 'IsActive', label: 'Active', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
   ],
   fields: [
     {
@@ -420,6 +430,13 @@ export const FACILITIES = {
     { key: 'minHeightCm', label: 'Minimum height in cm, 0 for none (rides)', type: 'number', min: 0, step: '1' },
     { key: 'isIndoor', label: 'Indoor (rides)', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
     { key: 'isExpressEligible', label: 'Express line (rides)', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
+    {
+      key: 'rideStatus',
+      label: 'Operating status (rides)',
+      type: 'select',
+      show: (form) => form.kind === 'Ride',
+      options: [['Open', 'Open'], ['Maintenance', 'Maintenance']],
+    },
     { key: 'playPrice', label: 'Price per play in dollars (games)', type: 'number', min: 0, step: '0.01' },
     { key: 'venueType', label: 'Venue type (venues)', type: 'select', options: [['Restaurant', 'Restaurant'], ['Gift Shop', 'Gift shop']] },
     {
@@ -428,7 +445,7 @@ export const FACILITIES = {
       type: 'select',
       options: [['', 'None (gift shops)'], ['Table Service', 'Table service'], ['Quick Service', 'Quick service'], ['Snack Cart', 'Snack cart']],
     },
-    { key: 'isActive', label: 'Status', type: 'select', options: [['yes', 'Active'], ['no', 'Inactive']] },
+    { key: 'isActive', label: 'Active', type: 'select', options: [['yes', 'Active'], ['no', 'Inactive']] },
   ],
   blank: () => ({
     kind: 'Ride',
@@ -439,6 +456,7 @@ export const FACILITIES = {
     minHeightCm: '0',
     isIndoor: 'no',
     isExpressEligible: 'no',
+    rideStatus: 'Open',
     playPrice: '',
     venueType: 'Restaurant',
     serviceType: '',
@@ -453,6 +471,7 @@ export const FACILITIES = {
     minHeightCm: rec.MinHeightCm == null ? '0' : String(rec.MinHeightCm),
     isIndoor: Number(rec.IsIndoor) ? 'yes' : 'no',
     isExpressEligible: Number(rec.IsExpressEligible) ? 'yes' : 'no',
+    rideStatus: rec.RideStatus ?? 'Open',
     playPrice: rec.PlayPrice == null ? '' : String(rec.PlayPrice),
     venueType: rec.VenueType ?? 'Restaurant',
     serviceType: rec.ServiceType ?? '',
@@ -467,12 +486,22 @@ export const FACILITIES = {
     minHeightCm: num(form.minHeightCm),
     isIndoor: form.isIndoor === 'yes',
     isExpressEligible: form.isExpressEligible === 'yes',
+    rideStatus: form.rideStatus || 'Open',
     playPrice: form.playPrice === '' ? null : form.playPrice,
     venueType: form.venueType,
     serviceType: form.serviceType === '' ? null : form.serviceType,
     isActive: form.isActive === 'yes',
   }),
   describe: (row) => `${row.Kind.toLowerCase()} "${row.Name}"`,
+  savedToast: (saved) =>
+    saved.notification
+      ? {
+          title: saved.notification.Title,
+          badge: 'New',
+          message: saved.notification.Message,
+          footnote: 'Automatically created by the database trigger.',
+        }
+      : null,
 }
 
 // ---- App Users (Admin): add / edit / deactivate -----------------------------------------------------------

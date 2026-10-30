@@ -1,191 +1,242 @@
 import { useEffect, useState } from 'react'
 import { listDemos, runDemo } from '../api'
 import { listTriggers } from '../api/triggers.js'
-import DataTable from '../components/DataTable.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 import './TriggerDemo.css'
 
-const KINDS = ['All', 'Notification', 'Automatic', 'Check']
-
-const KIND_HELP = {
-  Notification: 'Posts a notice on the homepage',
-  Automatic: 'Fills in or refreshes data by itself',
-  Check: 'Refuses a bad change with an error',
+const NOTICE = {
+  success: 'Success',
+  warning: 'Warning',
+  error: 'Error',
 }
 
-const when = (t) => `${t.timing.charAt(0)}${t.timing.slice(1).toLowerCase()} ${t.event.toLowerCase()}`
-
-function DemoResult({ result }) {
-  if (!result) return null
-  if (result.busy) return <p className="muted">Running...</p>
-  if (result.error) {
-    return (
-      <p role="alert" className="result blocked">
-        {result.error}
-      </p>
-    )
-  }
-  const d = result.data
-  if (!d) return null
-  return d.blocked ? (
-    <p className="result blocked">
-      Blocked by the database: <strong>{d.message}</strong>
-      {d.matches === false && <em> (expected: {d.expected})</em>}
-    </p>
-  ) : (
-    <p className="result allowed">{d.message} Nothing was kept.</p>
-  )
+function show(value) {
+  if (value == null || value === '') return '—'
+  if (typeof value === 'object') return String(value)
+  return String(value)
 }
 
-function StatusBadge({ inDatabase }) {
-  if (inDatabase === null) return <span className="trg-status trg-status-unknown">Not checked</span>
-  return inDatabase ? (
-    <span className="trg-status trg-status-ok">In database</span>
-  ) : (
-    <span className="trg-status trg-status-missing">Missing from database</span>
+function Flow({ demo, result }) {
+  const data = result?.data
+  return (
+    <ol className="trg-flow">
+      <li>
+        <strong>Input</strong>
+        <ul>
+          {demo.inputs.map((item) => (
+            <li key={item.label}>
+              {item.label}: {item.value}
+            </li>
+          ))}
+        </ul>
+      </li>
+      <li>
+        <strong>SQL {demo.sqlKind || 'INSERT'}</strong>
+        <pre>{demo.sql}</pre>
+      </li>
+      <li>
+        <strong>Trigger</strong>
+        <p>{demo.trigger}</p>
+      </li>
+      <li>
+        <strong>Business rule</strong>
+        <p>{demo.rule}</p>
+      </li>
+      <li>
+        <strong>Database result</strong>
+        {!data && <p className="muted">Not run yet.</p>}
+        {data?.outcome === 'error' && demo.spotlight !== 2 && (
+          <p>
+            Refused: {data.message}
+            {data.matches === false && <em> (expected: {data.expected})</em>}
+          </p>
+        )}
+        {demo.spotlight === 1 && data?.after?.Title && (
+          <div className="trg-alert">
+            <div className="trg-alert-top">
+              <strong>{data.after.Title}</strong>
+              <span className="trg-badge">New</span>
+            </div>
+            <p>{data.after.Message}</p>
+            <p className="muted">Automatically created by the database trigger.</p>
+          </div>
+        )}
+        {demo.spotlight === 2 && data?.outcome === 'error' && (
+          <div className="trg-alert trg-alert-bad">
+            <strong>Membership Rejected</strong>
+            <p>{data.message}</p>
+            <p className="muted">Database prevents invalid data from being saved.</p>
+          </div>
+        )}
+        {data && data.outcome !== 'error' && data.after && demo.spotlight !== 1 && (
+          <table className="trg-compare">
+            <thead>
+              <tr>
+                <th>Column</th>
+                <th>Sent</th>
+                <th>Stored</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.keys(data.after).map((key) => (
+                <tr key={key}>
+                  <td>{key}</td>
+                  <td>{data.before && key in data.before ? show(data.before[key]) : '—'}</td>
+                  <td>{show(data.after[key])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {data && data.outcome !== 'error' && !data.after && <p>{data.message}</p>}
+      </li>
+      <li>
+        <strong>Notification</strong>
+        {result?.busy && <p className="muted">Running against MySQL…</p>}
+        {result?.error && <p className="trg-notice trg-notice-error">{result.error}</p>}
+        {data && (
+          <p className={`trg-notice trg-notice-${data.outcome}`}>
+            <strong>{NOTICE[data.outcome]}.</strong> {data.message} Nothing was saved.
+          </p>
+        )}
+      </li>
+    </ol>
   )
 }
 
 export default function TriggerDemo() {
-  const [data, setData] = useState(null)
   const [demos, setDemos] = useState([])
+  const [live, setLive] = useState(null)
   const [results, setResults] = useState({})
-  const [kind, setKind] = useState('All')
   const [error, setError] = useState('')
 
   useEffect(() => {
-    listTriggers()
-      .then(setData)
-      .catch((e) => setError(e.message))
     listDemos()
       .then(setDemos)
       .catch((e) => setError(e.message))
+    listTriggers()
+      .then(setLive)
+      .catch((e) => setError(e.message))
   }, [])
 
-  async function run(id, mode) {
-    const key = `${id}:${mode}`
-    setResults((r) => ({ ...r, [key]: { busy: true } }))
+  async function run(id) {
+    setResults((r) => ({ ...r, [id]: { busy: true } }))
     try {
-      const out = await runDemo(id, mode)
-      setResults((r) => ({ ...r, [key]: { data: out } }))
+      const data = await runDemo(id)
+      setResults((r) => ({ ...r, [id]: { data } }))
     } catch (e) {
-      setResults((r) => ({ ...r, [key]: { error: e.message } }))
+      setResults((r) => ({ ...r, [id]: { error: e.message } }))
     }
   }
 
-  const triggers = data?.triggers ?? []
-  const count = (k) => triggers.filter((t) => t.kind === k).length
-  const shown = kind === 'All' ? triggers : triggers.filter((t) => t.kind === kind)
-  const missing = triggers.filter((t) => t.inDatabase === false)
-  const demoTitle = (id) => demos.find((d) => d.id === id)?.title ?? id
+  const spotlights = demos.filter((d) => d.spotlight).sort((a, b) => a.spotlight - b.spotlight)
+  const triggers = []
+  for (const demo of demos.filter((d) => !d.spotlight)) {
+    const group = triggers.find((g) => g.name === demo.trigger)
+    if (group) group.demos.push(demo)
+    else triggers.push({ name: demo.trigger, rule: demo.rule, demos: [demo] })
+  }
+
+  const liveByName = new Map((live?.triggers ?? []).map((t) => [t.name, t]))
 
   return (
     <div className="trg-page">
-      <h1>Database triggers</h1>
+      <h1>Trigger demo</h1>
       <p className="muted">
-        Triggers are rules the database enforces on its own, whichever page or program makes the change.
+        The three presentation demos run real SQL in MySQL, show the trigger result, then roll the change back so park
+        data stays as it was.
       </p>
       <ErrorBanner message={error} onClose={() => setError('')} />
 
-      {!data && !error && <p className="muted">Loading…</p>}
+      {live?.live && (
+        <p className="trg-summary">
+          <strong>{live.liveCount} triggers</strong> in the database
+          {live.liveCount === live.expected ? ', which matches this page.' : `. This page expects ${live.expected}.`}
+          {live.extra?.length > 0 && ` Extra: ${live.extra.join(', ')}.`}
+        </p>
+      )}
 
-      {data && (
-        <>
-          <p className="trg-summary">
-            <strong>{triggers.length} triggers:</strong> {count('Notification')} post notices, {count('Automatic')}{' '}
-            update data automatically, {count('Check')} check and refuse bad changes.
+      {!demos.length && !error && <p className="muted">Loading…</p>}
+
+      {spotlights.length > 0 && (
+        <table className="trg-compare trg-present">
+          <thead>
+            <tr>
+              <th></th>
+              {spotlights.map((d) => (
+                <th key={d.id}>Demo {d.spotlight}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Type</th>
+              {spotlights.map((d) => (
+                <td key={d.id}>{d.purpose}</td>
+              ))}
+            </tr>
+            <tr>
+              <th>Trigger timing</th>
+              {spotlights.map((d) => (
+                <td key={d.id}>{d.timing}</td>
+              ))}
+            </tr>
+            <tr>
+              <th>Action</th>
+              {spotlights.map((d) => (
+                <td key={d.id}>{d.action}</td>
+              ))}
+            </tr>
+            <tr>
+              <th>Demonstrates</th>
+              {spotlights.map((d) => (
+                <td key={d.id}>{d.shows}</td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      )}
+
+      {spotlights.map((demo) => (
+        <article key={demo.id} className="panel trg-demo">
+          <h2>{demo.title}</h2>
+          <p className="trg-where">
+            {demo.timing} on <strong>{demo.trigger}</strong>
           </p>
-          {data.live ? (
-            <p className="muted">
-              {data.liveCount} found in the live database.
-              {missing.length > 0 && ` ${missing.length} described here but missing from the database (marked below).`}
-            </p>
-          ) : (
-            <p className="muted">
-              The live trigger list could not be read, so this is the project&apos;s own list and was not checked
-              against the database.
-            </p>
-          )}
+          <Flow demo={demo} result={results[demo.id]} />
+          <button type="button" onClick={() => run(demo.id)} disabled={results[demo.id]?.busy}>
+            {results[demo.id]?.busy ? 'Running…' : demo.button}
+          </button>
+        </article>
+      ))}
 
-          <div className="button-row trg-filters" role="group" aria-label="Filter by kind">
-            {KINDS.map((k) => (
-              <button
-                key={k}
-                type="button"
-                className={k === kind ? 'trg-filter trg-filter-on' : 'trg-filter'}
-                aria-pressed={k === kind}
-                onClick={() => setKind(k)}
-              >
-                {k}
-                {k !== 'All' && ` (${count(k)})`}
-              </button>
-            ))}
-          </div>
-          {kind !== 'All' && <p className="muted">{KIND_HELP[kind]}.</p>}
+      {triggers.length > 0 && <h2 className="trg-sub">More trigger checks</h2>}
 
-          <div className="trg-list">
-            {shown.map((t) => (
-              <article key={t.name} className={`panel trg trg-${t.kind.toLowerCase()}`}>
-                <header className="trg-head">
-                  <h2>{t.name}</h2>
-                  <span className="trg-kind">{t.kind}</span>
-                  <StatusBadge inDatabase={t.inDatabase} />
-                </header>
-                <p className="trg-where">
-                  {when(t)} on <strong>{t.table}</strong>
-                </p>
-                <p className="trg-rule">{t.rule}</p>
-
-                {t.errors.length > 0 && (
-                  <ul className="trg-errors" aria-label="Error messages this trigger can raise">
-                    {t.errors.map((m) => (
-                      <li key={m}>{m}</li>
-                    ))}
-                  </ul>
-                )}
-
-                {t.demos.map((id) => (
-                  <div key={id} className="trg-demo">
-                    <p>
-                      <strong>Try it:</strong> {demoTitle(id)}
-                    </p>
-                    <div className="button-row">
-                      <button type="button" className="btn-danger" onClick={() => run(id, 'blocked')}>
-                        Try the bad insert
-                      </button>
-                      <button type="button" onClick={() => run(id, 'allowed')}>
-                        Try the good insert
-                      </button>
-                    </div>
-                    <DemoResult result={results[`${id}:blocked`]} />
-                    <DemoResult result={results[`${id}:allowed`]} />
-                  </div>
-                ))}
-
-                {t.body && (
-                  <details className="trg-sql">
-                    <summary>Show the trigger&apos;s SQL</summary>
-                    <pre>{t.body}</pre>
-                  </details>
-                )}
+      {triggers.map((group) => {
+        const row = liveByName.get(group.name)
+        return (
+          <section key={group.name} className="trg-group">
+            <header className="trg-head">
+              <h2>{group.name}</h2>
+              {row && (
+                <span className={row.inDatabase ? 'trg-status trg-status-ok' : 'trg-status trg-status-missing'}>
+                  {row.inDatabase ? 'In database' : 'Missing from database'}
+                </span>
+              )}
+            </header>
+            <p className="trg-rule">{row?.rule ?? group.rule}</p>
+            {group.demos.map((demo) => (
+              <article key={demo.id} className="panel trg-demo">
+                <h3>{demo.title}</h3>
+                <Flow demo={demo} result={results[demo.id]} />
+                <button type="button" onClick={() => run(demo.id)} disabled={results[demo.id]?.busy}>
+                  {results[demo.id]?.busy ? 'Running…' : demo.button || 'Run against MySQL'}
+                </button>
               </article>
             ))}
-          </div>
-
-          <h2 className="trg-sub">Notices the triggers have created</h2>
-          {data.recent.length > 0 ? (
-            <DataTable rows={data.recent} columns={['Kind', 'Severity', 'Title', 'Message', 'CreatedAt']} />
-          ) : (
-            <p className="muted">None yet, or the notifications table has not been added to the database.</p>
-          )}
-
-          <p className="muted trg-note">{data.eventNote}</p>
-          <p className="muted trg-note">
-            Every demo runs a real insert inside a transaction and rolls it back, so nothing is saved. The error text
-            comes from the trigger itself.
-          </p>
-        </>
-      )}
+          </section>
+        )
+      })}
     </div>
   )
 }
