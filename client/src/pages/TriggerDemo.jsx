@@ -31,7 +31,7 @@ function Flow({ demo, result }) {
         </ul>
       </li>
       <li>
-        <strong>SQL INSERT</strong>
+        <strong>SQL {demo.sqlKind || 'INSERT'}</strong>
         <pre>{demo.sql}</pre>
       </li>
       <li>
@@ -45,13 +45,30 @@ function Flow({ demo, result }) {
       <li>
         <strong>Database result</strong>
         {!data && <p className="muted">Not run yet.</p>}
-        {data?.outcome === 'error' && (
+        {data?.outcome === 'error' && demo.spotlight !== 2 && (
           <p>
             Refused: {data.message}
             {data.matches === false && <em> (expected: {data.expected})</em>}
           </p>
         )}
-        {data && data.outcome !== 'error' && data.after && (
+        {demo.spotlight === 1 && data?.after?.Title && (
+          <div className="trg-alert">
+            <div className="trg-alert-top">
+              <strong>{data.after.Title}</strong>
+              <span className="trg-badge">New</span>
+            </div>
+            <p>{data.after.Message}</p>
+            <p className="muted">Automatically created by the database trigger.</p>
+          </div>
+        )}
+        {demo.spotlight === 2 && data?.outcome === 'error' && (
+          <div className="trg-alert trg-alert-bad">
+            <strong>Membership Rejected</strong>
+            <p>{data.message}</p>
+            <p className="muted">Database prevents invalid data from being saved.</p>
+          </div>
+        )}
+        {data && data.outcome !== 'error' && data.after && demo.spotlight !== 1 && (
           <table className="trg-compare">
             <thead>
               <tr>
@@ -112,8 +129,9 @@ export default function TriggerDemo() {
     }
   }
 
+  const spotlights = demos.filter((d) => d.spotlight).sort((a, b) => a.spotlight - b.spotlight)
   const triggers = []
-  for (const demo of demos) {
+  for (const demo of demos.filter((d) => !d.spotlight)) {
     const group = triggers.find((g) => g.name === demo.trigger)
     if (group) group.demos.push(demo)
     else triggers.push({ name: demo.trigger, rule: demo.rule, demos: [demo] })
@@ -125,20 +143,74 @@ export default function TriggerDemo() {
     <div className="trg-page">
       <h1>Trigger demo</h1>
       <p className="muted">
-        Each button runs a real INSERT in MySQL, then rolls it back. The path is: input, SQL, trigger, rule, stored
-        result, notification.
+        The three presentation demos run real SQL in MySQL, show the trigger result, then roll the change back so park
+        data stays as it was.
       </p>
       <ErrorBanner message={error} onClose={() => setError('')} />
 
       {live?.live && (
         <p className="trg-summary">
           <strong>{live.liveCount} triggers</strong> in the database
-          {live.liveCount === live.expected ? ', which is the six this page demonstrates.' : `. This page expects ${live.expected}.`}
+          {live.liveCount === live.expected ? ', which matches this page.' : `. This page expects ${live.expected}.`}
           {live.extra?.length > 0 && ` Extra: ${live.extra.join(', ')}.`}
         </p>
       )}
 
       {!demos.length && !error && <p className="muted">Loading…</p>}
+
+      {spotlights.length > 0 && (
+        <table className="trg-compare trg-present">
+          <thead>
+            <tr>
+              <th></th>
+              {spotlights.map((d) => (
+                <th key={d.id}>Demo {d.spotlight}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Type</th>
+              {spotlights.map((d) => (
+                <td key={d.id}>{d.purpose}</td>
+              ))}
+            </tr>
+            <tr>
+              <th>Trigger timing</th>
+              {spotlights.map((d) => (
+                <td key={d.id}>{d.timing}</td>
+              ))}
+            </tr>
+            <tr>
+              <th>Action</th>
+              {spotlights.map((d) => (
+                <td key={d.id}>{d.action}</td>
+              ))}
+            </tr>
+            <tr>
+              <th>Demonstrates</th>
+              {spotlights.map((d) => (
+                <td key={d.id}>{d.shows}</td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      )}
+
+      {spotlights.map((demo) => (
+        <article key={demo.id} className="panel trg-demo">
+          <h2>{demo.title}</h2>
+          <p className="trg-where">
+            {demo.timing} on <strong>{demo.trigger}</strong>
+          </p>
+          <Flow demo={demo} result={results[demo.id]} />
+          <button type="button" onClick={() => run(demo.id)} disabled={results[demo.id]?.busy}>
+            {results[demo.id]?.busy ? 'Running…' : demo.button}
+          </button>
+        </article>
+      ))}
+
+      {triggers.length > 0 && <h2 className="trg-sub">More trigger checks</h2>}
 
       {triggers.map((group) => {
         const row = liveByName.get(group.name)
@@ -158,7 +230,7 @@ export default function TriggerDemo() {
                 <h3>{demo.title}</h3>
                 <Flow demo={demo} result={results[demo.id]} />
                 <button type="button" onClick={() => run(demo.id)} disabled={results[demo.id]?.busy}>
-                  {results[demo.id]?.busy ? 'Running…' : 'Run against MySQL'}
+                  {results[demo.id]?.busy ? 'Running…' : demo.button || 'Run against MySQL'}
                 </button>
               </article>
             ))}

@@ -7,12 +7,12 @@
 USE theme_park;
 
 -- [TABLE] Notification: messages shown on the homepage and staff dashboards.
--- [RULE] Promo rows are entered by staff. SoldOut rows below are a one-time seed fill, not a trigger.
+-- [RULE] Promo rows are entered by staff. A ride set to Maintenance gets a Maintenance row from trg_Ride_AU_Notify.
 -- [RULE] DedupeKey is unique, so the same event never creates two rows. Manual rows leave it empty.
 -- [RULE] IsActive = 0 means dismissed; ExpiresAt empty means no expiry.
 CREATE TABLE IF NOT EXISTS Notification (
     NotificationID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Kind           ENUM('SoldOut','Weather','MaintenanceClosed','Promo') NOT NULL,
+    Kind           ENUM('SoldOut','Weather','MaintenanceClosed','Promo','Maintenance') NOT NULL,
     Severity       ENUM('Info','Warning','Alert') NOT NULL,
     Title          VARCHAR(100) NOT NULL,
     Message        VARCHAR(255) NOT NULL,
@@ -45,3 +45,23 @@ SELECT 'SoldOut', 'Warning', 'Sold out',
            AND NOT EXISTS (SELECT 1 FROM TicketRefund r WHERE r.TicketID = t.TicketID)
          GROUP BY t.VisitDate
         HAVING COUNT(*) >= (SELECT MaxOccupancy FROM Park WHERE ParkID = 1)) x;
+
+-- Existing databases created before the Maintenance kind need the enum widened. Safe to repeat.
+ALTER TABLE Notification
+  MODIFY Kind ENUM('SoldOut','Weather','MaintenanceClosed','Promo','Maintenance') NOT NULL;
+
+DELIMITER $$
+
+-- [RULE] Ride update: when Status becomes Maintenance, post a notice. The ride name is read from the row.
+DROP TRIGGER IF EXISTS trg_Ride_AU_Notify$$
+CREATE TRIGGER trg_Ride_AU_Notify AFTER UPDATE ON Ride
+FOR EACH ROW
+BEGIN
+    IF NOT (OLD.Status <=> NEW.Status) AND NEW.Status = 'Maintenance' THEN
+        INSERT INTO Notification (Kind, Severity, Title, Message)
+        VALUES ('Maintenance', 'Alert', 'New Maintenance Alert',
+                CONCAT(NEW.RideName, ' is currently unavailable due to maintenance.'));
+    END IF;
+END$$
+
+DELIMITER ;

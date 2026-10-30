@@ -19,6 +19,7 @@ export default function RecordManager({ entity }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [toast, setToast] = useState(null)
 
   useEffect(() => {
     let alive = true
@@ -29,6 +30,12 @@ export default function RecordManager({ entity }) {
       alive = false
     }
   }, [entity.resource])
+
+  useEffect(() => {
+    if (!toast) return undefined
+    const timer = setTimeout(() => setToast(null), 5000)
+    return () => clearTimeout(timer)
+  }, [toast])
 
   const filterKey = JSON.stringify(filters)
   useEffect(() => {
@@ -74,10 +81,14 @@ export default function RecordManager({ entity }) {
       const body = entity.toPayload(form)
       const saved = editingId == null ? await createRecord(entity.resource, body) : await updateRecord(entity.resource, editingId, body)
       setNotice(`${entity.noun[0].toUpperCase()}${entity.noun.slice(1)} #${saved[entity.idKey]} saved.`)
+      const nextToast = entity.savedToast?.(saved)
+      if (nextToast) setToast(nextToast)
       closeForm()
       setReload((n) => n + 1)
     } catch (err) {
-      setError(err.message) // the trigger's own text, for example "Repair cost is required to close a maintenance job"
+      const nextToast = entity.rejectToast?.(err.message)
+      if (nextToast) setToast(nextToast)
+      else setError(err.message) // the trigger's own text, for example "Park is at capacity for that date"
     } finally {
       setSaving(false)
     }
@@ -111,6 +122,7 @@ export default function RecordManager({ entity }) {
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }))
 
   function renderField(field) {
+    if (field.show && !field.show(form)) return null
     const value = form[field.key]
     const options = field.optionsFrom ? field.optionsFrom(form, lookups) : (field.options ?? [])
     const id = `f-${field.key}`
@@ -214,6 +226,17 @@ export default function RecordManager({ entity }) {
             </button>
           </div>
         </form>
+      )}
+
+      {toast && (
+        <div className={`corner-toast ${toast.bad ? 'corner-toast-bad' : ''}`} role={toast.bad ? 'alert' : 'status'}>
+          <div className="corner-toast-top">
+            <strong>{toast.title}</strong>
+            {toast.badge && <span className="corner-badge">{toast.badge}</span>}
+          </div>
+          <p>{toast.message}</p>
+          {toast.footnote && <p className="muted">{toast.footnote}</p>}
+        </div>
       )}
 
       {rows === null ? (

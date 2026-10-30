@@ -3,6 +3,10 @@
 
 export const TRIGGER_CATALOG = [
   {
+    name: 'trg_Ride_AU_Notify', table: 'Ride', timing: 'AFTER', event: 'UPDATE', kind: 'Notification',
+    rule: 'When a ride status changes to Maintenance, inserts a New Maintenance Alert.',
+  },
+  {
     name: 'trg_WeatherLog_BI', table: 'WeatherLog', timing: 'BEFORE', event: 'INSERT', kind: 'Automatic',
     rule: 'Sets ClosesOutdoorRides from the reading and the park limits.',
   },
@@ -23,7 +27,7 @@ export const TRIGGER_CATALOG = [
     errors: [
       'Customer is inactive or does not exist',
       'This membership tier is no longer sold',
-      'Customer already has a membership covering those dates',
+      'This guest already has a membership that overlaps with the selected dates.',
     ],
   },
   {

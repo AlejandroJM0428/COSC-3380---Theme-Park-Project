@@ -56,7 +56,7 @@ export default function NotificationsPage() {
     <div>
       <h1>Promos & notices</h1>
       <p>
-        Add a promo here. It shows on the homepage until it is dismissed or it expires.
+        Add a promo here. It shows on the homepage until it is dismissed or it expires. A ride set to Maintenance is listed here too. That row is created by the database trigger.
       </p>
       <ErrorBanner message={error} onClose={() => setError('')} />
       {notice && <p className="page-note">{notice}</p>}

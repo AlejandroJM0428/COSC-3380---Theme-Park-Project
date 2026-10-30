@@ -11,7 +11,7 @@ route('GET', '/api/notifications', async () => {
   return rows;
 });
 
-// Promos are entered by hand. Triggers no longer create SoldOut, Weather or MaintenanceClosed rows.
+// Promos are entered by hand. trg_Ride_AU_Notify inserts a Maintenance row when a ride status changes to Maintenance.
 const SEVERITIES = ['Info', 'Warning', 'Alert'];
 
 route(

@@ -539,7 +539,7 @@ BEGIN
                   AND m.MembershipID <> p_self
                   AND p_start <= m.EndDate
                   AND p_end   >= m.StartDate) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Customer already has a membership covering those dates';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'This guest already has a membership that overlaps with the selected dates.';
     END IF;
 END$$
 

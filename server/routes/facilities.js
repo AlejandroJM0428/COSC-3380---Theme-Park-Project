@@ -7,10 +7,12 @@ import { friendlyDbError, needId, needInt, needText, oneOf } from '../validate.j
 // Rides, Games & Venues (Admin only): list, get, add, edit, deactivate.
 // One page covers three tables, so each row has a key like "Ride-5" (kind + id).
 // "Delete" is a soft delete (IsActive = 0), because tickets, ride logs and maintenance point at these rows.
-// Ride.Status is stored as Open when a ride is added. Live availability is v_RideAvailability, not this column.
+// Ride.Status is a stored label. Setting it to Maintenance commits, and trg_Ride_AU_Notify
+// inserts the maintenance notice. Live availability is still v_RideAvailability, not this column.
 
 const CAN_USE = ['Admin'];
 const KINDS = ['Ride', 'Game', 'Venue'];
+const RIDE_STATUSES = ['Open', 'Maintenance'];
 const RIDE_TYPES = ['Coaster', 'Dark Ride', 'Water Ride', 'Carousel', 'Train', 'Simulator', 'Walkthrough'];
 const VENUE_TYPES = ['Restaurant', 'Gift Shop'];
 const SERVICE_TYPES = ['Table Service', 'Quick Service', 'Snack Cart'];
@@ -43,6 +45,7 @@ function shape(kind, r) {
     MinHeightCm: null,
     IsIndoor: null,
     IsExpressEligible: null,
+    RideStatus: null,
     PlayPrice: null,
     VenueType: null,
     ServiceType: null,
@@ -56,7 +59,8 @@ function shape(kind, r) {
       MinHeightCm: r.MinHeightCm,
       IsIndoor: r.IsIndoor,
       IsExpressEligible: r.IsExpressEligible,
-      Details: `${r.RideType}, ${r.SeatCapacity} seats, ${r.MinHeightCm ? `min ${r.MinHeightCm} cm` : 'no height limit'}`,
+      RideStatus: r.Status,
+      Details: `${r.RideType}, ${r.SeatCapacity} seats, ${r.Status}, ${r.MinHeightCm ? `min ${r.MinHeightCm} cm` : 'no height limit'}`,
     };
   }
   if (kind === 'Game') {
@@ -72,7 +76,7 @@ function shape(kind, r) {
 
 const SELECT = {
   Ride: `SELECT r.RideID AS ID, r.ZoneID, z.ZoneName, r.RideName AS Name, r.RideType, r.SeatCapacity,
-                r.MinHeightCm, r.IsIndoor, r.IsExpressEligible, r.IsActive
+                r.MinHeightCm, r.IsIndoor, r.IsExpressEligible, r.Status, r.IsActive
            FROM Ride r JOIN Zone z ON z.ZoneID = r.ZoneID`,
   Game: `SELECT g.GameID AS ID, g.ZoneID, z.ZoneName, g.GameName AS Name, g.PlayPrice, g.IsActive
            FROM Game g JOIN Zone z ON z.ZoneID = g.ZoneID`,
@@ -104,6 +108,7 @@ export function parseFacility(kind, body) {
       minHeightCm: needInt(b.minHeightCm, 'Minimum height (cm, 0 = none)', 0, 250),
       isIndoor: b.isIndoor ? 1 : 0,
       isExpressEligible: b.isExpressEligible ? 1 : 0,
+      rideStatus: oneOf(b.rideStatus, 'Ride status', RIDE_STATUSES),
     };
   }
   if (kind === 'Game') {
@@ -117,6 +122,39 @@ export function parseFacility(kind, body) {
   // The database requires a service type for restaurants and none for gift shops.
   const serviceType = venueType === 'Restaurant' ? oneOf(b.serviceType, 'Service type (required for restaurants)', SERVICE_TYPES) : null;
   return { ...common, venueType, serviceType };
+}
+
+// The maintenance notice is inserted by trg_Ride_AU_Notify, only when Status changes to Maintenance.
+// A new ride is stored as Open first, then updated, so that same trigger runs.
+async function writeRide(f, existingId) {
+  const conn = await pool.getConnection();
+  try {
+    const [beforeRows] = await conn.query('SELECT COALESCE(MAX(NotificationID), 0) AS id FROM Notification');
+    const before = beforeRows[0].id;
+    let id = existingId;
+    if (id == null) {
+      const [result] = await conn.query(
+        `INSERT INTO Ride (ZoneID, RideName, RideType, SeatCapacity, MinHeightCm, IsIndoor, IsExpressEligible, Status, IsActive)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'Open', ?)`,
+        [f.zoneId, f.name, f.rideType, f.seatCapacity, f.minHeightCm, f.isIndoor, f.isExpressEligible, f.isActive],
+      );
+      id = result.insertId;
+    }
+    if (id != null && (existingId != null || f.rideStatus === 'Maintenance')) {
+      await conn.query(
+        `UPDATE Ride SET ZoneID = ?, RideName = ?, RideType = ?, SeatCapacity = ?, MinHeightCm = ?,
+                         IsIndoor = ?, IsExpressEligible = ?, Status = ?, IsActive = ? WHERE RideID = ?`,
+        [f.zoneId, f.name, f.rideType, f.seatCapacity, f.minHeightCm, f.isIndoor, f.isExpressEligible, f.rideStatus, f.isActive, id],
+      );
+    }
+    const [notes] = await conn.query(
+      'SELECT Title, Message FROM Notification WHERE NotificationID > ? ORDER BY NotificationID DESC LIMIT 1',
+      [before],
+    );
+    return { id, notification: notes[0] ?? null };
+  } finally {
+    conn.release();
+  }
 }
 
 // GET /api/facilities?kind=Ride|Game|Venue&status=active|inactive (both optional). Sorted by kind, then name.
@@ -168,11 +206,10 @@ route(
     try {
       let result;
       if (kind === 'Ride') {
-        [result] = await pool.query(
-          `INSERT INTO Ride (ZoneID, RideName, RideType, SeatCapacity, MinHeightCm, IsIndoor, IsExpressEligible, Status, IsActive)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'Open', ?)`,
-          [f.zoneId, f.name, f.rideType, f.seatCapacity, f.minHeightCm, f.isIndoor, f.isExpressEligible, f.isActive],
-        );
+        const written = await writeRide(f, null);
+        ctx.status = 201;
+        const row = await loadFacility(kind, written.id);
+        return { ...row, notification: written.notification };
       } else if (kind === 'Game') {
         [result] = await pool.query('INSERT INTO Game (ZoneID, GameName, PlayPrice, IsActive) VALUES (?, ?, ?, ?)', [
           f.zoneId,
@@ -204,11 +241,9 @@ route(
     await loadFacility(kind, id); // 404 if missing
     try {
       if (kind === 'Ride') {
-        await pool.query(
-          `UPDATE Ride SET ZoneID = ?, RideName = ?, RideType = ?, SeatCapacity = ?, MinHeightCm = ?,
-                           IsIndoor = ?, IsExpressEligible = ?, IsActive = ? WHERE RideID = ?`,
-          [f.zoneId, f.name, f.rideType, f.seatCapacity, f.minHeightCm, f.isIndoor, f.isExpressEligible, f.isActive, id],
-        );
+        const written = await writeRide(f, id);
+        const row = await loadFacility(kind, id);
+        return { ...row, notification: written.notification };
       } else if (kind === 'Game') {
         await pool.query('UPDATE Game SET ZoneID = ?, GameName = ?, PlayPrice = ?, IsActive = ? WHERE GameID = ?', [
           f.zoneId,

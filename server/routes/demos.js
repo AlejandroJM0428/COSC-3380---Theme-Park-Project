@@ -6,7 +6,22 @@ import { DEMOS } from '../demos/definitions.js';
 import './triggers.js'; // registers GET /api/triggers
 import './dataentry.js'; // registers the customers, memberships, purchases, game plays, ride log and weather routes
 
-const publicDemo = ({ id, trigger, title, rule, inputs, sql, expect }) => ({ id, trigger, title, rule, inputs, sql, expect });
+const publicDemo = (demo) => ({
+  id: demo.id,
+  trigger: demo.trigger,
+  title: demo.title,
+  rule: demo.rule,
+  inputs: demo.inputs,
+  sql: demo.sql,
+  expect: demo.expect,
+  sqlKind: demo.sqlKind || 'INSERT',
+  spotlight: demo.spotlight || null,
+  timing: demo.timing || null,
+  purpose: demo.purpose || null,
+  action: demo.action || null,
+  shows: demo.shows || null,
+  button: demo.button || 'Run against MySQL',
+});
 
 route(
   'GET',
@@ -58,8 +73,13 @@ route(
       let outcome = differs ? 'warning' : 'success';
       let message = differs
         ? 'Accepted. The trigger replaced a value before the row was stored.'
-        : 'Accepted. The trigger allowed this insert.';
-      if (demo.expect === 'error') {
+        : 'Accepted. The trigger allowed this statement.';
+      if (demo.expect === 'notify') {
+        outcome = after?.Title ? 'success' : 'warning';
+        message = after?.Title
+          ? 'The trigger inserted this notification.'
+          : 'The update ran, but the trigger did not insert a notification.';
+      } else if (demo.expect === 'error') {
         outcome = 'warning';
         message = 'The database accepted this insert. It was expected to refuse it.';
       } else if (demo.expect === 'assign' && !differs) {
