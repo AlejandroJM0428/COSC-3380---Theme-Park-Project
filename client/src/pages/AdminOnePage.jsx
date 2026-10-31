@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { listRecords } from '../api'
 import { useAuth } from '../auth/context.js'
 import { ADMIN_NAV_SECTIONS, PARK_SHORT, ROLE_INFO } from '../config/nav.js'
@@ -11,10 +11,12 @@ import TransactionsPanel from '../components/admin/TransactionsPanel.jsx'
 import MaintenancePage from './MaintenancePage.jsx'
 import NotificationsPage from './NotificationsPage.jsx'
 import Placeholder from './Placeholder.jsx'
+import QueryPage from './QueryPage.jsx'
 import ReportPage from './ReportPage.jsx'
 import SellTicket from './SellTicket.jsx'
 import ShiftRatingsPage from './ShiftRatingsPage.jsx'
 import TicketSalesPage from './TicketSalesPage.jsx'
+import TriggerDemo from './TriggerDemo.jsx'
 import { CustomersPage, FacilitiesPage, GamePlaysPage, MembershipsPage, PurchasesPage, RideLogPage, UsersPage, WeatherPage } from './DataEntryPages.jsx'
 import './AdminDashboard.css'
 import './AdminOnePage.css'
@@ -25,7 +27,8 @@ import './AdminOnePage.css'
 // The choice lives in the address as #group/item (for example #reports/revenue), so a refresh or a shared link returns to it.
 // The People, Park setup, Reports and Daily records lists are read from ADMIN_NAV_SECTIONS (config/nav.js),
 // so every item of the old admin menu has a place here and a new menu item shows up on its own.
-// The existing pages and panels are used as they are.
+// The existing pages and panels are used as they are. Required Queries and Trigger Demos open here too;
+// their old addresses (/admin/queries and /admin/trigger-demos) still work.
 
 // Same map as PAGE_COMPONENTS in App.jsx (key = the `path` in config/nav.js).
 const PAGES = {
@@ -51,6 +54,8 @@ const TOOLS = [
   { key: 'builder', label: 'SQL GUI' },
   { key: 'transactions', label: 'Transactions per ID' },
   { key: 'rows', label: 'Row Editor' },
+  { key: 'queries', label: 'Required Queries' },
+  { key: 'triggers', label: 'Trigger Demos' },
 ]
 
 // Menu entries this admin may open, as { key, label, note, group }.
@@ -143,13 +148,14 @@ function ToolsBody({ tool, sql, onSqlChange, onUseInConsole }) {
     builder: <BuilderPanel onUseInConsole={onUseInConsole} />,
     transactions: <TransactionsPanel />,
     rows: <RowEditorPanel />,
+    queries: <QueryPage />,
+    triggers: <TriggerDemo />,
   }
 
   return (
     <div>
       <p className="muted">
         Raw access to the database for admins only. Everything here is checked on the server, and every change is written to the audit log.
-        Also open: <Link to="/admin/queries">required queries</Link> and <Link to="/admin/trigger-demos">trigger demos</Link>.
       </p>
       {TOOLS.filter((t) => t.key === tool || seen.has(t.key)).map((t) => (
         <div key={t.key} id={`tool-${t.key}`} hidden={tool !== t.key}>
