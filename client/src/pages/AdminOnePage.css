@@ -222,3 +222,41 @@
     overflow: visible;
   }
 }
+
+/* One table style for every admin tool (Browse, Row Editor, SQL GUI, SQL Console, Transactions, Data importance).
+   Scoped to the workspace pane, so the staff portal and the old admin pages keep their own tables.
+   The header stays in view, long text wraps inside a column instead of stretching the table, and numbers stay on one line. */
+.onepage-pane .table-wrap {
+  max-height: 62vh;
+}
+.onepage-pane th,
+.onepage-pane td {
+  padding: 6px 12px;
+}
+.onepage-pane th {
+  font-size: 0.85rem;
+  z-index: 1;
+}
+.onepage-pane td {
+  max-width: 40ch;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+.onepage-pane td.dt-num,
+.onepage-pane td.dp-num {
+  white-space: nowrap;
+}
+.onepage-pane tbody th {
+  position: static;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.onepage-pane tbody tr:nth-child(even) td {
+  background: #f7faf9;
+}
+.onepage-pane tbody tr:hover td {
+  background: #e8f1ee;
+}

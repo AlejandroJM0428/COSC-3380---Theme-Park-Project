@@ -116,8 +116,8 @@ export default function DataPanel() {
         <section key={g.title} className="dp-group">
           <h3>{g.title}</h3>
           <p className="dp-why">{g.why}</p>
-          <div className="dp-scroll">
-            <table className="dp-table">
+          <div className="table-wrap">
+            <table>
               <thead>
                 <tr>
                   <th>Table</th>
