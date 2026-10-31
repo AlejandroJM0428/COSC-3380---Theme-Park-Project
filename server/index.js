@@ -17,6 +17,7 @@ import './routes/shifts.js';
 import './routes/notifications.js';
 import './routes/visitor.js';
 import './routes/me.js';
+import './routes/admin.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
