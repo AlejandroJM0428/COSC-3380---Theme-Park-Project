@@ -305,3 +305,121 @@
 .onepage-pane p.muted {
   margin: 8px 0;
 }
+
+/* Small and short screens. Nothing here changes the desktop layout on a tall laptop screen.
+   The aim: the page never scrolls sideways, wide tables scroll inside their own box, and every tap target is easy to hit. */
+
+/* Narrow laptop or tablet window: a slimmer left list gives the work area more room. */
+@media (min-width: 821px) and (max-width: 1050px) {
+  .onepage-work {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+  .onepage-main,
+  .onepage-top {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* Short laptop screens (and a phone held sideways): tighter bars so the work area keeps its height. */
+@media (min-width: 821px) and (max-height: 720px) {
+  .onepage-top {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .onepage-main {
+    padding-top: 6px;
+    padding-bottom: 10px;
+  }
+  .onepage-strip {
+    margin-bottom: 4px;
+  }
+  .onepage-strip h1 {
+    font-size: 1.2rem;
+  }
+  .onepage-groups {
+    padding-bottom: 6px;
+  }
+  .onepage-work {
+    margin-top: 8px;
+  }
+  .onepage-pane .table-wrap {
+    max-height: 52vh;
+  }
+}
+
+/* Phones. */
+@media (max-width: 820px) {
+  /* Backstop: if anything is still too wide it is cut off, not scrolled sideways. clip does not make a scroll box. */
+  .onepage {
+    overflow-x: clip;
+  }
+  .onepage-main,
+  .onepage-work,
+  .onepage-pane {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* The five areas become one row you swipe, instead of two or three rows of buttons that push the work down. */
+  .onepage-groups {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .onepage-groups button {
+    flex: none;
+    white-space: nowrap;
+    min-height: 40px;
+  }
+
+  .onepage-strip h1 {
+    font-size: 1.25rem;
+  }
+  .onepage .admin-stat {
+    padding: 4px 10px;
+  }
+
+  .onepage-picker select {
+    width: 100%;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .onepage-pane {
+    padding: 12px;
+  }
+
+  /* 16px type in boxes stops iPhones from zooming in when a box is tapped. Buttons are 44px tall. */
+  .onepage-pane input:not([type='checkbox']):not([type='radio']),
+  .onepage-pane select,
+  .onepage-pane textarea {
+    min-height: 44px;
+    font-size: 1rem;
+    max-width: 100%;
+  }
+  .onepage-pane textarea {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .onepage-pane button:not(.dt-sort) {
+    min-height: 44px;
+  }
+  .onepage-pane td button:not(.dt-sort) {
+    min-height: 36px;
+  }
+
+  /* Toolbars: each box and button takes the full width instead of sitting in a ragged row. */
+  .onepage-pane .toolbar > *,
+  .onepage-pane .button-row > button {
+    flex: 1 1 100%;
+  }
+
+  .onepage-pane .table-wrap {
+    max-height: 70vh;
+  }
+  .onepage-pane td {
+    max-width: 28ch;
+  }
+}
