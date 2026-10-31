@@ -212,6 +212,9 @@ function markDays(rows) {
   })
 }
 
+// A facility with three or more unplanned jobs, or availability under 95%.
+const isConcern = (f) => f.Unplanned >= 3 || f.AvailabilityPct < 95
+
 const TIERS = ['Basic', 'Plus', 'Premier']
 
 // One row per membership (v_MembershipPerformance) with real numbers, a Status and a Month.
@@ -282,6 +285,40 @@ function spendByTier(rows) {
       AvgExtraSpend: round2(total(list, 'ExtrasSpend') / list.length),
       AvgPricePaid: round2(total(list, 'Price') / list.length),
       NeverVisited: started.length ? `${pct(started.filter((r) => r.Visits === 0).length, started.length)}%` : '—',
+    }
+  })
+}
+
+// Parse a MySQL date or datetime as a UTC time in ms (both ends of a comparison use the same rule, so the offset cancels out).
+const stamp = (v) => Date.parse(String(v).slice(0, 19).replace(' ', 'T') + 'Z')
+
+// One row per maintenance job (v_MaintenanceHistory) with real numbers, a Month and a plain Kind (Planned or Unplanned).
+function prepJobs(rows) {
+  return toNumbers(rows, ['CrewSize', 'HoursDown', 'RepairCost']).map((r) => ({
+    ...r,
+    Month: monthOf(r.StartDate),
+    Kind: Number(r.IsPlanned) === 1 ? 'Planned' : 'Unplanned',
+  }))
+}
+
+// One row per ride, game or venue: jobs, planned vs unplanned, hours down, cost, and availability over the period the rows cover.
+// Availability is an estimate: it treats every maintenance hour as fully closed.
+function facilityStats(rows) {
+  const starts = rows.map((r) => stamp(r.StartDate)).filter((t) => !Number.isNaN(t))
+  const ends = rows.map((r) => (r.EndDate ? stamp(r.EndDate) : Date.now())).filter((t) => !Number.isNaN(t))
+  const windowHours = starts.length ? Math.max(24, (Math.max(...ends) - Math.min(...starts)) / 3600000) : 24
+  return groupSum(rows, ['FacilityKind', 'FacilityName'], ['HoursDown', 'RepairCost']).map((g) => {
+    const jobs = rows.filter((r) => r.FacilityName === g.FacilityName && r.FacilityKind === g.FacilityKind)
+    const unplanned = jobs.filter((r) => r.Kind === 'Unplanned').length
+    return {
+      FacilityKind: g.FacilityKind,
+      FacilityName: g.FacilityName,
+      Jobs: jobs.length,
+      Planned: jobs.length - unplanned,
+      Unplanned: unplanned,
+      HoursDown: g.HoursDown,
+      AvailabilityPct: Math.max(0, round2(100 - (100 * g.HoursDown) / windowHours)),
+      RepairCost: g.RepairCost,
     }
   })
 }
@@ -853,6 +890,187 @@ const ALL_REPORTS = [
   },
 
   // ---- Maintenance ----
+  // One merged report. Maintenance Jobs per Month is on the professor's list, so it keeps the first tab.
+  // Planned = inspections, preventive service and refurbishment. Unplanned = emergency repairs and safety recalls.
+  {
+    key: 'maintenance-activity',
+    group: 'Maintenance reports',
+    title: 'Maintenance Activity & History',
+    description: 'How much maintenance happens, which rides and games are unreliable, and what is still open.',
+    required: true,
+    roles: MAINTENANCE,
+    sections: [
+      {
+        key: 'per-month',
+        title: 'Jobs per Month',
+        sectionDescription: 'How many maintenance jobs start each month, and how many are planned work versus unplanned repairs?',
+        endpoint: 'maintenance-history',
+        view: 'v_MaintenanceHistory',
+        prepare: prepJobs,
+        filters: [{ key: 'FacilityKind', label: 'Type' }],
+        dateFilter: { key: 'StartDate', label: 'Started' },
+        kpis: (rows) => {
+          const months = groupSum(rows, ['Month'], [])
+          const busiest = extreme(months.map((m) => ({ Month: m.Month, Jobs: m.Rows })), 'Jobs')
+          const unplanned = rows.filter((r) => r.Kind === 'Unplanned').length
+          return [
+            { label: 'Jobs', value: rows.length.toLocaleString('en-US') },
+            { label: 'Average per month', value: months.length ? (rows.length / months.length).toFixed(1) : '0' },
+            { label: 'Busiest month', value: busiest ? busiest.row.Month : '—', note: busiest ? `${busiest.v} jobs` : '' },
+            { label: 'Unplanned share', value: rows.length ? `${pct(unplanned, rows.length)}%` : '—', note: 'emergency repairs and recalls' },
+          ]
+        },
+        insights: (rows) => {
+          const times = rows.map((r) => stamp(r.StartDate)).filter((t) => !Number.isNaN(t))
+          if (times.length < 6) return []
+          const mid = (Math.min(...times) + Math.max(...times)) / 2
+          const count = (kind, early) => rows.filter((r) => r.Kind === kind && (stamp(r.StartDate) < mid) === early).length
+          return [
+            `Unplanned jobs: ${count('Unplanned', true)} in the first half of the period, ${count('Unplanned', false)} in the second.`,
+            `Planned jobs: ${count('Planned', true)} in the first half, ${count('Planned', false)} in the second.`,
+          ]
+        },
+        notes: [
+          'Planned work is inspections, preventive service and refurbishment. Unplanned work is emergency repairs and safety recalls.',
+          'If planned work goes up while unplanned repairs go down, preventive maintenance is paying off. If both rise, the park is simply busier or older.',
+          'The newest month may be unfinished. Green months are far busier than usual, red months far quieter.',
+        ],
+        chartRows: (rows) => groupSum(rows, ['Month'], []).map((m) => ({ Month: m.Month, Jobs: m.Rows })).sort((a, b) => a.Month.localeCompare(b.Month)),
+        chart: { type: 'bar', x: 'Month', y: 'Jobs' },
+        extraChart: {
+          title: 'Planned work vs unplanned repairs',
+          rows: (rows) =>
+            groupSum(rows, ['Month'], [])
+              .map((m) => {
+                const mine = rows.filter((r) => r.Month === m.Month)
+                const unplanned = mine.filter((r) => r.Kind === 'Unplanned').length
+                return { Month: m.Month, Planned: mine.length - unplanned, Unplanned: unplanned }
+              })
+              .sort((a, b) => a.Month.localeCompare(b.Month)),
+          chart: { type: 'bar', x: 'Month', y: 'Planned', y2: 'Unplanned', yLabel: 'Planned jobs', y2Label: 'Unplanned jobs' },
+        },
+        tableRows: (rows) => {
+          const months = groupSum(rows, ['Month'], ['HoursDown', 'RepairCost']).map((m) => {
+            const mine = rows.filter((r) => r.Month === m.Month)
+            const unplanned = mine.filter((r) => r.Kind === 'Unplanned').length
+            return { Month: m.Month, Jobs: m.Rows, Planned: m.Rows - unplanned, Unplanned: unplanned, HoursDown: m.HoursDown, RepairCost: m.RepairCost, All: 'all' }
+          })
+          return markOutliers(months.sort((a, b) => a.Month.localeCompare(b.Month)), 'All', 'Jobs')
+        },
+        columns: ['Month', 'Jobs', 'Planned', 'Unplanned', 'HoursDown', 'RepairCost', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'reliability',
+        title: 'Reliability by facility',
+        sectionDescription: 'Which rides, games and venues break down most, and how much of the time are they available?',
+        endpoint: 'maintenance-history',
+        view: 'v_MaintenanceHistory',
+        prepare: prepJobs,
+        filters: [{ key: 'FacilityKind', label: 'Type' }],
+        dateFilter: { key: 'StartDate', label: 'Started' },
+        kpis: (rows) => {
+          const f = facilityStats(rows)
+          const worst = extreme(f, 'HoursDown')
+          const low = extreme(f, 'AvailabilityPct', true)
+          return [
+            { label: 'Facilities serviced', value: f.length.toLocaleString('en-US') },
+            { label: 'Most hours down', value: worst ? worst.row.FacilityName : '—', note: worst ? `${worst.v.toLocaleString('en-US')} hours` : '' },
+            { label: 'Lowest availability', value: low ? low.row.FacilityName : '—', note: low ? `${low.v}% (estimate)` : '' },
+            { label: 'Reliability concerns', value: f.filter(isConcern).length.toLocaleString('en-US'), note: 'see the red rows' },
+          ]
+        },
+        notes: [
+          'Availability is an estimate: it treats every maintenance hour as fully closed and measures it over the period the jobs cover.',
+          'A reliability concern means three or more unplanned jobs, or availability under 95%. It points to equipment that keeps breaking, not to a guest safety finding.',
+          'Facilities with unplanned jobs and no planned work may need a preventive service schedule.',
+        ],
+        chartRows: (rows) => facilityStats(rows).sort((a, b) => b.HoursDown - a.HoursDown).slice(0, 10),
+        chart: { type: 'bar', x: 'FacilityName', y: 'HoursDown', yLabel: 'Hours down', angle: true },
+        tableRows: (rows) =>
+          facilityStats(rows)
+            .sort((a, b) => b.HoursDown - a.HoursDown)
+            .map((f) => {
+              const concern = isConcern(f)
+              const note = concern ? (f.Planned === 0 ? 'Reliability concern, no planned work' : 'Reliability concern') : ''
+              return { ...f, Note: note, _mark: concern ? 'low' : undefined }
+            }),
+        columns: ['FacilityKind', 'FacilityName', 'Jobs', 'Planned', 'Unplanned', 'HoursDown', 'AvailabilityPct', 'RepairCost', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'open',
+        title: 'Open repairs',
+        sectionDescription: 'Which repairs are still open, and which have waited the longest?',
+        endpoint: 'open-maintenance',
+        view: 'v_OpenMaintenance',
+        prepare: (rows) => toNumbers(rows, ['DaysOpen', 'CrewSize']),
+        filters: [{ key: 'FacilityKind', label: 'Type' }],
+        kpis: (rows) => {
+          const oldest = extreme(rows, 'DaysOpen')
+          return [
+            { label: 'Open jobs', value: rows.length.toLocaleString('en-US') },
+            { label: 'Open the longest', value: oldest ? oldest.row.FacilityName : '—', note: oldest ? `${oldest.v} days` : '' },
+            { label: 'Average days open', value: average(rows, 'DaysOpen') },
+            { label: 'Open over 14 days', value: rows.filter((r) => r.DaysOpen > 14).length.toLocaleString('en-US') },
+          ]
+        },
+        notes: [
+          'An open job has started but has no end date yet. A ride with an open job stays closed to guests.',
+          'Red rows have been open for more than two weeks and need a follow-up.',
+        ],
+        chart: { type: 'bar', x: 'FacilityName', y: 'DaysOpen', yLabel: 'Days open', angle: true },
+        tableRows: (rows) =>
+          [...rows]
+            .sort((a, b) => b.DaysOpen - a.DaysOpen)
+            .map((r) => ({ ...r, Note: r.DaysOpen > 14 ? 'Open over 2 weeks' : '', _mark: r.DaysOpen > 14 ? 'low' : undefined })),
+        columns: ['FacilityKind', 'FacilityName', 'MaintType', 'StartDate', 'CrewSize', 'DaysOpen', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'history',
+        title: 'Job history',
+        sectionDescription: 'Every maintenance job with crew size, downtime, outcome and repair cost.',
+        endpoint: 'maintenance-history',
+        view: 'v_MaintenanceHistory',
+        prepare: prepJobs,
+        filters: [
+          { key: 'FacilityKind', label: 'Type' },
+          { key: 'MaintType', label: 'Job type' },
+          { key: 'Outcome', label: 'Outcome' },
+        ],
+        dateFilter: { key: 'StartDate', label: 'Started' },
+        kpis: (rows) => [
+          { label: 'Jobs', value: rows.length.toLocaleString('en-US') },
+          { label: 'Total repair cost', value: money(total(rows, 'RepairCost')) },
+          { label: 'Average hours down', value: average(rows, 'HoursDown') },
+          { label: 'Not fully fixed', value: rows.filter((r) => r.Outcome === 'Partially Fixed' || r.Outcome === 'Not Fixed').length.toLocaleString('en-US') },
+        ],
+        notes: [
+          'Hours down counts from the start of the job to its end (or to now if it is still open).',
+          'Red rows were not fully fixed, or kept the facility down much longer than a usual job.',
+        ],
+        chartRows: (rows) =>
+          groupSum(rows, ['MaintType'], ['HoursDown']).map((g) => ({ MaintType: g.MaintType, AvgHoursDown: round2(g.HoursDown / g.Rows) })),
+        chart: { type: 'bar', x: 'MaintType', y: 'AvgHoursDown', yLabel: 'Average hours down per job' },
+        tableRows: (rows) => {
+          const hours = rows.map((r) => r.HoursDown ?? 0)
+          const mean = hours.length ? hours.reduce((a, b) => a + b, 0) / hours.length : 0
+          const sd = Math.sqrt(hours.length ? hours.reduce((a, b) => a + (b - mean) ** 2, 0) / hours.length : 0)
+          return [...rows]
+            .sort((a, b) => String(b.StartDate).localeCompare(String(a.StartDate)))
+            .map((r) => {
+              const unfixed = r.Outcome === 'Partially Fixed' || r.Outcome === 'Not Fixed'
+              const long = rows.length >= 8 && sd > 0 && r.HoursDown > mean + 2 * sd
+              const note = unfixed ? r.Outcome : long ? 'Unusually long downtime' : ''
+              return { ...r, Note: note, _mark: note ? 'low' : undefined }
+            })
+        },
+        columns: ['FacilityKind', 'FacilityName', 'MaintType', 'StartDate', 'EndDate', 'Outcome', 'CrewSize', 'HoursDown', 'RepairCost', 'Note'],
+        rowClass: markOf,
+      },
+    ],
+  },
   {
     key: 'maintenance-cost',
     group: 'Maintenance reports',
@@ -879,64 +1097,6 @@ const ALL_REPORTS = [
     chartRows: (rows) => rows.slice(0, 10),
     chart: { type: 'bar', x: 'FacilityName', y: 'TotalCost', yLabel: 'Total repair cost ($)', angle: true },
     columns: ['FacilityKind', 'FacilityName', 'Jobs', 'EmergencyJobs', 'TotalCost', 'AvgCost', 'TotalHoursDown'],
-  },
-  {
-    key: 'open-maintenance',
-    group: 'Maintenance reports',
-    endpoint: 'open-maintenance',
-    view: 'v_OpenMaintenance',
-    title: 'Open Repairs',
-    description: 'Which repairs are still open, and which have waited the longest?',
-    roles: MAINTENANCE,
-    prepare: (rows) => toNumbers(rows, ['DaysOpen', 'CrewSize']),
-    kpis: (rows) => {
-      const oldest = extreme(rows, 'DaysOpen')
-      return [
-        { label: 'Open jobs', value: rows.length.toLocaleString('en-US') },
-        { label: 'Open the longest', value: oldest ? oldest.row.FacilityName : '—', note: oldest ? `${oldest.v} days` : '' },
-      ]
-    },
-    chart: { type: 'bar', x: 'FacilityName', y: 'DaysOpen', yLabel: 'Days open' },
-  },
-  {
-    key: 'maintenance-per-month',
-    group: 'Maintenance reports',
-    endpoint: 'maintenance-history',
-    view: 'v_MaintenanceHistory (grouped by month here)',
-    title: 'Maintenance Jobs per Month',
-    description: 'How many maintenance jobs start each month?',
-    required: true,
-    roles: MAINTENANCE,
-    prepare: (rows) => countByMonth(rows, 'StartDate', 'Jobs'),
-    kpis: (rows) => {
-      const busiest = extreme(rows, 'Jobs')
-      return [
-        { label: 'Average per month', value: average(rows, 'Jobs') },
-        { label: 'Busiest month', value: busiest ? busiest.row.Month : '—', note: busiest ? `${busiest.v} jobs` : '' },
-      ]
-    },
-    chart: { type: 'bar', x: 'Month', y: 'Jobs' },
-  },
-  {
-    key: 'maintenance-history',
-    group: 'Maintenance reports',
-    endpoint: 'maintenance-history',
-    view: 'v_MaintenanceHistory',
-    title: 'Maintenance History',
-    description: 'Every maintenance job with crew size, downtime, outcome and repair cost.',
-    roles: MAINTENANCE,
-    prepare: (rows) => toNumbers(rows, ['CrewSize', 'HoursDown', 'RepairCost']),
-    filters: [
-      { key: 'FacilityKind', label: 'Type' },
-      { key: 'MaintType', label: 'Job type' },
-      { key: 'Outcome', label: 'Outcome' },
-    ],
-    dateFilter: { key: 'StartDate', label: 'Started' },
-    kpis: (rows) => [
-      { label: 'Jobs', value: rows.length.toLocaleString('en-US') },
-      { label: 'Total repair cost', value: money(total(rows, 'RepairCost')) },
-      { label: 'Average hours down', value: average(rows, 'HoursDown') },
-    ],
   },
 
   // ---- Employees ----
