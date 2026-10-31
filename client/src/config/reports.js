@@ -171,6 +171,47 @@ function markOutliers(rows, groupKey, valueKey, z = 1.5) {
 
 const markOf = (row) => row._mark
 
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+// Add Month, Weekday and RefundRate (% of that day's tickets that were refunded) to a daily attendance row.
+function withDayInfo(r) {
+  const day = String(r.VisitDate).slice(0, 10)
+  const dow = new Date(day + 'T00:00:00Z').getUTCDay() // 0 = Sunday
+  const all = (r.ValidTickets ?? 0) + (r.RefundedTickets ?? 0)
+  return { ...r, VisitDate: day, Month: day.slice(0, 7), Weekday: WEEKDAYS[(dow + 6) % 7], RefundRate: pct(r.RefundedTickets ?? 0, all) }
+}
+
+// One row per day of the week with the average tickets, fill, refund rate and revenue. Monday first; weekdays with no data are left out.
+function byWeekday(rows) {
+  return WEEKDAYS.map((Weekday) => {
+    const days = rows.filter((r) => r.Weekday === Weekday)
+    if (days.length === 0) return null
+    const valid = total(days, 'ValidTickets')
+    const refunded = total(days, 'RefundedTickets')
+    return {
+      Weekday,
+      Days: days.length,
+      AvgTickets: round2(valid / days.length),
+      AvgFill: round2(total(days, 'PctOfCapacity') / days.length),
+      RefundRate: pct(refunded, valid + refunded),
+      AvgRevenue: round2(total(days, 'TicketRevenue') / days.length),
+    }
+  }).filter(Boolean)
+}
+
+// Flag days that are full, far busier than usual, or have an unusually high share of refunds.
+function markDays(rows) {
+  const fills = rows.map((r) => r.PctOfCapacity ?? 0)
+  const mean = fills.length ? fills.reduce((a, b) => a + b, 0) / fills.length : 0
+  const sd = Math.sqrt(fills.length ? fills.reduce((a, b) => a + (b - mean) ** 2, 0) / fills.length : 0)
+  return rows.map((r) => {
+    if ((r.RefundedTickets ?? 0) >= 3 && r.RefundRate >= 15) return { ...r, Note: 'High refund rate', _mark: 'low' }
+    if (r.PctOfCapacity >= 100) return { ...r, Note: 'At capacity', _mark: 'high' }
+    if (rows.length >= 8 && sd > 0 && r.PctOfCapacity > mean + 2 * sd) return { ...r, Note: 'Spike', _mark: 'high' }
+    return { ...r, Note: '' }
+  })
+}
+
 const withMonth = (yearKey, monthKey) => (rows) =>
   rows.map((r) => ({ ...r, Month: `${r[yearKey]}-${String(r[monthKey]).padStart(2, '0')}` }))
 
@@ -462,45 +503,131 @@ const ALL_REPORTS = [
     ],
     chart: { type: 'bar', x: 'Tier', y: 'Memberships' },
   },
+  // ---- Attendance ----
+  // One merged report. Customers per Month and Daily Attendance are both on the professor's list, so each keeps its own tab (first two).
   {
-    key: 'customers-per-month',
-    group: 'Revenue reports',
-    endpoint: 'customers-per-month',
-    view: 'v_CustomersPerMonth',
-    title: 'Customers per Month',
-    description: 'How many different customers visit each month (refunded tickets excluded)?',
+    key: 'attendance',
+    group: 'Attendance reports',
+    title: 'Attendance & Capacity Performance',
+    description: 'How many guests visit, which days and months are busiest or slowest, and how close the park gets to its limit.',
     required: true,
     roles: ATTENDANCE,
-    prepare: (rows) => toNumbers(withMonth('VisitYear', 'VisitMonth')(rows), ['Customers']),
-    kpis: (rows) => {
-      const best = extreme(rows, 'Customers')
-      return [
-        { label: 'Average per month', value: average(rows, 'Customers') },
-        { label: 'Best month', value: best ? best.row.Month : '—', note: best ? `${best.v.toLocaleString('en-US')} customers` : '' },
-      ]
-    },
-    chart: { type: 'bar', x: 'Month', y: 'Customers' },
-  },
-  {
-    key: 'attendance-spikes',
-    group: 'Revenue reports',
-    endpoint: 'daily-attendance',
-    view: 'v_DailyAttendance',
-    title: 'Daily Attendance & Spikes',
-    description: 'Which days fill the park, and how close do we get to capacity?',
-    required: true,
-    roles: ATTENDANCE,
-    prepare: (rows) => toNumbers(rows, ['ValidTickets', 'RefundedTickets', 'PctOfCapacity', 'TicketRevenue']),
-    dateFilter: { key: 'VisitDate', label: 'Visit date' },
-    kpis: (rows) => {
-      const busiest = extreme(rows, 'PctOfCapacity')
-      return [
-        { label: 'Busiest day', value: busiest ? busiest.row.VisitDate : '—', note: busiest ? `${busiest.v}% of capacity` : '' },
-        { label: 'Average fill', value: average(rows, 'PctOfCapacity') + '%' },
-        { label: 'Days at capacity', value: rows.filter((r) => r.PctOfCapacity >= 100).length.toLocaleString('en-US') },
-      ]
-    },
-    chart: { type: 'line', x: 'VisitDate', y: 'PctOfCapacity', yLabel: '% of capacity' },
+    sections: [
+      {
+        key: 'customers-per-month',
+        title: 'Customers per Month',
+        sectionDescription: 'How many different customers visit each month (refunded tickets excluded)?',
+        endpoint: 'customers-per-month',
+        view: 'v_CustomersPerMonth',
+        prepare: (rows) => toNumbers(withMonth('VisitYear', 'VisitMonth')(rows), ['Customers']).map((r) => ({ ...r, All: 'all' })),
+        kpis: (rows) => {
+          const best = extreme(rows, 'Customers')
+          const slow = extreme(rows, 'Customers', true)
+          const sorted = [...rows].sort((a, b) => a.Month.localeCompare(b.Month))
+          const last = sorted[sorted.length - 1]
+          const before = sorted[sorted.length - 2]
+          return [
+            { label: 'Average per month', value: average(rows, 'Customers') },
+            { label: 'Best month', value: best ? best.row.Month : '—', note: best ? `${best.v.toLocaleString('en-US')} customers` : '' },
+            { label: 'Slowest month', value: slow ? slow.row.Month : '—', note: slow ? `${slow.v.toLocaleString('en-US')} customers` : '' },
+            {
+              label: 'Latest month vs the one before',
+              value: last && before && before.Customers ? `${last.Customers >= before.Customers ? '+' : ''}${(((last.Customers - before.Customers) / before.Customers) * 100).toFixed(1)}%` : '—',
+              note: last ? last.Month : '',
+            },
+          ]
+        },
+        notes: [
+          'A customer counts once per month, however many times they visit. Refunded tickets are not counted.',
+          'The newest month may be unfinished, so it can look low. Green months are far above the usual month, red months far below.',
+        ],
+        chartRows: (rows) => [...rows].sort((a, b) => a.Month.localeCompare(b.Month)),
+        chart: { type: 'bar', x: 'Month', y: 'Customers' },
+        tableRows: (rows) => markOutliers([...rows].sort((a, b) => a.Month.localeCompare(b.Month)), 'All', 'Customers'),
+        columns: ['Month', 'Customers', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'daily',
+        title: 'Daily Attendance & Spikes',
+        sectionDescription: 'Which days fill the park, and how close do we get to capacity?',
+        endpoint: 'daily-attendance',
+        view: 'v_DailyAttendance',
+        prepare: (rows) => toNumbers(rows, ['ValidTickets', 'RefundedTickets', 'PctOfCapacity', 'TicketRevenue']).map(withDayInfo),
+        filters: [{ key: 'Weekday', label: 'Day of week' }],
+        dateFilter: { key: 'VisitDate', label: 'Visit date' },
+        kpis: (rows) => {
+          const busiest = extreme(rows, 'PctOfCapacity')
+          const quiet = extreme(rows, 'PctOfCapacity', true)
+          const valid = total(rows, 'ValidTickets')
+          const refunded = total(rows, 'RefundedTickets')
+          return [
+            { label: 'Busiest day', value: busiest ? busiest.row.VisitDate : '—', note: busiest ? `${busiest.v}% of capacity` : '' },
+            { label: 'Quietest day', value: quiet ? quiet.row.VisitDate : '—', note: quiet ? `${quiet.v}% of capacity` : '' },
+            { label: 'Average fill', value: average(rows, 'PctOfCapacity') + '%' },
+            { label: 'Days at capacity', value: rows.filter((r) => r.PctOfCapacity >= 100).length.toLocaleString('en-US') },
+            { label: 'Refund rate', value: valid + refunded ? `${pct(refunded, valid + refunded)}%` : '—', note: `${refunded.toLocaleString('en-US')} refunded tickets` },
+          ]
+        },
+        notes: [
+          'Fill is the share of the park\'s daily limit that valid tickets use. At 100% the park is full and no more tickets can be sold for that day.',
+          'Green rows are spikes: far busier than a usual day, or full. Red rows are days with an unusually high share of refunds, which is often bad weather or a closure.',
+        ],
+        chartRows: (rows) => [...rows].sort((a, b) => a.VisitDate.localeCompare(b.VisitDate)),
+        chart: { type: 'line', x: 'VisitDate', y: 'PctOfCapacity', yLabel: '% of capacity' },
+        extraChart: {
+          title: 'Average fill by day of week',
+          rows: (rows) => byWeekday(rows).map((w) => ({ Weekday: w.Weekday, AvgFill: w.AvgFill })),
+          chart: { type: 'bar', x: 'Weekday', y: 'AvgFill', yLabel: 'Average % of capacity' },
+        },
+        tableRows: (rows) => markDays(rows).sort((a, b) => b.VisitDate.localeCompare(a.VisitDate)),
+        columns: ['VisitDate', 'Weekday', 'ValidTickets', 'RefundedTickets', 'RefundRate', 'PctOfCapacity', 'TicketRevenue', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'peaks',
+        title: 'Peak & slow periods',
+        sectionDescription: 'Which days of the week and which months are busiest, and where is there room to grow?',
+        endpoint: 'daily-attendance',
+        view: 'v_DailyAttendance',
+        prepare: (rows) => toNumbers(rows, ['ValidTickets', 'RefundedTickets', 'PctOfCapacity', 'TicketRevenue']).map(withDayInfo),
+        filters: [{ key: 'Month', label: 'Month' }],
+        kpis: (rows) => {
+          const days = byWeekday(rows)
+          const top = extreme(days, 'AvgTickets')
+          const low = extreme(days, 'AvgTickets', true)
+          const spare = rows.length ? rows.filter((r) => r.PctOfCapacity < 50).length : 0
+          return [
+            { label: 'Busiest day of week', value: top ? top.row.Weekday : '—', note: top ? `${top.v} tickets on average` : '' },
+            { label: 'Slowest day of week', value: low ? low.row.Weekday : '—', note: low ? `${low.v} tickets on average` : '' },
+            { label: 'Days under half full', value: spare.toLocaleString('en-US'), note: rows.length ? `${pct(spare, rows.length)}% of days` : '' },
+          ]
+        },
+        insights: (rows) => {
+          const days = byWeekday(rows)
+          const top = extreme(days, 'AvgTickets')
+          const low = extreme(days, 'AvgTickets', true)
+          if (!top || !low || top.row.Weekday === low.row.Weekday || !low.v) return []
+          return [`${top.row.Weekday} brings about ${(top.v / low.v).toFixed(1)} times the guests of ${low.row.Weekday}.`]
+        },
+        notes: [
+          'Slow days have the most room for promotions or weekday-only deals. Busy days are where queues and staffing need the most attention.',
+          'Green weekdays are well above the weekly average, red ones well below.',
+        ],
+        chartRows: (rows) => byWeekday(rows),
+        chart: { type: 'bar', x: 'Weekday', y: 'AvgTickets', yLabel: 'Average valid tickets per day' },
+        tableRows: (rows) => {
+          const days = byWeekday(rows)
+          const avg = days.length ? days.reduce((a, d) => a + d.AvgTickets, 0) / days.length : 0
+          return days.map((d) => {
+            const mark = days.length >= 5 && avg > 0 ? (d.AvgTickets > avg * 1.25 ? 'high' : d.AvgTickets < avg * 0.75 ? 'low' : undefined) : undefined
+            return { ...d, Note: mark === 'high' ? 'Peak day' : mark === 'low' ? 'Slow day' : '', _mark: mark }
+          })
+        },
+        columns: ['Weekday', 'Days', 'AvgTickets', 'AvgFill', 'RefundRate', 'AvgRevenue', 'Note'],
+        rowClass: markOf,
+      },
+    ],
   },
 
   // ---- Maintenance ----
@@ -758,4 +885,4 @@ const ALL_REPORTS = [
 export const REPORTS = ALL_REPORTS.filter((r) => !r.hidden)
 
 // Menu sections for the reports, in the order they are shown (config/nav.js builds one section per entry).
-export const REPORT_GROUPS = ['Revenue reports', 'Maintenance reports', 'Employee reports', 'Ride reports']
+export const REPORT_GROUPS = ['Revenue reports', 'Attendance reports', 'Maintenance reports', 'Employee reports', 'Ride reports']
