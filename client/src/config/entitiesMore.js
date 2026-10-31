@@ -18,7 +18,7 @@ export const CUSTOMERS = {
   resource: 'customers',
   idKey: 'CustomerID',
   noun: 'customer',
-  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  deleteRoles: ['Admin', 'RetailManager'],
   deleteLabel: 'Deactivate',
   deletePast: 'Deactivated',
   deleteNote: 'The record is kept and can be turned back on by editing it.',
@@ -74,7 +74,7 @@ export const MEMBERSHIPS = {
   resource: 'memberships',
   idKey: 'MembershipID',
   noun: 'membership',
-  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  deleteRoles: ['Admin', 'RetailManager'],
   deleteNote: 'Memberships that already have tickets cannot be deleted.',
   filters: [
     {
@@ -98,7 +98,7 @@ export const MEMBERSHIPS = {
     { key: 'IsCurrent', label: 'Status', format: (v) => (Number(v) ? 'Current' : 'Not current') },
   ],
   fields: [
-    { key: 'customerId', label: 'Customer ID', type: 'number', required: true, min: 1, step: '1' },
+    { key: 'customerId', label: 'Guest', type: 'lookup', kind: 'customer', required: true },
     {
       key: 'tier',
       label: 'Tier',
@@ -142,7 +142,9 @@ export const PURCHASES = {
   resource: 'purchases',
   idKey: 'PurchaseID',
   noun: 'purchase',
-  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  lockedNote:
+    'These rows are sales records and feed the revenue reports. They are permanent records, so the totals in the reports cannot be changed quietly after the fact. To fix a mistake, delete the entry and add it again.',
+  deleteRoles: ['Admin', 'RetailManager'],
   deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
   canEditRow: () => false,
   columns: [
@@ -157,7 +159,7 @@ export const PURCHASES = {
     { key: 'LineTotal', label: 'Total', format: money },
   ],
   fields: [
-    { key: 'ticketId', label: 'Ticket ID', type: 'number', required: true, min: 1, step: '1' },
+    { key: 'ticketId', label: 'Ticket', type: 'lookup', kind: 'ticket', required: true },
     {
       key: 'itemId',
       label: 'Item',
@@ -193,7 +195,9 @@ export const GAME_PLAYS = {
   resource: 'game-plays',
   idKey: 'GamePlayID',
   noun: 'game play',
-  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  lockedNote:
+    'These rows are sales records and feed the revenue reports. They are permanent records, so the totals in the reports cannot be changed quietly after the fact. To fix a mistake, delete the play and add it again.',
+  deleteRoles: ['Admin', 'RetailManager'],
   deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
   canEditRow: () => false,
   columns: [
@@ -205,7 +209,7 @@ export const GAME_PLAYS = {
     { key: 'AmountPaid', label: 'Paid', format: money },
   ],
   fields: [
-    { key: 'ticketId', label: 'Ticket ID', type: 'number', required: true, min: 1, step: '1' },
+    { key: 'ticketId', label: 'Ticket', type: 'lookup', kind: 'ticket', required: true },
     {
       key: 'gameId',
       label: 'Game',
@@ -233,6 +237,8 @@ export const RIDE_LOG = {
   resource: 'ride-log',
   idKey: 'RideLogID',
   noun: 'ride log entry',
+  lockedNote:
+    'These rows are the permanent record of guest traffic and wait times, and the ride reports read them. They are permanent records, so the numbers in the reports cannot be changed quietly after the fact. To fix a mistake, delete the entry and add it again.',
   deleteRoles: ['Admin', 'Manager'],
   deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
   canEditRow: () => false,
@@ -271,7 +277,7 @@ export const RIDE_LOG = {
       required: true,
       optionsFrom: (form, lookups) => (lookups?.rides ?? []).map((x) => [String(x.id), x.name]),
     },
-    { key: 'ticketId', label: 'Ticket ID (for a boarding)', type: 'number', min: 1, step: '1' },
+    { key: 'ticketId', label: 'Ticket (for a boarding)', type: 'lookup', kind: 'ticket', show: (form) => form.eventType === 'Boarding' },
     { key: 'waitMinutes', label: 'Wait minutes (for a wait reading)', type: 'number', min: 0, step: '1' },
     { key: 'usedExpress', label: 'Used the Express line (boardings)', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
     { key: 'loggedAt', label: 'Time (leave empty for now)', type: 'datetime' },

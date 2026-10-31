@@ -57,7 +57,7 @@ export default function Dashboard({ base = '/staff', sections: menu = NAV_SECTIO
               </span>
               <div>
                 <h2>{section.title}</h2>
-                <p>Discover everything in {section.title.toLowerCase()}</p>
+                <p>{items.length} {items.length === 1 ? 'page' : 'pages'} for your role</p>
               </div>
             </div>
 

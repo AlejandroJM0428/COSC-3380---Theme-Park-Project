@@ -8,9 +8,10 @@ import { friendlyDbError, needDate, needInt, needText, recordId } from '../valid
 // "Delete" is a soft delete: IsActive = 0. The row stays, because tickets and memberships point at it.
 // Editing the record can turn a customer back on.
 
-const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_WRITE = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
+// Role matrix (TA fixes plan): the retail desk and the ticket booth own these records. The operations manager has no access.
+const CAN_READ = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_WRITE = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_DELETE = ['Admin', 'RetailManager'];
 
 const SELECT_CUSTOMER = `
   SELECT CustomerID, FirstName, LastName, CONCAT(FirstName, ' ', LastName) AS FullName,

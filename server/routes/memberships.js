@@ -12,9 +12,10 @@ import { friendlyDbError, needDate, needId, oneOf, recordId } from '../validate.
 // Delete is a real delete, because Membership has no IsActive column. The database refuses it when
 // tickets already use the membership (foreign key), and we turn that into a plain sentence.
 
-const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_WRITE = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
+// Role matrix (TA fixes plan): the retail desk and the ticket booth own these records. The operations manager has no access.
+const CAN_READ = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_WRITE = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_DELETE = ['Admin', 'RetailManager'];
 const TIERS = ['Basic', 'Plus', 'Premier'];
 
 const SELECT_MEMBERSHIP = `

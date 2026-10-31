@@ -37,3 +37,5 @@
 @media (max-width: 600px) {
   .rm-grid { grid-template-columns: 1fr; }
 }
+
+.rm-locked { margin: 8px 0; padding: 8px 12px; border-left: 4px solid var(--line); background: #f6f6f6; font-size: 0.9rem; }

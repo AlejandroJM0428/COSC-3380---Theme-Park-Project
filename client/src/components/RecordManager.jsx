@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createRecord, deleteRecord, getLookups, getRecord, listRecords, updateRecord } from '../api'
 import { useAuth } from '../auth/context.js'
 import ErrorBanner from './ErrorBanner.jsx'
+import LookupField from './LookupField.jsx'
 import './RecordManager.css'
 
 // A table of records plus an add / edit / delete form, all driven by one config object
@@ -9,6 +10,7 @@ import './RecordManager.css'
 export default function RecordManager({ entity }) {
   const { user } = useAuth()
   const canDelete = entity.deleteRoles.includes(user?.role)
+  const canWrite = !entity.writeRoles || entity.writeRoles.includes(user?.role) // false = view only
 
   const [filters, setFilters] = useState(() => Object.fromEntries((entity.filters ?? []).map((f) => [f.key, ''])))
   const [rows, setRows] = useState(null)
@@ -76,6 +78,11 @@ export default function RecordManager({ entity }) {
     e.preventDefault()
     setError('')
     setNotice('')
+    const missing = entity.fields.find((f) => f.type === 'lookup' && f.required && !form[f.key] && (!f.show || f.show(form)))
+    if (missing) {
+      setError(`Choose the ${missing.pickLabel ?? missing.label.toLowerCase()} first.`)
+      return
+    }
     setSaving(true)
     try {
       const body = entity.toPayload(form)
@@ -95,7 +102,7 @@ export default function RecordManager({ entity }) {
     }
   }
 
-  // Optional entity settings: hideIds (never show record numbers), deleteLabel ('Void'), deletePast ('Voided'), askReason (prompt sent as ?reason=),
+  // Optional entity settings: lockedNote (why Edit is turned off, shown under the intro), hideIds (never show record numbers), deleteLabel ('Void'), deletePast ('Voided'), askReason (prompt sent as ?reason=),
   // canEditRow(row) and canDeleteRow(row) to hide the buttons on rows that are already finished.
   const deleteLabel = entity.deleteLabel ?? 'Delete'
   const deletePast = entity.deletePast ?? 'Deleted'
@@ -148,6 +155,22 @@ export default function RecordManager({ entity }) {
     }
 
     let input
+    if (field.type === 'lookup') {
+      // Pick a guest, ticket or membership by what a person knows. The form keeps the ID, nobody sees or types it.
+      return (
+        <div key={field.key} className={`rm-field ${field.wide ?? true ? 'rm-wide' : ''}`}>
+          <span id={`${id}-label`}>{field.label}</span>
+          <LookupField
+            id={id}
+            kind={field.kind}
+            value={value}
+            required={field.required}
+            forCustomer={field.forCustomerKey ? form[field.forCustomerKey] : undefined}
+            onChange={(v) => set(field.key, v)}
+          />
+        </div>
+      )
+    }
     if (field.type === 'select') {
       input = (
         <select id={id} value={value} required={field.required} onChange={(e) => set(field.key, e.target.value)}>
@@ -192,14 +215,22 @@ export default function RecordManager({ entity }) {
     <div className="rm">
       <h1>{entity.title}</h1>
       <p className="muted">{entity.intro}</p>
+      {!canWrite && <p className="rm-locked" role="note">View only for your role. The maintenance desk adds and changes these jobs.</p>}
+      {entity.lockedNote && (
+        <p className="rm-locked" role="note">
+          <strong>Why there is no Edit button:</strong> {entity.lockedNote}
+        </p>
+      )}
 
       <ErrorBanner message={error} onClose={() => setError('')} />
       {notice && <p className="result allowed">{notice}</p>}
 
       <div className="rm-toolbar">
-        <button type="button" className="btn-primary" onClick={openAdd} disabled={form !== null}>
-          + Add {entity.noun}
-        </button>
+        {canWrite && (
+          <button type="button" className="btn-primary" onClick={openAdd} disabled={form !== null}>
+            + Add {entity.noun}
+          </button>
+        )}
         {(entity.filters ?? []).map((f) => (
           <label key={f.key} className="rm-filter">
             {f.label}
@@ -262,7 +293,7 @@ export default function RecordManager({ entity }) {
                     <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
                   ))}
                   <td className="rm-actions">
-                    {(entity.canEditRow?.(row) ?? true) && (
+                    {canWrite && (entity.canEditRow?.(row) ?? true) && (
                       <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
                         Edit
                       </button>

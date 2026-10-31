@@ -3,8 +3,8 @@ import { searchCustomers } from '../api'
 import ErrorBanner from './ErrorBanner.jsx'
 import './CustomerLookup.css'
 
-// Membership status line for a search result.
-function membershipStatus(c) {
+// Membership status line for a search result (also used by the Sell Ticket page for the chosen guest).
+export function membershipStatus(c) {
   if (c.MembershipID) {
     const weekdays = c.Tier === 'Basic' ? ' (weekdays only)' : ''
     return `${c.Tier} member${weekdays} until ${c.MembershipEnd}`
@@ -15,7 +15,7 @@ function membershipStatus(c) {
 
 // "Find customer" box: search by name, date of birth, or both, then click a result.
 // onPick(customer) gets the full row ({ CustomerID, FullName, DOB, MembershipID, ... }) so the page can fill
-// its Customer ID field and, when the customer has a membership, its Membership ID field.
+// the chosen guest and, when the customer has a membership, the membership. No ID is typed or shown to the user.
 export default function CustomerLookup({ onPick }) {
   const [name, setName] = useState('')
   const [dob, setDob] = useState('')
@@ -70,7 +70,7 @@ export default function CustomerLookup({ onPick }) {
           {results.map((c) => (
             <li key={c.CustomerID}>
               <button type="button" onClick={() => pick(c)}>
-                <strong>#{c.CustomerID}</strong> · {c.FullName} · DOB: {c.DOB}
+                <strong>{c.FullName}</strong> · DOB: {c.DOB}
                 <span className={`cl-member ${c.MembershipID ? 'is-member' : ''}`}>{membershipStatus(c)}</span>
               </button>
             </li>

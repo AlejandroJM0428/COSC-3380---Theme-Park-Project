@@ -18,11 +18,12 @@
 //   summary     optional: older style, one line of text above the data
 
 // Keep in step with the lists in server/routes/reports.js
-const ADMINS = ['Admin', 'Manager']
-const RETAIL = [...ADMINS, 'RetailManager']
-const HR = [...ADMINS, 'HRManager']
-const MAINTENANCE = [...ADMINS, 'MaintenanceManager']
-const EVERY_MANAGER = [...ADMINS, 'RetailManager', 'HRManager', 'MaintenanceManager']
+// Role matrix (TA fixes plan). Admin sees every report; each manager sees only the reports for their own area.
+const OPERATIONS = ['Admin', 'Manager']
+const ATTENDANCE = ['Admin', 'Manager', 'RetailManager']
+const RETAIL = ['Admin', 'RetailManager']
+const HR = ['Admin', 'HRManager']
+const MAINTENANCE = ['Admin', 'MaintenanceManager']
 
 // ---------- helpers ----------
 
@@ -225,7 +226,7 @@ const ALL_REPORTS = [
     title: 'Customers per Month',
     description: 'How many different customers visit each month (refunded tickets excluded)?',
     required: true,
-    roles: RETAIL,
+    roles: ATTENDANCE,
     prepare: (rows) => toNumbers(withMonth('VisitYear', 'VisitMonth')(rows), ['Customers']),
     kpis: (rows) => {
       const best = extreme(rows, 'Customers')
@@ -244,7 +245,7 @@ const ALL_REPORTS = [
     title: 'Daily Attendance & Spikes',
     description: 'Which days fill the park, and how close do we get to capacity?',
     required: true,
-    roles: RETAIL,
+    roles: ATTENDANCE,
     prepare: (rows) => toNumbers(rows, ['ValidTickets', 'RefundedTickets', 'PctOfCapacity', 'TicketRevenue']),
     dateFilter: { key: 'VisitDate', label: 'Visit date' },
     kpis: (rows) => {
@@ -409,7 +410,7 @@ const ALL_REPORTS = [
     title: 'Most Ridden Rides per Month',
     description: 'Which rides do visitors ride most? Pick a month, or look at all of them.',
     required: true,
-    roles: EVERY_MANAGER,
+    roles: OPERATIONS,
     prepare: (rows) => toNumbers(withMonth('VisitYear', 'VisitMonth')(rows), ['Boardings']),
     filters: [{ key: 'Month', label: 'Month' }],
     kpis: (rows) => {
@@ -430,7 +431,7 @@ const ALL_REPORTS = [
     view: 'v_RideAvailability',
     title: 'Ride Availability Now',
     description: 'Which rides are open right now, and why are the others closed?',
-    roles: EVERY_MANAGER,
+    roles: OPERATIONS,
     filters: [{ key: 'CurrentState', label: 'State' }],
     kpis: (rows) => [
       { label: 'Open', value: rows.filter((r) => r.CurrentState === 'Open').length.toLocaleString('en-US') },
@@ -444,7 +445,7 @@ const ALL_REPORTS = [
     view: 'v_ZoneRideTraffic',
     title: 'Ride Traffic by Zone',
     description: 'How many boardings does each ride get, grouped by zone?',
-    roles: EVERY_MANAGER,
+    roles: OPERATIONS,
     prepare: (rows) => toNumbers(rows, ['Boardings']),
     filters: [{ key: 'ZoneName', label: 'Zone' }],
     kpis: (rows) => {
@@ -463,7 +464,7 @@ const ALL_REPORTS = [
     view: 'v_WaitTimeByRide',
     title: 'Wait Times by Ride',
     description: 'Which rides have the longest waits?',
-    roles: EVERY_MANAGER,
+    roles: OPERATIONS,
     prepare: (rows) => toNumbers(rows, ['Readings', 'AvgWaitMinutes', 'MaxWaitMinutes']),
     filters: [{ key: 'ZoneName', label: 'Zone' }],
     kpis: (rows) => {
@@ -488,7 +489,7 @@ const ALL_REPORTS = [
     title: 'Rain-outs per Month',
     description: 'Rain or storm events that closed outdoor rides, per month.',
     required: true,
-    roles: ADMINS,
+    roles: OPERATIONS,
     prepare: (rows) =>
       countByMonth(
         rows.filter((r) => r.ClosesOutdoorRides && ['Rain', 'Storm'].includes(r.WeatherType)),
@@ -505,7 +506,7 @@ const ALL_REPORTS = [
     title: 'Weather Impact',
     description: 'Weather events with weather-related refunds.',
     hidden: true,
-    roles: ADMINS,
+    roles: OPERATIONS,
   },
 ]
 

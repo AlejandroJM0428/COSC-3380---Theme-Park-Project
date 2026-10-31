@@ -1,19 +1,19 @@
 import { REPORTS, REPORT_GROUPS } from './reports.js'
 
-// ASSUMPTION: these role permissions are a first guess. Agree on them with your
-// team (and the professor) and edit here - the menu and route guards follow this file.
+// Role matrix (TA fixes plan, D4): every role gets only its own pages. Keep these lists in step with the CAN_* lists in server/routes.
+// The menu, the dashboard and the route guards all follow this file.
 export const PARK_NAME = 'Thunder Valley Adventure Park'
 export const PARK_SHORT = 'Thunder Valley'
 
 // What each role is called around the park. Shown on the staff badge and the dashboard.
 export const ROLE_INFO = {
   Admin: { title: 'Control room', blurb: 'Staff accounts, park setup, every report and every record in the park.' },
-  Manager: { title: 'Operations desk', blurb: 'Reports and day-to-day records.' },
-  Cashier: { title: 'Ticket booth', blurb: 'Sell tickets, take refunds and record purchases.' },
+  Manager: { title: 'Operations desk', blurb: 'Ride availability and performance, attendance and capacity, the ride log, the weather log and maintenance status.' },
+  Cashier: { title: 'Ticket booth', blurb: 'Sell tickets, look up guests and memberships, record purchases and game plays.' },
   Customer: { title: 'Customer account', blurb: 'Explore rides, manage your tickets, and view your membership' },
-  RetailManager: { title: 'Retail desk', blurb: 'Sales, items and revenue across the shops and restaurants.' },
-  HRManager: { title: 'People desk', blurb: 'Staff, shifts and performance.' },
-  MaintenanceManager: { title: 'Maintenance desk', blurb: 'Repairs, repair costs and ride downtime.' },
+  RetailManager: { title: 'Retail desk', blurb: 'Revenue and sales, memberships, attendance, ticket sales and refunds, guests and park notices.' },
+  HRManager: { title: 'People desk', blurb: 'Employee performance, staff by zone and shift ratings.' },
+  MaintenanceManager: { title: 'Maintenance desk', blurb: 'Repair jobs, repair costs and ride downtime.' },
   MaintenanceWorker: { title: 'Maintenance crew', blurb: 'Your repair jobs and shifts.' },
   RestaurantWorker: { title: 'Restaurant team', blurb: 'Your shifts and venue sales.' },
 }
@@ -21,12 +21,13 @@ export const ROLE_INFO = {
 // Everyone who may enter the staff transaction portal (Customer is NOT one of them).
 export const STAFF_ROLES = Object.keys(ROLE_INFO).filter((r) => r !== 'Customer')
 
-export const ALL_ROLES = ['Admin', 'Manager', 'Cashier']
+// Who owns the ticket-selling pages: the ticket booth and the retail desk (the operations manager does not).
+export const SALES_ROLES = ['Admin', 'RetailManager', 'Cashier']
 
 // Everyone who can open the reports area. Each report lists its own roles (config/reports.js).
 export const MANAGEMENT = ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager']
 
-// Ride log, weather log and similar day-to-day records.
+// Ride log and weather log: the operations manager.
 export const OPS_ROLES = ['Admin', 'Manager']
 
 // The admin portal (/admin) is for this one role only. Everyone else is sent to /staff.
@@ -36,17 +37,17 @@ export const ADMIN_ONLY = ['Admin']
 // `ready: true` = the page is built (it is registered in PAGE_COMPONENTS in App.jsx).
 // Pages without it stay out of the menu and dashboard until someone sets the flag, so nobody lands on an empty "not built yet" page.
 export const FORM_PAGES = [
-  { path: 'tickets',     label: 'Sell Ticket',            roles: [...ALL_ROLES, 'RetailManager'], ready: true },
-  { path: 'refunds',     label: 'Ticket Sales & Refunds', roles: [...ALL_ROLES, 'RetailManager'], ready: true },
-  { path: 'purchases',   label: 'Food & Shop Purchases',  roles: [...ALL_ROLES, 'RetailManager'], ready: true },
-  { path: 'game-plays',  label: 'Game Plays',             roles: [...ALL_ROLES, 'RetailManager'], ready: true },
-  { path: 'customers',   label: 'Customers',              roles: [...ALL_ROLES, 'RetailManager'], ready: true },
-  { path: 'memberships', label: 'Memberships',            roles: [...ALL_ROLES, 'RetailManager'], ready: true },
+  { path: 'tickets',     label: 'Sell Ticket',            roles: SALES_ROLES, ready: true },
+  { path: 'refunds',     label: 'Ticket Sales & Refunds', roles: SALES_ROLES, ready: true },
+  { path: 'purchases',   label: 'Food & Shop Purchases',  roles: SALES_ROLES, ready: true },
+  { path: 'game-plays',  label: 'Game Plays',             roles: SALES_ROLES, ready: true },
+  { path: 'customers',   label: 'Customers',              roles: SALES_ROLES, ready: true },
+  { path: 'memberships', label: 'Memberships',            roles: SALES_ROLES, ready: true },
   { path: 'ride-log',    label: 'Ride Log',               roles: OPS_ROLES, ready: true },
   { path: 'weather',     label: 'Weather Log',            roles: OPS_ROLES, ready: true },
-  { path: 'maintenance', label: 'Maintenance',            roles: [...OPS_ROLES, 'MaintenanceManager'], ready: true },
-  { path: 'employees',   label: 'Shift Ratings',          roles: [...OPS_ROLES, 'HRManager'], ready: true },
-  { path: 'notifications', label: 'Promos & Notices',     roles: ['Admin', 'Manager', 'RetailManager'], ready: true },
+  { path: 'maintenance', label: 'Maintenance',            roles: [...OPS_ROLES, 'MaintenanceManager'], ready: true }, // Manager can view only
+  { path: 'employees',   label: 'Shift Ratings',          roles: ['Admin', 'HRManager'], ready: true },
+  { path: 'notifications', label: 'Promos & Notices',     roles: ['Admin', 'RetailManager'], ready: true },
   { path: 'my-work',     label: 'My Work',                roles: ['MaintenanceWorker', 'RestaurantWorker'], ready: true },
   { path: 'facilities',  label: 'Rides, Games & Venues',  roles: ['Admin'], ready: true },
   { path: 'users',       label: 'App Users',              roles: ['Admin'], ready: true },

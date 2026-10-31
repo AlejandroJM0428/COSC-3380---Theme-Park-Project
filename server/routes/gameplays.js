@@ -9,9 +9,10 @@ import { friendlyDbError, needId, optDateTime, recordId } from '../validate.js';
 // only while nobody edits the row in SQL. The browser never sends the amount:
 // trg_GamePlay_BI copies it from Game.PlayPrice and refuses games that are retired or under maintenance.
 
-const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_WRITE = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
+// Role matrix (TA fixes plan): the retail desk and the ticket booth own these records. The operations manager has no access.
+const CAN_READ = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_WRITE = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_DELETE = ['Admin', 'RetailManager'];
 
 const SELECT_PLAY = `
   SELECT gp.GamePlayID, gp.TicketID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
