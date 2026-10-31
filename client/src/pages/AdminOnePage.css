@@ -62,6 +62,7 @@
   font-size: 1.5rem;
 }
 
+/* Headline numbers: four small tiles on one line. */
 .onepage .admin-summary {
   display: flex;
   flex-wrap: wrap;
@@ -70,20 +71,30 @@
 }
 
 .onepage .admin-stat {
+  display: flex;
   flex-direction: row;
   align-items: baseline;
   gap: 6px;
   padding: 5px 12px;
-  border-top-width: 3px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--role, var(--plum));
+  border-radius: 6px;
 }
 
 .onepage .admin-stat-value {
   font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
 .onepage .admin-stat-label,
 .onepage .admin-stat-note {
   font-size: 0.8rem;
+}
+
+.onepage .admin-stat-note {
+  opacity: 0.7;
 }
 
 /* The five groups. */

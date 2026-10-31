@@ -18,7 +18,6 @@ import ShiftRatingsPage from './ShiftRatingsPage.jsx'
 import TicketSalesPage from './TicketSalesPage.jsx'
 import TriggerDemo from './TriggerDemo.jsx'
 import { CustomersPage, FacilitiesPage, GamePlaysPage, MembershipsPage, PurchasesPage, RideLogPage, UsersPage, WeatherPage } from './DataEntryPages.jsx'
-import './AdminDashboard.css'
 import './AdminOnePage.css'
 
 // The one-page admin (no sidebar): one workspace instead of stacked sections.
