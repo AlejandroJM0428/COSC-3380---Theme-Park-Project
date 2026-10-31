@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { buyVisitorTicket, getVisitorDashboard, refundVisitorTicket } from '../api/index.js'
 import NotificationBar from '../components/NotificationBar.jsx'
+import Wordmark from '../components/Wordmark.jsx'
+import { BRAND, LANDS } from '../config/brand.js'
 import './VisitorPortal.css'
 
 function localDate(offset = 0) {
@@ -29,11 +31,6 @@ function statusTone(status) {
 }
 
 
-const LANDS = [
-  { key: 'thrill', title: 'Thrill Rides', blurb: 'Coasters, drops and big speed', img: '/images/thrill-rides.jpg', zones: ['Thunder Canyon'] },
-  { key: 'family', title: 'Family Favorites', blurb: 'Rides everyone can share', img: '/images/family-rides.jpg', zones: ['Main Street', 'Adventure Bay', 'Fantasy Forest'] },
-  { key: 'kids', title: 'Kids Corner', blurb: 'Little rides for little riders', img: '/images/kids-rides.jpg', zones: ['Kids Corner'] },
-]
 function rideImage(zoneName) {
   return (LANDS.find((land) => land.zones.includes(zoneName)) ?? LANDS[1]).img
 }
@@ -155,7 +152,7 @@ export default function VisitorPortal({ mode = 'public' }) {
     <main className="visitor-portal">
       <header className="vp-header">
         <div className="vp-utility">
-          <span>Thunder Valley Adventure Park</span>
+          <span>{BRAND.name}</span>
           <span className="vp-utility-links">
             {isMember ? (
               <>
@@ -171,9 +168,8 @@ export default function VisitorPortal({ mode = 'public' }) {
           </span>
         </div>
         <div className="vp-navbar">
-          <Link to="/" className="visitor-brand" aria-label="Thunder Valley home">
-            <span className="brand-mark" aria-hidden="true">TV</span>
-            <span><strong>Thunder Valley</strong><small>Adventure Park</small></span>
+          <Link to="/" className="visitor-brand" aria-label={`${BRAND.name} home`}>
+            <Wordmark />
           </Link>
           <nav className="vp-nav" aria-label="Main navigation">
             {isMember && <a href="#my-membership">Membership</a>}
@@ -191,7 +187,7 @@ export default function VisitorPortal({ mode = 'public' }) {
 
       <section className="vp-hero">
         <div className="vp-hero-copy">
-          <p className="vp-hero-eyebrow">{isMember ? `Welcome back${dashboard?.customer ? `, ${dashboard.customer.firstName}` : ''}` : 'Welcome to Thunder Valley'}</p>
+          <p className="vp-hero-eyebrow">{isMember ? `Welcome back${dashboard?.customer ? `, ${dashboard.customer.firstName}` : ''}` : `Welcome to ${BRAND.shortName}`}</p>
           <h1>More thrills.<br />Less waiting.</h1>
           <div className="vp-hero-actions">
             {isMember ? <a href="#my-tickets" className="vp-buy">Buy Tickets</a> : <Link to="/member/login" className="vp-buy">Buy Tickets</Link>}
@@ -338,7 +334,7 @@ export default function VisitorPortal({ mode = 'public' }) {
 
       <footer className="vp-footer">
         <div className="vp-footer-inner">
-          <div className="vp-footer-brand"><span className="brand-mark" aria-hidden="true">TV</span><strong>Thunder Valley</strong></div>
+          <div className="vp-footer-brand"><Wordmark tagline={false} light /></div>
           <nav aria-label="Footer">
             <Link to="/member/login">Member sign in</Link>
             <Link to="/member/register">Join</Link>
@@ -346,7 +342,7 @@ export default function VisitorPortal({ mode = 'public' }) {
             <a href="#top" onClick={(event) => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</a>
           </nav>
         </div>
-        <p>Thunder Valley Adventure Park · Visitor portal prototype</p>
+        <p>{BRAND.name} · Visitor portal prototype</p>
       </footer>
     </main>
   )

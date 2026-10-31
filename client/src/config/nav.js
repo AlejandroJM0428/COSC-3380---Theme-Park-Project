@@ -1,9 +1,11 @@
 import { REPORTS, REPORT_GROUPS } from './reports.js'
+import { BRAND } from './brand.js'
 
 // Role matrix (TA fixes plan, D4): every role gets only its own pages. Keep these lists in step with the CAN_* lists in server/routes.
 // The menu, the dashboard and the route guards all follow this file.
-export const PARK_NAME = 'Thunder Valley Adventure Park'
-export const PARK_SHORT = 'Thunder Valley'
+// Name comes from config/brand.js (one place).
+export const PARK_NAME = BRAND.name
+export const PARK_SHORT = BRAND.shortName
 
 // What each role is called around the park. Shown on the staff badge and the dashboard.
 export const ROLE_INFO = {

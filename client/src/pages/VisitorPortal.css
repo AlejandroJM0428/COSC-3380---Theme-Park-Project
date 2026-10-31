@@ -15,7 +15,6 @@
 .visitor-portal button, .visitor-portal input { font: inherit; }
 .visitor-header { min-height: 78px; padding: 0 max(5vw, calc((100vw - 1240px) / 2)); background: #fffefa; display: flex; align-items: center; justify-content: space-between; gap: 26px; border-bottom: 1px solid #e8ede3; }
 .visitor-brand { display: flex; align-items: center; gap: 11px; min-width: 215px; }
-.brand-mark { width: 42px; height: 42px; background: var(--vp-forest); color: #f4c86c; border-radius: 13px 13px 13px 4px; display: grid; place-items: center; font-size: .85rem; letter-spacing: -.06em; font-weight: 900; }
 .visitor-brand strong, .visitor-brand small { display: block; }
 .visitor-brand strong { font-family: var(--font-display); font-size: 1.03rem; letter-spacing: -.03em; }
 .visitor-brand small { color: var(--vp-muted); font-size: .78rem; margin-top: -2px; }
@@ -180,7 +179,6 @@
 
 /* ---- Round 2: more theme park, less bank ---- */
 .visitor-portal { background: #fff; --vp-blue: #0b3d91; }
-.brand-mark { background: #0b3d91; color: #ffd566; }
 .vp-hero { min-height: 620px; align-items: center; justify-content: center; text-align: center; background: linear-gradient(to bottom, rgba(8,24,60,.55), rgba(8,24,60,.15) 45%, rgba(8,24,60,.7)), url('/images/roller-coaster.jpg') center / cover no-repeat; }
 .vp-hero-copy { max-width: 760px; }
 .vp-hero-eyebrow { color: #fff; font-size: 1rem; letter-spacing: .2em; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
@@ -220,7 +218,6 @@
 .vp-footer { margin-top: 72px; background: #0b2a66; color: #cfdcf5; padding: 40px max(5vw, calc((100vw - 1240px) / 2)) 28px; }
 .vp-footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
 .vp-footer-brand { display: flex; align-items: center; gap: 12px; color: #fff; font-family: var(--font-display); font-size: 1.2rem; }
-.vp-footer-brand .brand-mark { background: #ffd566; color: #0b2a66; }
 .vp-footer nav { display: flex; gap: 26px; flex-wrap: wrap; }
 .vp-footer nav a { color: #fff; font-weight: 600; font-size: .9rem; }
 .vp-footer nav a:hover { color: #ffd566; }
