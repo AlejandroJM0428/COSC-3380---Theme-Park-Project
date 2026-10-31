@@ -73,6 +73,21 @@ export function refundVisitorTicket(ticketId) {
   needLive()
   return http(`/visitor/tickets/${ticketId}/refund`, { method: 'POST', body: {} })
 }
+export function renewVisitorMembership(data) {
+  needLive()
+  return http('/visitor/membership/renew', {
+    method: 'POST',
+    body: data
+  })
+}
+export function updateVisitorProfile(data) {
+  needLive()
+
+  return http('/visitor/profile', {
+    method: 'PUT',
+    body: data
+  })
+}
 
 // Generic data entry, used by components/RecordManager.jsx. `resource` is the API path, e.g. 'maintenance'.
 export function listRecords(resource, query = {}) {
