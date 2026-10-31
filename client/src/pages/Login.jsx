@@ -31,7 +31,8 @@ export default function Login({ audience = 'staff' }) {
         logout()
         throw new Error('That is a member account. Please use the member sign in.')
       }
-      navigate(location.state?.from?.pathname ?? (isMember ? '/member' : '/staff'), { replace: true })
+      const home = isMember ? '/member' : who.role === 'Admin' ? '/admin' : '/staff'
+      navigate(location.state?.from?.pathname ?? home, { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {

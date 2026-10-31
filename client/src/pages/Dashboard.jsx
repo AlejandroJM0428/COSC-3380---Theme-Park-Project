@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { NAV_SECTIONS, ROLE_INFO } from '../config/nav.js'
 
-export default function Dashboard() {
+// Used by both portals: the staff portal (default) and the admin portal (base="/admin" + its own sections).
+// `children` shows between the welcome text and the menu cards (the admin portal puts its summary there).
+export default function Dashboard({ base = '/staff', sections: menu = NAV_SECTIONS, children }) {
   const { user } = useAuth()
   const info = ROLE_INFO[user.role] ?? { title: 'Dashboard', blurb: '' }
 
-  const sections = NAV_SECTIONS
+  const sections = menu
     .map((s) => ({
       ...s,
       items: s.items.filter((i) => i.roles.includes(user.role)),
@@ -26,8 +28,10 @@ export default function Dashboard() {
         <p>{info.blurb}</p>
       </div>
 
+      {children}
+
       {featured && (
-        <Link to={`/staff${featured.to}`} className="thunder-featured">
+        <Link to={`${base}${featured.to}`} className="thunder-featured">
           <span className="thunder-featured-icon">🎟️</span>
           <div>
             <h3>Sell a Ticket</h3>
@@ -61,7 +65,7 @@ export default function Dashboard() {
               {items.map((item, itemIndex) => (
                 <Link
                   key={item.to}
-                  to={`/staff${item.to}`}
+                  to={`${base}${item.to}`}
                   className="thunder-card"
                 >
                   <div className="thunder-card-icon">

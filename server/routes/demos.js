@@ -26,7 +26,7 @@ const publicDemo = (demo) => ({
 route(
   'GET',
   '/api/demos',
-  requireRole('Admin', 'Manager')(async () => DEMOS.map(publicDemo)),
+  requireRole('Admin')(async () => DEMOS.map(publicDemo)),
 );
 
 function cell(value) {
@@ -50,7 +50,7 @@ function same(left, right) {
 route(
   'POST',
   '/api/demos/:id/run',
-  requireRole('Admin', 'Manager')(async (ctx) => {
+  requireRole('Admin')(async (ctx) => {
     const demo = DEMOS.find((d) => d.id === ctx.params.id);
     if (!demo) throw new HttpError(404, 'Unknown demo');
 

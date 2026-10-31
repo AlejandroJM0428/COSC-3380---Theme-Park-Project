@@ -77,8 +77,22 @@ route(
   }),
 );
 
-// The form needs no dropdowns. Registered BEFORE /:id so "lookups" is not read as an id.
-route('GET', '/api/users/lookups', requireRole(...CAN_USE)(async () => ({})));
+// Dropdown for the "Employee" field, so nobody has to type an employee number.
+// Registered BEFORE /:id so "lookups" is not read as an id.
+route(
+  'GET',
+  '/api/users/lookups',
+  requireRole(...CAN_USE)(async () => {
+    const [employees] = await pool.query(
+      `SELECT EmployeeID AS id,
+              CONCAT(FirstName, ' ', LastName, ' - ', JobTitle, IF(IsActive = 1, '', ' (inactive)')) AS name
+         FROM Employee
+        ORDER BY LastName, FirstName, EmployeeID
+        LIMIT 1000`,
+    );
+    return { employees };
+  }),
+);
 
 route(
   'GET',

@@ -3,12 +3,12 @@ import { pool } from '../db.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { TRIGGER_CATALOG } from '../demos/triggerCatalog.js';
 
-// GET /api/triggers  (Admin, Manager)
+// GET /api/triggers  (Admin only)
 // Read-only. Compares the six project triggers with the live database.
 route(
   'GET',
   '/api/triggers',
-  requireRole('Admin', 'Manager')(async () => {
+  requireRole('Admin')(async () => {
     let liveRows = [];
     let live = true;
     try {

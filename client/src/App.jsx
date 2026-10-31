@@ -5,6 +5,7 @@ import Layout from './components/Layout.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import AdminDashboard from './pages/AdminDashboard.jsx'
 import ReportPage from './pages/ReportPage.jsx'
 import QueryPage from './pages/QueryPage.jsx'
 import TriggerDemo from './pages/TriggerDemo.jsx'
@@ -18,7 +19,7 @@ import { CustomersPage, FacilitiesPage, GamePlaysPage, MembershipsPage, Purchase
 import Placeholder from './pages/Placeholder.jsx'
 import NotFound from './pages/NotFound.jsx'
 import VisitorPortal from './pages/VisitorPortal.jsx'
-import { FORM_PAGES, MANAGEMENT, STAFF_ROLES } from './config/nav.js'
+import { ADMIN_NAV_SECTIONS, ADMIN_ONLY, FORM_PAGES, MANAGEMENT, STAFF_ROLES } from './config/nav.js'
 
 // When you build a real page, import it here and add ONE line to this map
 // (key = the `path` in config/nav.js). Until then the Placeholder is shown.
@@ -52,21 +53,38 @@ export default function App() {
         <Route path="/member" element={<VisitorPortal mode="member" />} />
       </Route>
 
-      {/* 3. Staff transaction portal */}
+      {/* 3. Staff sign in (admins sign in here too and are sent to /admin) */}
       <Route path="/staff/login" element={<Login audience="staff" />} />
       <Route path="/login" element={<Navigate to="/staff/login" replace />} />
       <Route path="/visitor" element={<Navigate to="/" replace />} />
 
       <Route path="*" element={<NotFound />} />
 
-      <Route path="/staff" element={<RequireAuth roles={STAFF_ROLES} />}>
+      {/* Admin portal: Admin only. Everyone else who is signed in goes back to /staff. */}
+      <Route path="/admin" element={<RequireAuth roles={ADMIN_ONLY} denyTo="/staff" />}>
+        <Route element={<Layout base="/admin" sections={ADMIN_NAV_SECTIONS} brandSub="Admin portal" />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="reports/:key" element={<ReportPage />} />
+          {/* Not in any menu. Kept for the presentation: type the address to open them. */}
+          <Route path="queries" element={<QueryPage />} />
+          <Route path="trigger-demos" element={<TriggerDemo />} />
+
+          {FORM_PAGES.map((p) => {
+            const Page = PAGE_COMPONENTS[p.path]
+            return <Route key={p.path} path={p.path} element={Page ? <Page /> : <Placeholder title={p.label} />} />
+          })}
+
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Route>
+
+      {/* Staff portal: every other employee role. An admin who opens /staff is sent to /admin. */}
+      <Route path="/staff" element={<RequireAuth roles={STAFF_ROLES} redirects={{ Admin: '/admin' }} />}>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
 
           <Route element={<RequireAuth roles={MANAGEMENT} />}>
             <Route path="reports/:key" element={<ReportPage />} />
-            <Route path="queries" element={<QueryPage />} />
-            <Route path="trigger-demos" element={<TriggerDemo />} />
           </Route>
 
           {FORM_PAGES.map((p) => {

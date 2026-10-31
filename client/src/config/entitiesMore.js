@@ -370,6 +370,7 @@ export const FACILITIES = {
     'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Edit one to turn it back on. Set a ride to Maintenance and save: MySQL adds a notice, a toast appears in the corner, and the notice stays on Promos & Notices.',
   resource: 'facilities',
   idKey: 'FacilityKey',
+  hideIds: true, // the page never shows internal keys
   noun: 'attraction',
   deleteRoles: ['Admin'],
   deleteLabel: 'Deactivate',
@@ -513,6 +514,7 @@ export const USERS = {
     'Staff logins for this site. Add an account, change its role, set a new password, or deactivate it. A deactivated account cannot log in. You cannot deactivate yourself or change your own role.',
   resource: 'users',
   idKey: 'UserID',
+  hideIds: true, // the page never shows user numbers
   noun: 'user',
   deleteRoles: ['Admin'],
   deleteLabel: 'Deactivate',
@@ -531,10 +533,9 @@ export const USERS = {
     },
   ],
   columns: [
-    { key: 'UserID', label: 'User #' },
     { key: 'Username', label: 'Username' },
     { key: 'Role', label: 'Role' },
-    { key: 'EmployeeName', label: 'Employee', format: (v, row) => (v ? `${v} (#${row.EmployeeID})` : '—') },
+    { key: 'EmployeeName', label: 'Employee', format: (v) => v || '—' },
     { key: 'IsActive', label: 'Status', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
   ],
   fields: [
@@ -547,7 +548,13 @@ export const USERS = {
       options: ['Admin', 'Manager', 'Cashier', 'RetailManager', 'HRManager', 'MaintenanceManager', 'MaintenanceWorker', 'RestaurantWorker'].map((r) => [r, r]),
     },
     { key: 'password', label: 'Password, at least 8 characters (empty keeps the current one)', type: 'password', maxLength: 72 },
-    { key: 'employeeId', label: 'Employee ID (optional)', type: 'number', min: 1, step: '1' },
+    {
+      key: 'employeeId',
+      label: 'Employee (optional)',
+      type: 'select',
+      options: [['', 'Not linked to an employee']],
+      optionsFrom: (form, lookups) => [['', 'Not linked to an employee'], ...(lookups?.employees ?? []).map((e) => [String(e.id), e.name])],
+    },
     { key: 'isActive', label: 'Status', type: 'select', options: [['yes', 'Active'], ['no', 'Inactive']] },
   ],
   blank: () => ({ username: '', role: '', password: '', employeeId: '', isActive: 'yes' }),

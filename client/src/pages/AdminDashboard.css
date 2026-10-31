@@ -1,0 +1,19 @@
+.admin-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 8px 0 28px;
+}
+.admin-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--role, var(--plum));
+  border-radius: 6px;
+}
+.admin-stat-value { font-size: 1.9rem; font-weight: 700; line-height: 1.1; }
+.admin-stat-label { font-size: .9rem; }
+.admin-stat-note { font-size: .8rem; opacity: .7; }

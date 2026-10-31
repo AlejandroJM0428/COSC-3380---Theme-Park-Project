@@ -7,8 +7,8 @@ export const PARK_SHORT = 'Thunder Valley'
 
 // What each role is called around the park. Shown on the staff badge and the dashboard.
 export const ROLE_INFO = {
-  Admin: { title: 'Control room', blurb: 'Every report, live check and setting in the park.' },
-  Manager: { title: 'Operations desk', blurb: 'Reports, live checks and day-to-day records.' },
+  Admin: { title: 'Control room', blurb: 'Staff accounts, park setup, every report and every record in the park.' },
+  Manager: { title: 'Operations desk', blurb: 'Reports and day-to-day records.' },
   Cashier: { title: 'Ticket booth', blurb: 'Sell tickets, take refunds and record purchases.' },
   Customer: { title: 'Customer account', blurb: 'Explore rides, manage your tickets, and view your membership' },
   RetailManager: { title: 'Retail desk', blurb: 'Sales, items and revenue across the shops and restaurants.' },
@@ -26,8 +26,11 @@ export const ALL_ROLES = ['Admin', 'Manager', 'Cashier']
 // Everyone who can open the reports area. Each report lists its own roles (config/reports.js).
 export const MANAGEMENT = ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager']
 
-// Run Queries and Trigger Demos: the server only allows these two roles.
+// Ride log, weather log and similar day-to-day records.
 export const OPS_ROLES = ['Admin', 'Manager']
+
+// The admin portal (/admin) is for this one role only. Everyone else is sent to /staff.
+export const ADMIN_ONLY = ['Admin']
 
 // One entry per data-entry page. `path` is the URL (/tickets), `label` is the menu text.
 // `ready: true` = the page is built (it is registered in PAGE_COMPONENTS in App.jsx).
@@ -62,19 +65,45 @@ const REPORT_SECTIONS = REPORT_GROUPS.map((group) => ({
   })),
 })).filter((s) => s.items.length > 0)
 
+// Staff portal (/staff) menu. There is no "Live database" section any more (TA feedback: remove it).
 export const NAV_SECTIONS = [
-  {
-    title: 'Live database',
-    zone: 'var(--lagoon)',
-    items: [
-      { to: '/queries', label: 'Run Queries', note: 'Run a saved SQL query and see the rows.', roles: OPS_ROLES },
-      { to: '/trigger-demos', label: 'Trigger Demos', note: 'Run a real insert and see the trigger result. Nothing is saved.', roles: OPS_ROLES },
-    ],
-  },
   ...REPORT_SECTIONS,
   {
     title: 'Park operations',
     zone: 'var(--coral)',
     items: FORM_PAGES.filter((f) => f.ready).map((f) => ({ to: `/${f.path}`, label: f.label, roles: f.roles })),
+  },
+]
+
+// Admin portal (/admin) menu. Same pages, grouped by what an admin does. Every item is admin only.
+// `to` is the path under /admin, so the page components are shared with the staff portal.
+const adminItem = (to, label, note) => ({ to, label, note, roles: ADMIN_ONLY })
+const formItem = (path) => {
+  const f = FORM_PAGES.find((p) => p.path === path)
+  return adminItem(`/${f.path}`, f.label)
+}
+
+export const ADMIN_NAV_SECTIONS = [
+  {
+    title: 'People & access',
+    zone: 'var(--plum)',
+    items: [adminItem('/users', 'Staff Accounts', 'Add logins, change roles, reset passwords, deactivate accounts.')],
+  },
+  {
+    title: 'Park setup',
+    zone: 'var(--lagoon)',
+    items: [
+      adminItem('/facilities', 'Rides, Games & Venues', 'Add or edit attractions, set a ride to maintenance, deactivate.'),
+      formItem('notifications'),
+    ],
+  },
+  ...REPORT_SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.map((i) => ({ ...i, roles: ADMIN_ONLY })),
+  })),
+  {
+    title: 'Daily records',
+    zone: 'var(--coral)',
+    items: ['tickets', 'refunds', 'purchases', 'game-plays', 'customers', 'memberships', 'ride-log', 'weather', 'maintenance', 'employees'].map(formItem),
   },
 ]

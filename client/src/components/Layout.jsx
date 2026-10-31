@@ -4,8 +4,9 @@ import { useAuth } from '../auth/context.js'
 import { NAV_SECTIONS, PARK_SHORT, ROLE_INFO } from '../config/nav.js'
 
 // The shell: sidebar menu (filtered by role) + the page content on the right.
+// The staff portal uses the defaults. The admin portal passes base="/admin" and its own sections.
 // data-role on the shell sets the role color (awning, active item, primary buttons).
-export default function Layout() {
+export default function Layout({ base = '/staff', sections = NAV_SECTIONS, brandSub = 'Transaction portal' }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -21,7 +22,7 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-name">{PARK_SHORT}</span>
-          <span className="brand-sub">Transaction portal</span>
+          <span className="brand-sub">{brandSub}</span>
         </div>
         <button
           type="button"
@@ -33,17 +34,17 @@ export default function Layout() {
         </button>
         <div className={menuOpen ? 'menu open' : 'menu'}>
           <nav onClick={() => setMenuOpen(false)}>
-            <NavLink to="/staff" end>
+            <NavLink to={base} end>
               Dashboard
             </NavLink>
-            {NAV_SECTIONS.map((section) => {
+            {sections.map((section) => {
               const items = section.items.filter((item) => item.roles.includes(user.role))
               if (items.length === 0) return null
               return (
                 <div key={section.title} className="nav-section" style={{ '--zone': section.zone }}>
                   <h2>{section.title}</h2>
                   {items.map((item) => (
-                    <NavLink key={item.to} to={`/staff${item.to}`}>
+                    <NavLink key={item.to} to={`${base}${item.to}`}>
                       {item.label}
                     </NavLink>
                   ))}

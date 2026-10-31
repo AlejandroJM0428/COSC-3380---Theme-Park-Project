@@ -80,7 +80,8 @@ export default function RecordManager({ entity }) {
     try {
       const body = entity.toPayload(form)
       const saved = editingId == null ? await createRecord(entity.resource, body) : await updateRecord(entity.resource, editingId, body)
-      setNotice(`${entity.noun[0].toUpperCase()}${entity.noun.slice(1)} #${saved[entity.idKey]} saved.`)
+      const label = `${entity.noun[0].toUpperCase()}${entity.noun.slice(1)}`
+      setNotice(entity.hideIds ? `${label} saved.` : `${label} #${saved[entity.idKey]} saved.`)
       const nextToast = entity.savedToast?.(saved)
       if (nextToast) setToast(nextToast)
       closeForm()
@@ -94,7 +95,7 @@ export default function RecordManager({ entity }) {
     }
   }
 
-  // Optional entity settings: deleteLabel ('Void'), deletePast ('Voided'), askReason (prompt sent as ?reason=),
+  // Optional entity settings: hideIds (never show record numbers), deleteLabel ('Void'), deletePast ('Voided'), askReason (prompt sent as ?reason=),
   // canEditRow(row) and canDeleteRow(row) to hide the buttons on rows that are already finished.
   const deleteLabel = entity.deleteLabel ?? 'Delete'
   const deletePast = entity.deletePast ?? 'Deleted'
@@ -215,7 +216,7 @@ export default function RecordManager({ entity }) {
 
       {form && (
         <form className="panel rm-form" onSubmit={submit} onChange={onFormChange}>
-          <h2>{editingId == null ? `Add ${entity.noun}` : `Edit ${entity.noun} #${editingId}`}</h2>
+          <h2>{editingId == null ? `Add ${entity.noun}` : entity.hideIds ? `Edit ${entity.noun}` : `Edit ${entity.noun} #${editingId}`}</h2>
           <div className="rm-grid">{entity.fields.map(renderField)}</div>
           <div className="button-row">
             <button type="submit" disabled={saving}>
