@@ -1,0 +1,109 @@
+/* One-page admin. Every class starts with onepage- so nothing else is affected. */
+
+.onepage {
+  min-height: 100vh;
+}
+
+.onepage-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 36px;
+  background: var(--pine);
+  color: #fff;
+}
+
+.onepage-brand {
+  display: flex;
+  flex-direction: column;
+}
+
+.onepage-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #cfe3df;
+}
+
+.onepage-main {
+  padding: 24px 36px 64px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Jump links stay in view while scrolling. */
+.onepage-jump {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0;
+  margin-bottom: 16px;
+  background: var(--mist);
+  border-bottom: 1px solid var(--line);
+}
+
+.onepage-jump a {
+  padding: 6px 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.onepage-jump a:hover {
+  background: var(--role-bright, var(--sun));
+}
+
+.onepage-section {
+  margin: 0 0 20px;
+  padding: 14px 18px 18px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: 6px solid var(--zone, var(--plum));
+  border-radius: 6px;
+  scroll-margin-top: 64px;
+}
+
+.onepage-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.onepage-section-head h2 {
+  margin: 0;
+}
+
+.onepage-entry {
+  margin-top: 8px;
+}
+
+.onepage-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 14px;
+}
+
+.onepage-tabs button[aria-selected='true'] {
+  background: var(--ink);
+  color: #fff;
+}
+
+@media (max-width: 820px) {
+  .onepage-top {
+    padding: 12px 16px;
+  }
+
+  .onepage-main {
+    padding: 16px 16px 48px;
+  }
+}

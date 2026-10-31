@@ -190,7 +190,7 @@ export function adminTransactions(type, id) {
   return http(`/admin/transactions/${encodeURIComponent(type)}/${encodeURIComponent(id)}`)
 }
 
-// Dean mode. Triggers and constraints still apply, and every change is audited.
+// Row Editor. Triggers and constraints still apply, and every change is audited.
 export function adminInsertRow(table, values) {
   needLive()
   return http(`/admin/rows/${encodeURIComponent(table)}`, { method: 'POST', body: { values } })

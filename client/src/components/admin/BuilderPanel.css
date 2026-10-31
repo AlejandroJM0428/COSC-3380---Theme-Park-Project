@@ -1,0 +1,40 @@
+/* SQL GUI panel. Every class starts with builder- so nothing else is affected. */
+
+.builder-columns,
+.builder-filters {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 10px 0;
+  padding: 8px 12px 10px;
+}
+
+.builder-columns legend,
+.builder-filters legend {
+  font-weight: 600;
+  padding: 0 6px;
+}
+
+.builder-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+}
+
+.builder-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.builder-sql {
+  margin: 6px 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.1);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

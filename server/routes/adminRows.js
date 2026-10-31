@@ -4,7 +4,7 @@ import { HttpError } from '../errors.js';
 import { friendlyDbError } from '../validate.js';
 import { adminOnly, audit } from './admin.js';
 
-// Dean mode (admin only): insert, edit and delete one row in any base table.
+// Row Editor (admin only): insert, edit and delete one row in any base table.
 //   POST /api/admin/rows/:table          { values: { Column: value, ... } }            insert
 //   PUT  /api/admin/rows/:table          { key: { PkColumn: value }, values: {...} }   edit
 //   POST /api/admin/rows/:table/delete   { key: { PkColumn: value } }                  delete
