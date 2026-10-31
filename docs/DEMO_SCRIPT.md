@@ -9,10 +9,10 @@ Credentials are not in the repo. Passwords come from the reseed (plan step 2.5) 
 | Username | Role | Used for |
 |---|---|---|
 | `admin` | Admin | Everything, the SQL console, the Triggers tab |
-| `manager` | Manager (operations) | Ride log, weather log, ride and attendance reports, Maintenance (view only) |
+| `manager` | Manager (operations) | Ride log, weather log, Ride Performance & Availability and Attendance & Capacity reports, Maintenance (view only) |
 | `cashier` | Cashier | Sell Ticket, refunds, purchases, game plays, customers, memberships |
-| `maintmgr` | MaintenanceManager | Maintenance page and the maintenance reports |
-| `hr` | HRManager | Shift Ratings and the employee reports |
+| `maintmgr` | MaintenanceManager | Maintenance page, Maintenance Activity & History and Repair Cost by Facility |
+| `hr` | HRManager | Shift Ratings, Employee Performance and Staff by Zone |
 | `tech` | MaintenanceWorker | My Work |
 
 ## Before you start (5 minutes, the day before and again 30 minutes before)
@@ -38,7 +38,7 @@ Credentials are not in the repo. Passwords come from the reseed (plan step 2.5) 
 Each role has its own menu and landing page, and the server refuses anything outside it (role matrix in `a3.md`). Three beats:
 
 1. `cashier` (ticket booth): the menu is Sell Ticket, Ticket Sales & Refunds, Food & Shop Purchases, Game Plays, Customers and Memberships. No reports. Type `/staff/reports/revenue` in the address bar: "Your role (Cashier) cannot open this report." Say the server answers 403 as well, so hiding links is not the protection.
-2. `manager` (operations desk), then `maintmgr` (maintenance desk): the manager sees the ride, weather and attendance reports, the Ride Log and Weather Log, and Maintenance as view only (no Add or Edit buttons). No revenue, no staff reports, no ticket sales. Switch to `maintmgr`: only the maintenance reports and the Maintenance page, with Add and Edit. Same idea for `hr` (employee reports and Shift Ratings) and `retail` (revenue, membership and attendance reports plus the sales pages) if there is time.
+2. `manager` (operations desk), then `maintmgr` (maintenance desk): the manager sees two reports, Ride Performance & Availability (its Rain-outs per Month tab covers the weather) and Attendance & Capacity Performance, plus the Ride Log and Weather Log, and Maintenance as view only (no Add or Edit buttons). No revenue, no staff reports, no ticket sales. Switch to `maintmgr`: only Maintenance Activity & History and Repair Cost by Facility, and the Maintenance page, with Add and Edit. Same idea for `hr` (Employee Performance, Staff by Zone and Shift Ratings) and `retail` (Revenue & Sales Performance, Membership Performance and Attendance & Capacity Performance plus the sales pages) if there is time.
 3. `admin`: show everything, then say the admin is the only role that reaches `/admin`. Open `/admin` as `cashier`: it sends you back to `/staff`.
 
 ## 3. Triggers in action (6 min, about one minute each)

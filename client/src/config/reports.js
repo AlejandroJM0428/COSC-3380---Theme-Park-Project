@@ -7,7 +7,7 @@
 //   group       which menu section it sits in (one of REPORT_GROUPS at the bottom of this file)
 //   roles       who may open it (the server enforces the same list in server/routes/reports.js)
 //   required    true = one of the reports the professor listed
-//   hidden      true = kept here but not shown anywhere (see the weather reports)
+//   hidden      true = kept here but not shown anywhere (none at the moment)
 //   prepare     optional: reshape the rows before showing them
 //   filters     optional: [{ key, label }] drop-downs built from the values in that column
 //   dateFilter  optional: { key, label } adds a from/to date range on that column
@@ -1359,6 +1359,7 @@ const ALL_REPORTS = [
     ],
     chartRows: (rows) => sumBy(rows, 'ZoneName', 'Staff'),
     chart: { type: 'bar', x: 'ZoneName', y: 'Staff' },
+    columns: ['ZoneName', 'JobTitle', 'Staff', 'ClockedInNow'],
   },
 
   // ---- Rides and operations ----
@@ -1612,16 +1613,6 @@ const ALL_REPORTS = [
         rowClass: markOf,
       },
     ],
-  },
-
-  {
-    key: 'weather-impact',
-    endpoint: 'weather-impact',
-    view: 'v_WeatherImpact',
-    title: 'Weather Impact',
-    description: 'Weather events with weather-related refunds.',
-    hidden: true,
-    roles: OPERATIONS,
   },
 ]
 
