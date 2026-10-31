@@ -73,8 +73,10 @@ function downloadCsv(name, columns, rows) {
 }
 
 // One page for EVERY report: it looks up its settings in config/reports.js.
-export default function ReportPage() {
-  const { key } = useParams()
+// `reportKey` lets the one-page admin show a report in place. Without it the key comes from the URL (/reports/:key).
+export default function ReportPage({ reportKey }) {
+  const params = useParams()
+  const key = reportKey ?? params.key
   const { user } = useAuth()
   const report = REPORTS.find((r) => r.key === key)
   const allowed = Boolean(report) && (!report.roles || report.roles.includes(user.role))
