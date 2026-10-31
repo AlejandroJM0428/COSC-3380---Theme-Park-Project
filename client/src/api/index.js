@@ -64,6 +64,12 @@ export function refundVisitorTicket(ticketId) {
   return http(`/visitor/tickets/${ticketId}/refund`, { method: 'POST', body: {} })
 }
 
+// Public site data for the homepage and public pages: prices, hours, membership tiers, rides
+// (Open/Closed only, never wait times) and venues. No sign-in needed. Works in mock mode too.
+export function getPublicSite() {
+  return USE_MOCK ? mock.getPublicSite() : http('/public/site')
+}
+
 // Generic data entry, used by components/RecordManager.jsx. `resource` is the API path, e.g. 'maintenance'.
 export function listRecords(resource, query = {}) {
   needLive()

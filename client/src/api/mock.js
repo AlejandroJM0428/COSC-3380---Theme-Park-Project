@@ -126,3 +126,33 @@ export async function getReport(endpoint) {
   if (!rows) throw new Error(`No mock data for report "${endpoint}"`)
   return rows.map((r) => ({ ...r })) // copy so pages can't mutate the originals
 }
+
+// Public site data (same shape as GET /api/public/site). No wait times, on purpose.
+export async function getPublicSite() {
+  await delay()
+  return {
+    prices: { dayPass: 79, expressAddOn: 25 },
+    hours: { open: '09:00', close: '22:00' },
+    tiers: [
+      { tier: 'Basic', annualPrice: 99, anyDayAccess: false, includesExpress: false, benefits: ['Weekday admission', 'Standard queues included'] },
+      { tier: 'Plus', annualPrice: 149, anyDayAccess: true, includesExpress: false, benefits: ['Any-day admission', 'Standard queues included'] },
+      { tier: 'Premier', annualPrice: 249, anyDayAccess: true, includesExpress: true, benefits: ['Any-day admission', 'Express queues included'] },
+    ],
+    rides: [
+      { rideId: 3, rideName: 'Thunder Run', zoneName: 'Thunder Canyon', rideType: 'Coaster', minHeightCm: 122, state: 'Open' },
+      { rideId: 4, rideName: 'Canyon Cyclone', zoneName: 'Thunder Canyon', rideType: 'Coaster', minHeightCm: 132, state: 'Open' },
+      { rideId: 5, rideName: 'Rapids Rampage', zoneName: 'Thunder Canyon', rideType: 'Water Ride', minHeightCm: 107, state: 'Closed' },
+      { rideId: 1, rideName: 'Heritage Railroad', zoneName: 'Main Street', rideType: 'Train', minHeightCm: null, state: 'Open' },
+      { rideId: 2, rideName: 'Grand Carousel', zoneName: 'Main Street', rideType: 'Carousel', minHeightCm: null, state: 'Open' },
+      { rideId: 9, rideName: 'Enchanted Journey', zoneName: 'Fantasy Forest', rideType: 'Dark Ride', minHeightCm: null, state: 'Open' },
+      { rideId: 14, rideName: 'Little Dino Dash', zoneName: 'Kids Corner', rideType: 'Coaster', minHeightCm: 91, state: 'Open' },
+      { rideId: 15, rideName: 'Mini Carousel', zoneName: 'Kids Corner', rideType: 'Carousel', minHeightCm: null, state: 'Open' },
+    ],
+    venues: [
+      { venueId: 6, venueName: 'Main Street Emporium', venueType: 'Gift Shop', serviceType: null, zoneName: 'Main Street' },
+      { venueId: 1, venueName: 'Main Street Diner', venueType: 'Restaurant', serviceType: 'Table Service', zoneName: 'Main Street' },
+      { venueId: 2, venueName: 'Canyon Grill', venueType: 'Restaurant', serviceType: 'Quick Service', zoneName: 'Thunder Canyon' },
+    ],
+  }
+}
+
