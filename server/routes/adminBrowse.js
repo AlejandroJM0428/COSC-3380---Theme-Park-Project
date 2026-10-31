@@ -52,7 +52,7 @@ route(
     const table = found[0].name; // the real name from the database, not the browser's text
 
     const [colRows] = await pool.query(
-      `SELECT COLUMN_NAME AS name, DATA_TYPE AS type, COLUMN_KEY AS keyType, (IS_NULLABLE = 'YES') AS nullable
+      `SELECT COLUMN_NAME AS name, DATA_TYPE AS type, COLUMN_KEY AS keyType, (IS_NULLABLE = 'YES') AS nullable, EXTRA AS extra
          FROM information_schema.COLUMNS
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
         ORDER BY ORDINAL_POSITION`,
@@ -63,6 +63,8 @@ route(
       type: c.type,
       key: c.keyType === 'PRI',
       nullable: Boolean(c.nullable),
+      auto: /auto_increment/i.test(c.extra || ''),
+      generated: /generated/i.test(c.extra || ''),
       hidden: HIDDEN.test(c.name),
     }));
     const primaryKey = columns.filter((c) => c.key).map((c) => c.name);
