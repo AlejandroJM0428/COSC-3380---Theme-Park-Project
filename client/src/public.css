@@ -1,0 +1,87 @@
+/* Public site (homepage and public pages). Uses the tokens in theme.css. Scoped under .pub / .pub-* */
+
+.pub { background: var(--brand-surface-alt); color: var(--brand-ink); }
+.pub a { color: inherit; }
+.pub :focus-visible { outline: 3px solid var(--brand-primary); outline-offset: 2px; }
+.pub-hero :focus-visible, .pub-footer :focus-visible, .notice-strip :focus-visible { outline-color: var(--brand-accent); }
+
+/* Header: one row, sticky */
+.pub-header { position: sticky; top: 0; z-index: 50; background: var(--brand-surface); border-bottom: 1px solid var(--brand-line); }
+.pub-header-inner { max-width: 1240px; margin: 0 auto; height: 68px; padding: 0 20px; display: flex; align-items: center; gap: 28px; }
+.pub-wordmark { text-decoration: none; color: var(--brand-primary); flex: none; }
+.pub-wordmark .wordmark strong { font-size: 1.25rem; }
+.pub-nav { display: flex; align-items: center; gap: 26px; flex: 1; }
+.pub-nav a { text-decoration: none; font-weight: 700; font-size: .93rem; padding: 6px 0; border-bottom: 2px solid transparent; }
+.pub-nav a:hover, .pub-nav a.active { border-bottom-color: var(--brand-primary); }
+.pub-signin-mobile { display: none; }
+.pub-actions { display: flex; align-items: center; gap: 18px; margin-left: auto; }
+.pub-signin { text-decoration: none; font-weight: 700; font-size: .93rem; }
+.pub-signin:hover { text-decoration: underline; }
+.pub-menu-button { display: none; background: transparent; border: 1px solid var(--brand-line); border-radius: 8px; width: 42px; height: 42px; font-size: 1.3rem; line-height: 1; cursor: pointer; color: var(--brand-ink); }
+
+/* Buttons */
+.pub-buy { display: inline-block; background: var(--brand-accent); color: var(--brand-accent-contrast); text-decoration: none; font-weight: 800; border-radius: 999px; padding: 10px 20px; white-space: nowrap; border: 0; }
+.pub-buy:hover { filter: brightness(.95); }
+.pub-buy-lg { padding: 15px 32px; font-size: 1.05rem; }
+.pub a.pub-buy { color: var(--brand-accent-contrast); }
+.pub-link { color: var(--brand-primary); font-weight: 700; }
+
+/* Hero */
+.pub-hero { position: relative; min-height: 540px; display: flex; align-items: flex-end; padding: 80px 20px 120px; color: #fff; }
+.pub-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(8, 20, 40, .78), rgba(8, 20, 40, .12) 65%); }
+.pub-hero-inner { position: relative; z-index: 1; max-width: 1240px; width: 100%; margin: 0 auto; }
+.pub-hero h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); margin: 0 0 12px; max-width: 14ch; line-height: 1.02; }
+.pub-hero p { font-size: 1.15rem; max-width: 34rem; margin: 0 0 26px; opacity: .95; }
+.pub-hero-actions { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.pub .pub-hero-link { color: #fff; font-weight: 800; text-decoration: none; border-bottom: 2px solid var(--brand-accent); padding-bottom: 2px; }
+
+/* Quick-buy bar overlapping the hero */
+.pub-quickbuy-wrap { position: relative; z-index: 2; max-width: 1100px; margin: -64px auto 0; padding: 0 20px; }
+.pub-quickbuy { background: var(--brand-surface); border-radius: 16px; box-shadow: 0 18px 44px rgba(10, 25, 50, .2); padding: 20px 24px; display: grid; grid-template-columns: 1.1fr 1.1fr 1fr auto; gap: 22px; align-items: center; }
+.pub-qb-field { display: grid; gap: 4px; }
+.pub-qb-field span, .pub-qb-price span { font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-muted); }
+.pub-qb-field input { font: inherit; padding: 11px 12px; border: 1px solid var(--brand-line); border-radius: 10px; background: #fff; color: var(--brand-ink); }
+.pub-qb-express { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.pub-qb-express input { width: 22px; height: 22px; accent-color: var(--brand-primary); flex: none; }
+.pub-qb-express strong, .pub-qb-express small { display: block; }
+.pub-qb-express small { color: var(--brand-muted); font-size: .78rem; }
+.pub-qb-price { display: grid; gap: 2px; }
+.pub-qb-price strong { font-family: var(--brand-font-display); font-size: 1.7rem; letter-spacing: -.03em; }
+.pub-qb-submit { font: inherit; font-weight: 800; background: var(--brand-primary); color: var(--brand-primary-contrast); border: 0; border-radius: 10px; padding: 15px 26px; cursor: pointer; white-space: nowrap; }
+.pub-qb-submit:hover { filter: brightness(1.12); }
+
+/* Simple page body (placeholder pages) */
+.pub-page { max-width: 760px; margin: 56px auto; padding: 0 20px; min-height: 40vh; }
+.pub-page h1 { margin: 0 0 12px; }
+
+/* Footer */
+.pub-footer { background: #0e1b2c; color: #fff; padding: 36px 20px 24px; }
+.pub-footer-inner { max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 36px; }
+.pub-footer nav { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+.pub-footer a { text-decoration: none; font-weight: 600; font-size: .92rem; opacity: .9; }
+.pub-footer a:hover { opacity: 1; text-decoration: underline; }
+.pub-footer p { max-width: 1240px; margin: 22px auto 0; font-size: .78rem; opacity: .65; }
+
+/* Tablet and phone */
+@media (max-width: 980px) {
+  .pub-quickbuy { grid-template-columns: 1fr 1fr; }
+  .pub-qb-submit { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .pub-header-inner { gap: 12px; }
+  .pub-signin { display: none; }
+  .pub-menu-button { display: inline-block; }
+  .pub-nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0; background: var(--brand-surface); border-bottom: 1px solid var(--brand-line); box-shadow: 0 14px 24px rgba(10, 25, 50, .12); padding: 8px 20px 14px; }
+  .pub-nav.open { display: flex; }
+  .pub-nav a { padding: 14px 0; border-bottom: 1px solid var(--brand-line); }
+  .pub-signin-mobile { display: block; }
+}
+@media (max-width: 560px) {
+  .pub-hero { min-height: 460px; padding-bottom: 110px; }
+  .pub-quickbuy { grid-template-columns: 1fr; padding: 18px; }
+  .pub-quickbuy-wrap { margin-top: -56px; }
+  .pub-buy { padding: 9px 16px; }
+}
+
+/* Visually hidden text (kept here so the public site does not depend on the portal stylesheet) */
+.pub .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

@@ -18,7 +18,9 @@ import NotificationsPage from './pages/NotificationsPage.jsx'
 import { CustomersPage, FacilitiesPage, GamePlaysPage, MembershipsPage, PurchasesPage, RideLogPage, UsersPage, WeatherPage } from './pages/DataEntryPages.jsx'
 import Placeholder from './pages/Placeholder.jsx'
 import NotFound from './pages/NotFound.jsx'
+import PublicLayout from './components/PublicLayout.jsx'
 import HomePage from './pages/HomePage.jsx'
+import Tickets from './pages/Tickets.jsx'
 import MemberPortal from './pages/MemberPortal.jsx'
 import { ADMIN_NAV_SECTIONS, ADMIN_ONLY, FORM_PAGES, MANAGEMENT, STAFF_ROLES } from './config/nav.js'
 
@@ -45,7 +47,10 @@ export default function App() {
   return (
     <Routes>
       {/* 1. Public visitor page: the front door, no login needed */}
-      <Route path="/" element={<HomePage />} />
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/tickets" element={<Tickets />} />
+      </Route>
 
       {/* 2. Member (customer) login + account */}
       <Route path="/member/login" element={<Login audience="member" />} />

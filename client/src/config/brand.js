@@ -6,6 +6,8 @@ export const BRAND = {
   name: 'Park Name',
   shortName: 'Park Name',
   tagline: 'Adventure Park',
+  // Placeholder homepage copy. Change it here.
+  hero: { headline: 'More thrills. Less waiting.', sub: 'Day passes, Express queues and memberships for every kind of adventure.' },
   images: {
     hero: '/images/roller-coaster.jpg',
     thrill: '/images/thrill-rides.jpg',

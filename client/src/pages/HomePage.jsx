@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getVisitorDashboard } from '../api/index.js'
-import NotificationBar from '../components/NotificationBar.jsx'
-import Wordmark from '../components/Wordmark.jsx'
+import { getPublicSite } from '../api/index.js'
+import BrandImage from '../components/BrandImage.jsx'
+import QuickBuy from '../components/QuickBuy.jsx'
 import { BRAND, LANDS } from '../config/brand.js'
 import { money, rideImage, statusTone } from '../utils/portalFormat.js'
-import './VisitorPortal.css'
 
 // The public front door (/). No sign-in needed. It never shows wait times or anything personal.
 export default function HomePage() {
-  const [dashboard, setDashboard] = useState(null)
+  const [site, setSite] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [rideSearch, setRideSearch] = useState('')
@@ -19,7 +18,7 @@ export default function HomePage() {
     setLoading(true)
     setError('')
     try {
-      setDashboard(await getVisitorDashboard())
+      setSite(await getPublicSite())
     } catch (err) {
       setError(err.message || 'Could not load the park information.')
     } finally {
@@ -29,9 +28,9 @@ export default function HomePage() {
 
   useEffect(() => { refresh() }, [refresh])
 
-  const passPrice = dashboard?.prices?.dayPass ?? 79
-  const expressPrice = dashboard?.prices?.expressAddOn ?? 25
-  const rides = dashboard?.rides ?? []
+  const passPrice = site?.prices?.dayPass
+  const expressPrice = site?.prices?.expressAddOn
+  const rides = site?.rides ?? []
   const visibleRides = useMemo(() => rides.filter((ride) => {
     const q = rideSearch.trim().toLowerCase()
     const matchesLand = !landFilter || landFilter.zones.includes(ride.zoneName)
@@ -53,39 +52,21 @@ export default function HomePage() {
   )
 
   return (
-    <main className="visitor-portal">
-      <header className="vp-header">
-        <div className="vp-utility">
-          <span>{BRAND.name}</span>
-          <span className="vp-utility-links">
-            <Link to="/member/login">Sign in</Link>
-            <Link to="/member/register">Join</Link>
-          </span>
-        </div>
-        <div className="vp-navbar">
-          <Link to="/" className="visitor-brand" aria-label={`${BRAND.name} home`}>
-            <Wordmark />
-          </Link>
-          <nav className="vp-nav" aria-label="Main navigation">
-            <a href="#rides">Rides &amp; Entertainment</a>
-            <a href="#visit">Tickets &amp; Memberships</a>
-          </nav>
-          <Link to="/member/login" className="vp-buy">Buy Tickets</Link>
-        </div>
-      </header>
-
-      <NotificationBar />
-
-      <section className="vp-hero">
-        <div className="vp-hero-copy">
-          <p className="vp-hero-eyebrow">{`Welcome to ${BRAND.shortName}`}</p>
-          <h1>More thrills.<br />Less waiting.</h1>
-          <div className="vp-hero-actions">
-            <Link to="/member/login" className="vp-buy">Buy Tickets</Link>
-            <a href="#rides" className="vp-ghost">Explore Rides</a>
+    <main>
+      <BrandImage src={BRAND.images.hero} className="pub-hero">
+        <div className="pub-hero-inner">
+          <h1>{BRAND.hero.headline}</h1>
+          <p>{BRAND.hero.sub}</p>
+          <div className="pub-hero-actions">
+            <Link to="/tickets" className="pub-buy pub-buy-lg">Buy Tickets</Link>
+            <a href="#rides" className="pub-hero-link">Explore Rides <span aria-hidden="true">→</span></a>
           </div>
         </div>
-      </section>
+      </BrandImage>
+
+      <div className="pub-quickbuy-wrap">
+        <QuickBuy prices={site?.prices} />
+      </div>
 
       <div className="visitor-content">
         {error && <div className="visitor-alert error" role="alert"><strong>Something needs attention</strong><span>{error}</span></div>}
@@ -96,10 +77,10 @@ export default function HomePage() {
           <div className="vp-promo-img" aria-hidden="true" />
           <div className="vp-promo-copy">
             <p className="vp-promo-eyebrow">Tickets &amp; Memberships</p>
-            <h2>Day passes from {money(passPrice)}</h2>
-            <p>Add Express queue access for {money(expressPrice)} and skip the long waits. Members get admission built in all year.</p>
+            <h2>{passPrice != null ? `Day passes from ${money(passPrice)}` : 'Day passes'}</h2>
+            <p>{expressPrice != null ? `Add Express queue access for ${money(expressPrice)} and skip the long queues.` : 'Add Express queue access and skip the long queues.'} Members get admission built in all year.</p>
             <div className="vp-promo-actions">
-              <Link to="/member/login" className="vp-buy">Buy Tickets</Link>
+              <Link to="/tickets" className="vp-buy">Buy Tickets</Link>
               <Link to="/member/register" className="vp-ghost vp-ghost-dark">Become a Member</Link>
             </div>
           </div>
@@ -114,12 +95,12 @@ export default function HomePage() {
           </div>
           <div className="vp-list">
             {visibleRides.map((ride) => (
-              <article className={`vp-row ${ride.currentState === 'Open' ? '' : 'vp-row-closed'}`} key={ride.rideId}>
+              <article className={`vp-row ${ride.state === 'Open' ? '' : 'vp-row-closed'}`} key={ride.rideId}>
                 <div className="vp-row-img" style={{ backgroundImage: `url(${rideImage(ride.zoneName)})` }} aria-hidden="true" />
                 <div className="vp-row-main">
                   <h3>{ride.rideName}</h3>
                   <p>{ride.zoneName}</p>
-                  <span className={`ride-status ${statusTone(ride.currentState)}`}><i />{ride.currentState}</span>
+                  <span className={`ride-status ${statusTone(ride.state)}`}><i />{ride.state}</span>
                 </div>
               </article>
             ))}
@@ -128,19 +109,6 @@ export default function HomePage() {
           <p className="ride-disclaimer"><span aria-hidden="true">ⓘ</span> Status comes from the park’s live ride status.</p>
         </section>
       </div>
-
-      <footer className="vp-footer">
-        <div className="vp-footer-inner">
-          <div className="vp-footer-brand"><Wordmark tagline={false} light /></div>
-          <nav aria-label="Footer">
-            <Link to="/member/login">Member sign in</Link>
-            <Link to="/member/register">Join</Link>
-            <Link to="/staff/login">Staff sign in</Link>
-            <a href="#top" onClick={(event) => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</a>
-          </nav>
-        </div>
-        <p>{BRAND.name} · Visitor portal prototype</p>
-      </footer>
     </main>
   )
 }
