@@ -20,6 +20,8 @@ import './routes/me.js';
 import './routes/admin.js';
 import './routes/adminBrowse.js';
 import './routes/adminSql.js';
+import './routes/adminTransactions.js';
+import './routes/adminRows.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
