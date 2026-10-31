@@ -341,7 +341,7 @@ export default function BuilderPanel({ onUseInConsole }) {
                 onChange={(e) => setLimit(e.target.value)}
               />
             </label>
-            <button type="button" onClick={run} disabled={busy || !table}>
+            <button type="button" className="btn-primary" onClick={run} disabled={busy || !table}>
               {busy ? 'Running…' : 'Run query'}
             </button>
           </div>
