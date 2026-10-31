@@ -13,27 +13,129 @@
   display: none !important;
 }
 
+/* White header: logo and park name on the left, who is signed in on the right. */
 .onepage-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px 16px;
-  padding: 8px 24px;
-  background: var(--pine);
-  color: #fff;
+  padding: 10px 24px;
+  background: var(--panel);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
 }
 
 .onepage-brand {
   display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.onepage-brand-text {
+  display: flex;
   flex-direction: column;
+}
+
+.onepage-logo {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: var(--role, var(--pine));
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.onepage .brand-name {
+  color: var(--ink);
+}
+
+.onepage .brand-sub {
+  color: var(--muted);
 }
 
 .onepage-user {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #cfe3df;
+  color: var(--muted);
+}
+
+/* Tab bar under the header. Each tab except Home opens a drop-down of its items. */
+.onepage-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.onepage-tabwrap {
+  position: relative;
+}
+
+.onepage-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+}
+
+.onepage-tab[aria-current='page'] {
+  border-bottom-color: var(--role, var(--plum));
+  color: var(--role, var(--plum));
+}
+
+.onepage-caret {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+}
+
+.onepage-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  min-width: 230px;
+  max-height: 70vh;
+  overflow: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+.onepage-menu button {
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.onepage-menu button[aria-current='page'] {
+  background: var(--ink);
+  color: #fff;
+}
+
+.onepage-title {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
 }
 
 .onepage-main {
@@ -47,144 +149,30 @@
   flex-direction: column;
 }
 
-/* Title on the left, the four headline numbers on one line to the right. */
-.onepage-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  margin-bottom: 8px;
-}
-
-.onepage-strip h1 {
-  margin: 0;
-  font-size: 1.5rem;
-}
-
-/* Headline numbers: four small tiles on one line. */
-.onepage .admin-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-}
-
-.onepage .admin-stat {
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  gap: 6px;
-  padding: 5px 12px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--role, var(--plum));
-  border-radius: 6px;
-}
-
-.onepage .admin-stat-value {
-  font-size: 1.2rem;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.onepage .admin-stat-label,
-.onepage .admin-stat-note {
-  font-size: 0.8rem;
-}
-
-.onepage .admin-stat-note {
-  opacity: 0.7;
-}
-
-/* The five groups. */
-.onepage-groups {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
-}
-
-.onepage-groups button {
-  border-radius: 999px;
-  padding: 6px 14px;
-}
-
-.onepage-groups button[aria-selected='true'] {
-  background: var(--ink);
-  color: #fff;
-}
-
-/* Items on the left, the chosen item on the right. */
+/* The chosen item (or Home) fills the width under the tab bar. */
 .onepage-work {
   flex: 1;
   min-height: 0;
   margin-top: 12px;
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
-  gap: 14px;
-}
-
-.onepage-work.single {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.onepage-rail,
 .onepage-pane {
   min-height: 0;
   overflow: auto;
+  padding: 14px 18px 18px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-top: 6px solid var(--zone, var(--plum));
   border-radius: 6px;
 }
 
-.onepage-rail {
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.onepage-rail-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.onepage-rail-head {
-  padding: 4px 10px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.onepage-rail button {
-  text-align: left;
-  padding: 7px 10px;
-  border-color: transparent;
+/* Home has no frame: its cards are the frames. */
+.onepage-work.home .onepage-pane {
   background: transparent;
-}
-
-.onepage-rail button:hover:not(:disabled) {
-  background: #f1f7f5;
-}
-
-.onepage-rail button[aria-current='page'] {
-  background: var(--ink);
-  color: #fff;
-}
-
-.onepage-pane {
-  padding: 14px 18px 18px;
-}
-
-/* The drop-down replaces the left list on narrow screens. */
-.onepage-picker {
-  display: none;
+  border: 0;
+  padding: 0;
 }
 
 @media (max-width: 820px) {
@@ -204,18 +192,6 @@
 
   .onepage-work {
     display: block;
-  }
-
-  .onepage-rail {
-    display: none;
-  }
-
-  .onepage-picker {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 10px;
-    font-weight: 600;
   }
 
   .onepage-pane {
@@ -309,11 +285,8 @@
 /* Small and short screens. Nothing here changes the desktop layout on a tall laptop screen.
    The aim: the page never scrolls sideways, wide tables scroll inside their own box, and every tap target is easy to hit. */
 
-/* Narrow laptop or tablet window: a slimmer left list gives the work area more room. */
+/* Narrow laptop or tablet window: slimmer side padding gives the work area more room. */
 @media (min-width: 821px) and (max-width: 1050px) {
-  .onepage-work {
-    grid-template-columns: 190px minmax(0, 1fr);
-  }
   .onepage-main,
   .onepage-top {
     padding-left: 16px;
@@ -330,15 +303,6 @@
   .onepage-main {
     padding-top: 6px;
     padding-bottom: 10px;
-  }
-  .onepage-strip {
-    margin-bottom: 4px;
-  }
-  .onepage-strip h1 {
-    font-size: 1.2rem;
-  }
-  .onepage-groups {
-    padding-bottom: 6px;
   }
   .onepage-work {
     margin-top: 8px;
@@ -359,32 +323,6 @@
   .onepage-pane {
     min-width: 0;
     max-width: 100%;
-  }
-
-  /* The five areas become one row you swipe, instead of two or three rows of buttons that push the work down. */
-  .onepage-groups {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-  }
-  .onepage-groups button {
-    flex: none;
-    white-space: nowrap;
-    min-height: 40px;
-  }
-
-  .onepage-strip h1 {
-    font-size: 1.25rem;
-  }
-  .onepage .admin-stat {
-    padding: 4px 10px;
-  }
-
-  .onepage-picker select {
-    width: 100%;
-    min-height: 44px;
-    font-size: 1rem;
   }
 
   .onepage-pane {

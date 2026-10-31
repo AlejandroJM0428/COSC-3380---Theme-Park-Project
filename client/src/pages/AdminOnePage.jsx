@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { listRecords } from '../api'
 import { useAuth } from '../auth/context.js'
 import { ADMIN_NAV_SECTIONS, PARK_SHORT, ROLE_INFO } from '../config/nav.js'
+import AdminHome from '../components/admin/AdminHome.jsx'
 import BrowsePanel from '../components/admin/BrowsePanel.jsx'
 import BuilderPanel from '../components/admin/BuilderPanel.jsx'
 import DataPanel from '../components/admin/DataPanel.jsx'
@@ -22,8 +22,9 @@ import { CustomersPage, FacilitiesPage, GamePlaysPage, MembershipsPage, Purchase
 import './AdminOnePage.css'
 
 // The one-page admin (no sidebar): one workspace instead of stacked sections.
-// A tab bar picks the group (People & access, Park setup, Reports, Daily records, Database tools).
-// A list on the left picks the item, and the item opens in place on the right. Only the right side scrolls.
+// A white header shows the park and who is signed in. Under it a tab bar picks the area:
+// Home, People & access, Park setup, Reports, Daily records, Database tools. Each area (except Home) opens a drop-down of its items,
+// and the chosen item opens in place below. Home is the overview: number cards, a chart and a few lists.
 // The choice lives in the address as #group/item (for example #reports/revenue), so a refresh or a shared link returns to it.
 // The People, Park setup, Reports and Daily records lists are read from ADMIN_NAV_SECTIONS (config/nav.js),
 // so every item of the old admin menu has a place here and a new menu item shows up on its own.
@@ -82,54 +83,6 @@ function parseHash(hash) {
   return { group: safeDecode(raw.slice(0, slash)), item: safeDecode(raw.slice(slash + 1)) }
 }
 
-function Stat({ label, value, note }) {
-  return (
-    <div className="admin-stat">
-      <span className="admin-stat-value">{value ?? '…'}</span>
-      <span className="admin-stat-label">{label}</span>
-      {note && <span className="admin-stat-note">{note}</span>}
-    </div>
-  )
-}
-
-// Same four numbers as the old admin home.
-function Headline() {
-  const [users, setUsers] = useState(null)
-  const [places, setPlaces] = useState(null)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let alive = true
-    // Starting inside .then() turns an immediate throw (mock mode) into a rejection the .catch below shows as a note.
-    Promise.resolve()
-      .then(() => Promise.all([listRecords('users'), listRecords('facilities')]))
-      .then(([u, f]) => {
-        if (!alive) return
-        setUsers(u)
-        setPlaces(f)
-      })
-      .catch((err) => alive && setError(err.message))
-    return () => {
-      alive = false
-    }
-  }, [])
-
-  const activeUsers = users?.filter((u) => Number(u.IsActive) === 1)
-  const activePlaces = places?.filter((p) => Number(p.IsActive) === 1)
-  const rides = activePlaces?.filter((p) => p.Kind === 'Ride')
-  const inMaintenance = rides?.filter((r) => r.RideStatus === 'Maintenance')
-
-  return (
-    <section className="admin-summary" aria-label="Park summary">
-      {error && <p className="muted">Summary unavailable: {error}</p>}
-      <Stat label="Active staff accounts" value={activeUsers?.length} note={users ? `${users.length - activeUsers.length} deactivated` : null} />
-      <Stat label="Active rides" value={rides?.length} note={inMaintenance ? `${inMaintenance.length} in maintenance` : null} />
-      <Stat label="Games" value={activePlaces?.filter((p) => p.Kind === 'Game').length} />
-      <Stat label="Venues" value={activePlaces?.filter((p) => p.Kind === 'Venue').length} />
-    </section>
-  )
-}
-
 // One entry shown in place. `kind` is 'report' or 'page'.
 function EntryView({ entry, kind }) {
   if (kind === 'report') return <ReportPage key={entry.key} reportKey={entry.key} />
@@ -168,46 +121,6 @@ function ToolsBody({ tool, sql, onSqlChange, onUseInConsole }) {
   )
 }
 
-// Left list (wide screens) or a drop-down (narrow screens) that picks the item inside a group.
-function ItemList({ group, items, current, onPick }) {
-  const subheads = [...new Set(items.map((i) => i.group))]
-  const showHeads = subheads.length > 1
-  return (
-    <>
-      <nav className="onepage-rail" aria-label={`${group.title} items`}>
-        {subheads.map((g) => (
-          <div key={g} className="onepage-rail-group">
-            {showHeads && <span className="onepage-rail-head">{g}</span>}
-            {items
-              .filter((i) => i.group === g)
-              .map((i) => (
-                <button key={i.key} type="button" aria-current={i.key === current ? 'page' : undefined} onClick={() => onPick(i.key)}>
-                  {i.label}
-                </button>
-              ))}
-          </div>
-        ))}
-      </nav>
-      <label className="onepage-picker">
-        {group.title}
-        <select value={current} onChange={(e) => onPick(e.target.value)}>
-          {subheads.map((g) => (
-            <optgroup key={g} label={g}>
-              {items
-                .filter((i) => i.group === g)
-                .map((i) => (
-                  <option key={i.key} value={i.key}>
-                    {i.label}
-                  </option>
-                ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
-    </>
-  )
-}
-
 export default function AdminOnePage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -219,6 +132,7 @@ export default function AdminOnePage() {
   const reportEntries = ADMIN_NAV_SECTIONS.filter((s) => s.items.some((i) => i.to.startsWith(REPORT_PREFIX))).flatMap((s) => entries(s, role))
 
   const groups = [
+    { id: 'home', title: 'Home', zone: 'var(--lagoon)', kind: 'home', items: [{ key: 'overview', label: 'Overview', group: 'Home' }] },
     { id: 'people', title: 'People & access', zone: 'var(--plum)', kind: 'page', items: entries(byTitle('People & access'), role) },
     { id: 'park', title: 'Park setup', zone: 'var(--lagoon)', kind: 'page', items: entries(byTitle('Park setup'), role) },
     { id: 'reports', title: 'Reports', zone: 'var(--sun)', kind: 'report', items: reportEntries },
@@ -238,10 +152,30 @@ export default function AdminOnePage() {
 
   const [sql, setSql] = useState('SELECT COUNT(*) AS customers FROM Customer')
 
+  // The tab whose drop-down is open (an id from `groups`, or null). Esc or a click elsewhere closes it.
+  const [menu, setMenu] = useState(null)
+  const navRef = useRef(null)
+  useEffect(() => {
+    if (!menu) return undefined
+    const onDown = (e) => {
+      if (navRef.current && !navRef.current.contains(e.target)) setMenu(null)
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenu(null)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menu])
+
   function go(groupId, itemKey) {
     const target = groups.find((g) => g.id === groupId)
     const key = itemKey ?? lastPick[groupId] ?? target.items[0].key
     setLastPick((p) => ({ ...p, [groupId]: key }))
+    setMenu(null)
     navigate({ pathname: location.pathname, search: location.search, hash: `#${groupId}/${encodeURIComponent(key)}` }, { replace: true })
   }
 
@@ -259,8 +193,13 @@ export default function AdminOnePage() {
     <div className="onepage" data-role={role}>
       <header className="onepage-top">
         <div className="onepage-brand">
-          <span className="brand-name">{PARK_SHORT}</span>
-          <span className="brand-sub">Admin portal</span>
+          <span className="onepage-logo" aria-hidden="true">
+            {PARK_SHORT.charAt(0)}
+          </span>
+          <span className="onepage-brand-text">
+            <span className="brand-name">{PARK_SHORT}</span>
+            <span className="brand-sub">Admin portal</span>
+          </span>
         </div>
         <div className="onepage-user">
           <span>
@@ -271,40 +210,65 @@ export default function AdminOnePage() {
           </button>
         </div>
       </header>
-      <div className="awning-wrap">
-        <div className="awning" />
-      </div>
+
+      <nav className="onepage-nav" aria-label="Admin areas" ref={navRef}>
+        {groups.map((g) => {
+          const dropdown = g.items.length > 1
+          const open = menu === g.id
+          return (
+            <div key={g.id} className="onepage-tabwrap">
+              <button
+                type="button"
+                className="onepage-tab"
+                id={`group-tab-${g.id}`}
+                aria-current={g.id === group?.id ? 'page' : undefined}
+                aria-haspopup={dropdown ? 'true' : undefined}
+                aria-expanded={dropdown ? open : undefined}
+                onClick={() => (dropdown ? setMenu(open ? null : g.id) : go(g.id))}
+              >
+                {g.title}
+                {dropdown && <span className="onepage-caret" aria-hidden="true" />}
+              </button>
+              {dropdown && open && (
+                <ul className="onepage-menu">
+                  {g.items.map((i) => (
+                    <li key={i.key}>
+                      <button type="button" aria-current={g.id === group?.id && i.key === item?.key ? 'page' : undefined} onClick={() => go(g.id, i.key)}>
+                        {i.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )
+        })}
+      </nav>
 
       <main className="onepage-main">
-        <div className="onepage-strip">
-          <h1>Control room</h1>
-          <Headline />
-        </div>
-
-        <div className="onepage-groups" role="tablist" aria-label="Admin areas">
-          {groups.map((g) => (
-            <button key={g.id} type="button" role="tab" id={`group-tab-${g.id}`} aria-selected={g.id === group?.id} aria-controls={`group-${g.id}`} onClick={() => go(g.id)}>
-              {g.title}
-            </button>
-          ))}
-        </div>
-
         {groups
           .filter((g) => visited.has(g.id))
           .map((g) => {
             const shown = g.id === group?.id
             const current = shown ? item : g.items.find((i) => i.key === lastPick[g.id]) ?? g.items[0]
-            const single = g.items.length === 1
             return (
-              <div key={g.id} id={`group-${g.id}`} role="tabpanel" aria-labelledby={`group-tab-${g.id}`} className={`onepage-work${single ? ' single' : ''}`} style={{ '--zone': g.zone }} hidden={!shown}>
-                {!single && <ItemList group={g} items={g.items} current={current.key} onPick={(key) => go(g.id, key)} />}
+              <div key={g.id} id={`group-${g.id}`} role="tabpanel" aria-labelledby={`group-tab-${g.id}`} className={`onepage-work${g.kind === 'home' ? ' home' : ''}`} style={{ '--zone': g.zone }} hidden={!shown}>
                 <section className="onepage-pane" aria-label={g.title}>
-                  {g.kind === 'tool' ? (
-                    <ToolsBody tool={current.key} sql={sql} onSqlChange={setSql} onUseInConsole={useInConsole} />
+                  {g.kind === 'home' ? (
+                    <AdminHome goTo={go} />
                   ) : (
                     <>
-                      {current.note && <p className="muted">{current.note}</p>}
-                      <EntryView entry={current} kind={g.kind} />
+                      <h1 className="onepage-title">
+                        {g.title} <span aria-hidden="true">›</span> {current.label}
+                      </h1>
+                      {g.kind === 'tool' ? (
+                        <ToolsBody tool={current.key} sql={sql} onSqlChange={setSql} onUseInConsole={useInConsole} />
+                      ) : (
+                        <>
+                          {current.note && <p className="muted">{current.note}</p>}
+                          <EntryView entry={current} kind={g.kind} />
+                        </>
+                      )}
                     </>
                   )}
                 </section>
