@@ -81,6 +81,33 @@ function mapDbError(err) {
   return err;
 }
 
+// Runs ONE read-only statement and returns { ms, kind, columns, rows, rowCount, truncated }.
+// MySQL itself refuses changes: the statement runs inside START TRANSACTION READ ONLY, which is always
+// rolled back, with a time limit. `params` are bound values for ? and ?? in the statement.
+// Exported so the query builder (adminBuilder.js) uses this same path instead of its own copy.
+export async function runReadOnly(sql, params = []) {
+  const conn = await pool.getConnection();
+  let broken = false;
+  const started = Date.now();
+  try {
+    await conn.query('SET SESSION max_execution_time = ?', [TIMEOUT_MS]);
+    await conn.query('START TRANSACTION READ ONLY');
+    let result;
+    try {
+      result = await conn.query({ sql, values: params, rowsAsArray: true });
+    } finally {
+      await conn.query('ROLLBACK').catch(() => { broken = true; });
+    }
+    return { ms: Date.now() - started, ...shape(result) };
+  } catch (err) {
+    throw mapDbError(err);
+  } finally {
+    await conn.query('SET SESSION max_execution_time = 0').catch(() => { broken = true; });
+    if (broken) conn.destroy();
+    else conn.release();
+  }
+}
+
 route(
   'POST',
   '/api/admin/sql',
@@ -90,41 +117,31 @@ route(
     if (write && ctx.body.confirm !== 'WRITE') throw new HttpError(400, 'Type WRITE to confirm write mode');
     checkStatement(sql, write);
 
-    if (write) {
-      await audit(ctx, 'SQL_WRITE', { detail: sql }); // fatal: no audit row, no change
-    } else {
+    if (!write) {
       await audit(ctx, 'SQL_READ', { detail: sql }).catch((e) => console.error('Audit write failed:', e.message));
+      return { mode: 'read', ...(await runReadOnly(sql)) };
     }
+
+    await audit(ctx, 'SQL_WRITE', { detail: sql }); // fatal: no audit row, no change
 
     const conn = await pool.getConnection();
     let broken = false;
     const started = Date.now();
     try {
       await conn.query('SET SESSION max_execution_time = ?', [TIMEOUT_MS]);
+      await conn.beginTransaction();
       let result;
-      if (write) {
-        await conn.beginTransaction();
-        try {
-          result = await conn.query({ sql, rowsAsArray: true });
-          await conn.commit();
-        } catch (err) {
-          await conn.rollback().catch(() => { broken = true; });
-          throw err;
-        }
-      } else {
-        await conn.query('START TRANSACTION READ ONLY');
-        try {
-          result = await conn.query({ sql, rowsAsArray: true });
-        } finally {
-          await conn.query('ROLLBACK').catch(() => { broken = true; });
-        }
+      try {
+        result = await conn.query({ sql, rowsAsArray: true });
+        await conn.commit();
+      } catch (err) {
+        await conn.rollback().catch(() => { broken = true; });
+        throw err;
       }
       const out = shape(result);
-      if (write) {
-        const detail = out.kind === 'write' ? `ok, ${out.affectedRows} row(s) affected` : `ok, ${out.rowCount} row(s) returned`;
-        await audit(ctx, 'SQL_WRITE_OK', { detail }).catch((e) => console.error('Audit write failed:', e.message));
-      }
-      return { mode: write ? 'write' : 'read', ms: Date.now() - started, ...out };
+      const detail = out.kind === 'write' ? `ok, ${out.affectedRows} row(s) affected` : `ok, ${out.rowCount} row(s) returned`;
+      await audit(ctx, 'SQL_WRITE_OK', { detail }).catch((e) => console.error('Audit write failed:', e.message));
+      return { mode: 'write', ms: Date.now() - started, ...out };
     } catch (err) {
       throw mapDbError(err);
     } finally {
