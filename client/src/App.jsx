@@ -8,7 +8,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import AdminOnePage from './pages/AdminOnePage.jsx'
 import ReportPage from './pages/ReportPage.jsx'
 import QueryPage from './pages/QueryPage.jsx'
-import TriggerDemo from './pages/TriggerDemo.jsx'
+import TriggerList from './pages/TriggerList.jsx'
 import SellTicket from './pages/SellTicket.jsx'
 import MaintenancePage from './pages/MaintenancePage.jsx'
 import TicketSalesPage from './pages/TicketSalesPage.jsx'
@@ -69,7 +69,7 @@ export default function App() {
           <Route path="reports/:key" element={<ReportPage />} />
           {/* Not in any menu. Kept for the presentation: type the address to open them. */}
           <Route path="queries" element={<QueryPage />} />
-          <Route path="trigger-demos" element={<TriggerDemo />} />
+          <Route path="triggers" element={<TriggerList />} />
 
           {FORM_PAGES.map((p) => {
             const Page = PAGE_COMPONENTS[p.path]

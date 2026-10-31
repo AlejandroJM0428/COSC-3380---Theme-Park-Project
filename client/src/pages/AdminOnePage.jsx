@@ -16,7 +16,7 @@ import ReportPage from './ReportPage.jsx'
 import SellTicket from './SellTicket.jsx'
 import ShiftRatingsPage from './ShiftRatingsPage.jsx'
 import TicketSalesPage from './TicketSalesPage.jsx'
-import TriggerDemo from './TriggerDemo.jsx'
+import TriggerList from './TriggerList.jsx'
 import { CustomersPage, FacilitiesPage, GamePlaysPage, MembershipsPage, PurchasesPage, RideLogPage, UsersPage, WeatherPage } from './DataEntryPages.jsx'
 import './AdminOnePage.css'
 
@@ -26,8 +26,8 @@ import './AdminOnePage.css'
 // The choice lives in the address as #group/item (for example #reports/revenue), so a refresh or a shared link returns to it.
 // The People, Park setup, Reports and Daily records lists are read from ADMIN_NAV_SECTIONS (config/nav.js),
 // so every item of the old admin menu has a place here and a new menu item shows up on its own.
-// The existing pages and panels are used as they are. Required Queries and Trigger Demos open here too;
-// their old addresses (/admin/queries and /admin/trigger-demos) still work.
+// The existing pages and panels are used as they are. Required Queries and Triggers open here too;
+// their addresses (/admin/queries and /admin/triggers) also work.
 
 // Same map as PAGE_COMPONENTS in App.jsx (key = the `path` in config/nav.js).
 const PAGES = {
@@ -54,7 +54,7 @@ const TOOLS = [
   { key: 'transactions', label: 'Transactions per ID' },
   { key: 'rows', label: 'Row Editor' },
   { key: 'queries', label: 'Required Queries' },
-  { key: 'triggers', label: 'Trigger Demos' },
+  { key: 'triggers', label: 'Triggers' },
 ]
 
 // Menu entries this admin may open, as { key, label, note, group }.
@@ -148,7 +148,7 @@ function ToolsBody({ tool, sql, onSqlChange, onUseInConsole }) {
     transactions: <TransactionsPanel />,
     rows: <RowEditorPanel />,
     queries: <QueryPage />,
-    triggers: <TriggerDemo />,
+    triggers: <TriggerList />,
   }
 
   return (

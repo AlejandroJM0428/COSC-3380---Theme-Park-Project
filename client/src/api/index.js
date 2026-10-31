@@ -38,16 +38,6 @@ export function runQuery(id, params) {
   return http(`/queries/${id}?${new URLSearchParams(params)}`)
 }
 
-export function listDemos() {
-  needLive()
-  return http('/demos')
-}
-
-export function runDemo(id) {
-  needLive()
-  return http(`/demos/${id}/run`, { method: 'POST', body: {} })
-}
-
 export function createTicket(data) {
   needLive()
   return http('/tickets', { method: 'POST', body: data })

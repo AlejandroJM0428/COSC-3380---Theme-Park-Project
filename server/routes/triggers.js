@@ -4,7 +4,7 @@ import { requireRole } from '../middleware/requireRole.js';
 import { TRIGGER_CATALOG } from '../demos/triggerCatalog.js';
 
 // GET /api/triggers  (Admin only)
-// Read-only. Compares the six project triggers with the live database.
+// Read-only. Compares the project triggers with the live database.
 route(
   'GET',
   '/api/triggers',
