@@ -89,6 +89,11 @@ const reports = {
     { Tier: 'Plus', Memberships: 45, ActiveNow: 33, ExpiringIn30Days: 4, MembershipRevenue: 8999.55, Visits: 610, VisitsPerMembership: 13.56 },
     { Tier: 'Premier', Memberships: 25, ActiveNow: 19, ExpiringIn30Days: 2, MembershipRevenue: 9999.75, Visits: 480, VisitsPerMembership: 19.2 },
   ],
+  'membership-performance': [
+    { Tier: 'Basic', StartDate: '2025-08-01', EndDate: '2026-07-31', Price: 99, AutoRenew: 0, IsActiveNow: 0, DaysToExpiry: -92, RenewedLater: 1, Visits: 9, ExtrasSpend: 140.5 },
+    { Tier: 'Plus', StartDate: '2025-12-01', EndDate: '2026-11-30', Price: 149, AutoRenew: 1, IsActiveNow: 1, DaysToExpiry: 30, RenewedLater: 0, Visits: 12, ExtrasSpend: 260 },
+    { Tier: 'Premier', StartDate: '2026-03-01', EndDate: '2027-02-28', Price: 249, AutoRenew: 0, IsActiveNow: 1, DaysToExpiry: 120, RenewedLater: 0, Visits: 0, ExtrasSpend: 0 },
+  ],
   'item-sales': [
     { VenueName: 'Burger Barn', VenueType: 'Restaurant', Category: 'Entree', ItemName: 'Cheeseburger', SaleYear: 2026, SaleMonth: 7, Units: 320, Revenue: 2880 },
     { VenueName: 'Burger Barn', VenueType: 'Restaurant', Category: 'Drink', ItemName: 'Lemonade', SaleYear: 2026, SaleMonth: 7, Units: 410, Revenue: 1435 },

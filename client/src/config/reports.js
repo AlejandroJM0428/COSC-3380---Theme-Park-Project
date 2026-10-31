@@ -212,6 +212,80 @@ function markDays(rows) {
   })
 }
 
+const TIERS = ['Basic', 'Plus', 'Premier']
+
+// One row per membership (v_MembershipPerformance) with real numbers, a Status and a Month.
+function prepMemberships(rows) {
+  return toNumbers(rows, ['Price', 'Visits', 'ExtrasSpend', 'DaysToExpiry']).map((r) => {
+    const active = Number(r.IsActiveNow) === 1
+    return {
+      ...r,
+      AutoRenew: Number(r.AutoRenew) === 1,
+      RenewedLater: Number(r.RenewedLater) === 1,
+      Status: active ? 'Active' : r.DaysToExpiry < 0 ? 'Expired' : 'Not started',
+      Month: monthOf(r.StartDate),
+    }
+  })
+}
+
+const tiersIn = (rows) => TIERS.filter((t) => rows.some((r) => r.Tier === t))
+
+// Per tier (and a last "All tiers" row): ended memberships, how many were followed by another one, and auto-renew share of the active ones.
+function retentionByTier(rows) {
+  const line = (label, list) => {
+    const expired = list.filter((r) => r.Status === 'Expired')
+    const active = list.filter((r) => r.Status === 'Active')
+    const renewed = expired.filter((r) => r.RenewedLater).length
+    return {
+      Tier: label,
+      Expired: expired.length,
+      Renewed: renewed,
+      RetentionRate: pct(renewed, expired.length),
+      Active: active.length,
+      AutoRenewShare: active.length ? `${pct(active.filter((r) => r.AutoRenew).length, active.length)}%` : '—',
+    }
+  }
+  return [...tiersIn(rows).map((t) => line(t, rows.filter((r) => r.Tier === t))), line('All tiers', rows)]
+}
+
+// Active memberships ending in 0-30, 31-60 and 61-90 days. perTier = one row per window and tier, otherwise one row per window.
+function expiringBuckets(rows, perTier) {
+  const windows = [
+    ['0-30 days', 0, 30],
+    ['31-60 days', 31, 60],
+    ['61-90 days', 61, 90],
+  ]
+  const active = rows.filter((r) => r.Status === 'Active')
+  const out = []
+  for (const [EndsIn, lo, hi] of windows) {
+    const inWindow = active.filter((r) => r.DaysToExpiry >= lo && r.DaysToExpiry <= hi)
+    const groups = perTier ? tiersIn(inWindow).map((t) => [t, inWindow.filter((r) => r.Tier === t)]) : [['All tiers', inWindow]]
+    for (const [Tier, list] of groups) {
+      const lapse = list.filter((r) => !r.AutoRenew)
+      const row = { EndsIn, Expiring: list.length, AutoRenew: list.length - lapse.length, NotAutoRenew: lapse.length }
+      if (perTier) Object.assign(row, { Tier, RevenueAtRiskEstimate: round2(total(lapse, 'Price')) })
+      out.push(row)
+    }
+  }
+  return out
+}
+
+// One row per tier: average visits, extra spend, price paid, and how many memberships were never used (started ones only).
+function spendByTier(rows) {
+  return tiersIn(rows).map((Tier) => {
+    const list = rows.filter((r) => r.Tier === Tier)
+    const started = list.filter((r) => r.Status !== 'Not started')
+    return {
+      Tier,
+      Memberships: list.length,
+      AvgVisits: round2(total(list, 'Visits') / list.length),
+      AvgExtraSpend: round2(total(list, 'ExtrasSpend') / list.length),
+      AvgPricePaid: round2(total(list, 'Price') / list.length),
+      NeverVisited: started.length ? `${pct(started.filter((r) => r.Visits === 0).length, started.length)}%` : '—',
+    }
+  })
+}
+
 const withMonth = (yearKey, monthKey) => (rows) =>
   rows.map((r) => ({ ...r, Month: `${r[yearKey]}-${String(r[monthKey]).padStart(2, '0')}` }))
 
@@ -485,24 +559,172 @@ const ALL_REPORTS = [
       },
     ],
   },
+  // One merged report. Four tabs; the first is the old Membership Summary.
+  // Retention is "bought another membership later", which is as close as the data gets (there is no cancel date).
   {
     key: 'memberships',
     group: 'Revenue reports',
-    endpoint: 'membership-summary',
-    view: 'v_MembershipSummary',
-    title: 'Membership Summary',
-    description: 'Which membership tiers sell, who is expiring soon, and how often do members visit?',
+    title: 'Membership Performance',
+    description: 'Which tiers sell, who renews, which memberships are about to lapse, and what members spend.',
     roles: RETAIL,
-    prepare: (rows) =>
-      toNumbers(rows, ['CurrentPrice', 'Memberships', 'ActiveNow', 'ExpiringIn30Days', 'MembershipRevenue', 'Visits', 'VisitsPerMembership']),
-    kpis: (rows) => [
-      { label: 'Memberships sold', value: total(rows, 'Memberships').toLocaleString('en-US') },
-      { label: 'Active now', value: total(rows, 'ActiveNow').toLocaleString('en-US') },
-      { label: 'Expiring in 30 days', value: total(rows, 'ExpiringIn30Days').toLocaleString('en-US') },
-      { label: 'Membership revenue', value: money(total(rows, 'MembershipRevenue')) },
+    sections: [
+      {
+        key: 'tiers',
+        title: 'Tiers',
+        sectionDescription: 'Which membership tiers sell, and how often do members visit?',
+        endpoint: 'membership-summary',
+        view: 'v_MembershipSummary',
+        prepare: (rows) =>
+          toNumbers(rows, ['CurrentPrice', 'Memberships', 'ActiveNow', 'ExpiringIn30Days', 'MembershipRevenue', 'Visits', 'VisitsPerMembership']),
+        kpis: (rows) => {
+          const top = extreme(rows, 'MembershipRevenue')
+          return [
+            { label: 'Memberships sold', value: total(rows, 'Memberships').toLocaleString('en-US') },
+            { label: 'Active now', value: total(rows, 'ActiveNow').toLocaleString('en-US') },
+            { label: 'Expiring in 30 days', value: total(rows, 'ExpiringIn30Days').toLocaleString('en-US') },
+            { label: 'Membership revenue', value: money(total(rows, 'MembershipRevenue')), note: top ? `${top.row.Tier} earns the most` : '' },
+          ]
+        },
+        notes: [
+          'Membership revenue is the price paid when each membership was sold, so it can differ from today\'s tier price.',
+          'Green is the tier that earns the most. Red means a quarter or more of that tier\'s active members expire within 30 days.',
+        ],
+        chart: { type: 'bar', x: 'Tier', y: 'Memberships' },
+        tableRows: (rows) => {
+          const all = total(rows, 'MembershipRevenue')
+          const top = extreme(rows, 'MembershipRevenue')
+          return rows.map((r) => {
+            const lapsing = r.ActiveNow > 0 && r.ExpiringIn30Days / r.ActiveNow >= 0.25
+            const best = top && top.row === r
+            return {
+              Tier: r.Tier,
+              CurrentPrice: r.CurrentPrice,
+              Memberships: r.Memberships,
+              ActiveNow: r.ActiveNow,
+              ExpiringIn30Days: r.ExpiringIn30Days,
+              MembershipRevenue: r.MembershipRevenue,
+              ShareOfRevenue: `${pct(r.MembershipRevenue, all)}%`,
+              VisitsPerMembership: r.VisitsPerMembership,
+              Note: lapsing ? 'Many expiring soon' : best ? 'Top earner' : '',
+              _mark: lapsing ? 'low' : best ? 'high' : undefined,
+            }
+          })
+        },
+        columns: ['Tier', 'CurrentPrice', 'Memberships', 'ActiveNow', 'ExpiringIn30Days', 'MembershipRevenue', 'ShareOfRevenue', 'VisitsPerMembership', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'retention',
+        title: 'Renewals & retention',
+        sectionDescription: 'Of the memberships that ended, how many came back with another one?',
+        endpoint: 'membership-performance',
+        view: 'v_MembershipPerformance',
+        prepare: prepMemberships,
+        filters: [{ key: 'Tier', label: 'Tier' }],
+        kpis: (rows) => {
+          const t = retentionByTier(rows)
+          const all = t[t.length - 1]
+          const active = rows.filter((r) => r.Status === 'Active')
+          return [
+            { label: 'Retention rate', value: all.Expired ? `${all.RetentionRate}%` : '—', note: `${all.Renewed} of ${all.Expired} ended memberships renewed` },
+            { label: 'Ended memberships', value: all.Expired.toLocaleString('en-US') },
+            { label: 'Active memberships', value: active.length.toLocaleString('en-US') },
+            { label: 'Active on auto-renew', value: active.length ? `${pct(active.filter((r) => r.AutoRenew).length, active.length)}%` : '—' },
+          ]
+        },
+        notes: [
+          'Retention is the share of ended memberships whose owner later bought another one. There is no cancellation date in the data, so this is the closest measure.',
+          'Auto-renew members usually stay, so a high auto-renew share protects next year\'s revenue.',
+          'Red tiers keep at least 10 points fewer members than the park overall.',
+        ],
+        chartRows: (rows) => retentionByTier(rows).filter((t) => t.Tier !== 'All tiers'),
+        chart: { type: 'bar', x: 'Tier', y: 'RetentionRate', yLabel: 'Retention rate (%)' },
+        tableRows: (rows) => {
+          const t = retentionByTier(rows)
+          const overall = t[t.length - 1].RetentionRate
+          return t.map((r) => {
+            const low = r.Tier !== 'All tiers' && r.Expired >= 5 && r.RetentionRate < overall - 10
+            return { ...r, Note: low ? 'Keeps fewer members than average' : '', _mark: low ? 'low' : undefined }
+          })
+        },
+        columns: ['Tier', 'Expired', 'Renewed', 'RetentionRate', 'Active', 'AutoRenewShare', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'expiring',
+        title: 'Expiring soon',
+        sectionDescription: 'How many active memberships end in the next 90 days, and how many are set to renew by themselves?',
+        endpoint: 'membership-performance',
+        view: 'v_MembershipPerformance',
+        prepare: prepMemberships,
+        filters: [{ key: 'Tier', label: 'Tier' }],
+        kpis: (rows) => {
+          const soon = rows.filter((r) => r.Status === 'Active' && r.DaysToExpiry <= 90)
+          const lapse = soon.filter((r) => !r.AutoRenew)
+          const next30 = soon.filter((r) => r.DaysToExpiry <= 30)
+          return [
+            { label: 'Ending in 30 days', value: next30.length.toLocaleString('en-US') },
+            { label: 'Ending in 90 days', value: soon.length.toLocaleString('en-US') },
+            { label: 'Not on auto-renew', value: lapse.length.toLocaleString('en-US'), note: 'likely to lapse unless contacted' },
+            { label: 'Revenue at risk (estimate)', value: money(total(lapse, 'Price')), note: 'what these memberships paid' },
+          ]
+        },
+        notes: [
+          'These are active memberships only. The ones on auto-renew should continue by themselves.',
+          'Revenue at risk is an estimate: it adds up what each non-auto-renew membership paid, assuming none of them renew.',
+          'Red rows have at least half of their memberships off auto-renew. Those are the guests worth a reminder or an offer.',
+        ],
+        chartRows: (rows) => expiringBuckets(rows, false),
+        chart: { type: 'bar', x: 'EndsIn', y: 'NotAutoRenew', y2: 'AutoRenew', yLabel: 'Not on auto-renew', y2Label: 'On auto-renew' },
+        tableRows: (rows) =>
+          expiringBuckets(rows, true).map((r) => {
+            const low = r.Expiring >= 3 && r.NotAutoRenew / r.Expiring >= 0.5
+            return { ...r, Note: low ? 'Most may lapse' : '', _mark: low ? 'low' : undefined }
+          }),
+        columns: ['EndsIn', 'Tier', 'Expiring', 'AutoRenew', 'NotAutoRenew', 'RevenueAtRiskEstimate', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'spend',
+        title: 'Spend per member',
+        sectionDescription: 'Do members visit and spend enough to be worth their discount?',
+        endpoint: 'membership-performance',
+        view: 'v_MembershipPerformance',
+        prepare: prepMemberships,
+        filters: [
+          { key: 'Tier', label: 'Tier' },
+          { key: 'Status', label: 'Status' },
+        ],
+        kpis: (rows) => {
+          const unused = rows.filter((r) => r.Visits === 0 && r.Status !== 'Not started')
+          return [
+            { label: 'Memberships', value: rows.length.toLocaleString('en-US') },
+            { label: 'Average visits', value: average(rows, 'Visits'), note: 'per membership' },
+            { label: 'Average extra spend', value: '$' + average(rows, 'ExtrasSpend'), note: 'food, shop and games per membership' },
+            { label: 'Never visited', value: rows.length ? `${pct(unused.length, rows.length)}%` : '—', note: 'memberships with no visit' },
+          ]
+        },
+        notes: [
+          'Extra spend is what members bought inside the park (food, shop, games) on visits that used their membership.',
+          'A membership that was never used is unlikely to renew, so a high "never visited" share is a retention warning.',
+          'Green is the tier whose members spend the most inside the park.',
+        ],
+        chartRows: (rows) => spendByTier(rows),
+        chart: { type: 'bar', x: 'Tier', y: 'AvgExtraSpend', y2: 'AvgPricePaid', yLabel: 'Average extra spend ($)', y2Label: 'Average price paid ($)' },
+        tableRows: (rows) => {
+          const t = spendByTier(rows)
+          const top = extreme(t, 'AvgExtraSpend')
+          return t.map((r) => {
+            const best = t.length > 1 && top && top.row === r
+            return { ...r, Note: best ? 'Highest in-park spend' : '', _mark: best ? 'high' : undefined }
+          })
+        },
+        columns: ['Tier', 'Memberships', 'AvgVisits', 'AvgExtraSpend', 'AvgPricePaid', 'NeverVisited', 'Note'],
+        rowClass: markOf,
+      },
     ],
-    chart: { type: 'bar', x: 'Tier', y: 'Memberships' },
   },
+
   // ---- Attendance ----
   // One merged report. Customers per Month and Daily Attendance are both on the professor's list, so each keeps its own tab (first two).
   {

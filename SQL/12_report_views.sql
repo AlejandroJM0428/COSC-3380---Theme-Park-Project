@@ -22,3 +22,25 @@ SELECT v.VenueName, v.VenueType, i.Category, i.ItemName, NULL, NULL, 0, 0
   JOIN Venue v ON v.VenueID = i.VenueID
  WHERE i.IsActive = 1
    AND NOT EXISTS (SELECT 1 FROM Purchase p WHERE p.ItemID = i.ItemID);
+
+-- [VIEW] v_MembershipPerformance: one row per membership with its state, visits and spend (Report: Membership Performance).
+-- [RULE] RenewedLater = the same customer has a membership that starts after this one. Visits and spend leave out refunded tickets.
+-- Spend = food and shop purchases plus game plays on tickets that used the membership. No ID columns on purpose.
+CREATE OR REPLACE VIEW v_MembershipPerformance AS
+SELECT m.Tier, m.StartDate, m.EndDate, m.Price, m.AutoRenew,
+       (CURDATE() BETWEEN m.StartDate AND m.EndDate) AS IsActiveNow,
+       DATEDIFF(m.EndDate, CURDATE()) AS DaysToExpiry,
+       EXISTS (SELECT 1 FROM Membership n
+                WHERE n.CustomerID = m.CustomerID AND n.StartDate > m.StartDate) AS RenewedLater,
+       (SELECT COUNT(*) FROM Ticket t
+         WHERE t.MembershipID = m.MembershipID
+           AND NOT EXISTS (SELECT 1 FROM TicketRefund r WHERE r.TicketID = t.TicketID)) AS Visits,
+       COALESCE((SELECT SUM(p.Quantity * p.UnitPrice)
+                   FROM Purchase p JOIN Ticket t ON t.TicketID = p.TicketID
+                  WHERE t.MembershipID = m.MembershipID
+                    AND NOT EXISTS (SELECT 1 FROM TicketRefund r WHERE r.TicketID = t.TicketID)), 0)
+     + COALESCE((SELECT SUM(g.AmountPaid)
+                   FROM GamePlay g JOIN Ticket t ON t.TicketID = g.TicketID
+                  WHERE t.MembershipID = m.MembershipID
+                    AND NOT EXISTS (SELECT 1 FROM TicketRefund r WHERE r.TicketID = t.TicketID)), 0) AS ExtrasSpend
+  FROM Membership m;
