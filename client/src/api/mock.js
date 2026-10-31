@@ -94,6 +94,11 @@ const reports = {
     { Tier: 'Plus', StartDate: '2025-12-01', EndDate: '2026-11-30', Price: 149, AutoRenew: 1, IsActiveNow: 1, DaysToExpiry: 30, RenewedLater: 0, Visits: 12, ExtrasSpend: 260 },
     { Tier: 'Premier', StartDate: '2026-03-01', EndDate: '2027-02-28', Price: 249, AutoRenew: 0, IsActiveNow: 1, DaysToExpiry: 120, RenewedLater: 0, Visits: 0, ExtrasSpend: 0 },
   ],
+  'ride-performance': [
+    { ZoneName: 'Adventure', RideName: 'Thunder Ridge', VisitYear: 2026, VisitMonth: 7, Boardings: 420, AvgWaitMinutes: 48.2, DowntimeHours: 2 },
+    { ZoneName: 'Future', RideName: 'Galaxy Rush', VisitYear: 2026, VisitMonth: 7, Boardings: 90, AvgWaitMinutes: 12.5, DowntimeHours: 66 },
+    { ZoneName: 'Fantasy', RideName: 'Carousel of Dreams', VisitYear: 2026, VisitMonth: 7, Boardings: 380, AvgWaitMinutes: 9.3, DowntimeHours: 0 },
+  ],
   'item-sales': [
     { VenueName: 'Burger Barn', VenueType: 'Restaurant', Category: 'Entree', ItemName: 'Cheeseburger', SaleYear: 2026, SaleMonth: 7, Units: 320, Revenue: 2880 },
     { VenueName: 'Burger Barn', VenueType: 'Restaurant', Category: 'Drink', ItemName: 'Lemonade', SaleYear: 2026, SaleMonth: 7, Units: 410, Revenue: 1435 },

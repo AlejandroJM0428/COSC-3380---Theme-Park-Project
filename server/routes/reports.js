@@ -39,6 +39,7 @@ const REPORTS = {
   'item-sales': { view: 'v_ItemSales', roles: RETAIL },
   'membership-performance': { view: 'v_MembershipPerformance', roles: RETAIL },
   'repair-impact': { view: 'v_RepairImpactEstimate', roles: MAINTENANCE },
+  'ride-performance': { view: 'v_RidePerformance', roles: OPERATIONS },
 };
 
 route(

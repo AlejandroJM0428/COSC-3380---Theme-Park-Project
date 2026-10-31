@@ -85,18 +85,6 @@ function sumBy(rows, groupKey, valueKey) {
     .sort((a, b) => b[valueKey] - a[valueKey])
 }
 
-// Count rows per calendar month using a date column -> [{ Month: '2026-03', <outKey>: 4 }, ...]
-function countByMonth(rows, dateKey, outKey) {
-  const counts = {}
-  for (const r of rows) {
-    const month = monthOf(r[dateKey])
-    counts[month] = (counts[month] ?? 0) + 1
-  }
-  return Object.keys(counts)
-    .sort()
-    .map((m) => ({ Month: m, [outKey]: counts[m] }))
-}
-
 // Compare the last `days` days of data with the `days` before them (counted back from the newest date in the rows).
 function periodChange(rows, dateKey, valueKey, days = 30) {
   const dayMs = 86400000
@@ -330,6 +318,47 @@ function facilityStats(rows) {
       WindowDays: round2(windowHours / 24),
       RepairCost: g.RepairCost,
     }
+  })
+}
+
+// What each ride status means for guests (shown on the Availability tab).
+const STATE_TEXT = {
+  Open: 'Guests can ride now.',
+  'Closed - Maintenance': 'Closed for repairs. Guests cannot ride until the job ends.',
+  'Closed - Weather': 'Closed because of weather. It reopens when conditions clear.',
+  'Closed - Retired': 'Retired. Out of service for good.',
+}
+
+const CAUSE_TEXT = {
+  downtime: 'Quiet: likely downtime',
+  demand: 'Quiet: likely low demand',
+  unclear: 'Quiet: cause unclear',
+  'busy-down': 'Busy but often down',
+}
+
+// One row per ride from v_RidePerformance rows: boardings, average wait, downtime, estimated availability, and why a quiet ride is quiet.
+function rideDiagnosis(rows) {
+  const months = new Set(rows.map((r) => r.Month)).size || 1
+  const rides = groupSum(rows, ['ZoneName', 'RideName'], ['Boardings', 'DowntimeHours']).map((g) => {
+    const waits = rows.filter((r) => r.RideName === g.RideName && r.ZoneName === g.ZoneName && r.AvgWaitMinutes !== null)
+    return {
+      ZoneName: g.ZoneName,
+      RideName: g.RideName,
+      Boardings: g.Boardings,
+      DowntimeHours: g.DowntimeHours,
+      AvgWaitMinutes: waits.length ? round2(total(waits, 'AvgWaitMinutes') / waits.length) : null,
+      AvailabilityPct: Math.max(0, round2(100 - (100 * g.DowntimeHours) / (months * 730))),
+    }
+  })
+  const avgBoardings = rides.length ? total(rides, 'Boardings') / rides.length : 0
+  const known = rides.filter((r) => r.AvgWaitMinutes !== null)
+  const avgWait = known.length ? total(known, 'AvgWaitMinutes') / known.length : null
+  return rides.map((r) => {
+    const quiet = rides.length >= 3 && avgBoardings > 0 && r.Boardings < avgBoardings / 2
+    let Cause = ''
+    if (quiet) Cause = r.AvailabilityPct < 95 ? 'downtime' : r.AvgWaitMinutes !== null && avgWait !== null && r.AvgWaitMinutes <= avgWait ? 'demand' : 'unclear'
+    else if (r.AvailabilityPct < 90) Cause = 'busy-down'
+    return { ...r, Cause }
   })
 }
 
@@ -1333,103 +1362,258 @@ const ALL_REPORTS = [
   },
 
   // ---- Rides and operations ----
+  // One merged report. Most Ridden Rides per Month and Rain-outs per Month are on the professor's list (D2, D3), so each keeps its own tab.
   {
-    key: 'ride-traffic-by-month',
+    key: 'ride-performance',
     group: 'Ride reports',
-    endpoint: 'ride-traffic-by-month',
-    view: 'v_RideTrafficByMonth',
-    title: 'Most Ridden Rides per Month',
-    description: 'Which rides do visitors ride most? Pick a month, or look at all of them.',
+    title: 'Ride Performance & Availability',
+    description: 'Which rides guests ride most, how often rides are closed, how long the waits are, and whether weather or repairs hurt ridership.',
     required: true,
     roles: OPERATIONS,
-    prepare: (rows) => toNumbers(withMonth('VisitYear', 'VisitMonth')(rows), ['Boardings']),
-    filters: [{ key: 'Month', label: 'Month' }],
-    kpis: (rows) => {
-      const byRide = sumBy(rows, 'RideName', 'Boardings')
-      return [
-        { label: 'Total boardings', value: total(rows, 'Boardings').toLocaleString('en-US') },
-        { label: 'Most ridden', value: byRide[0] ? byRide[0].RideName : '—', note: byRide[0] ? `${byRide[0].Boardings.toLocaleString('en-US')} boardings` : '' },
-      ]
-    },
-    chartRows: (rows) => sumBy(rows, 'RideName', 'Boardings').slice(0, 10),
-    chart: { type: 'bar', x: 'RideName', y: 'Boardings', angle: true },
-    columns: ['Month', 'RideName', 'Boardings'],
-  },
-  {
-    key: 'ride-availability',
-    group: 'Ride reports',
-    endpoint: 'ride-availability',
-    view: 'v_RideAvailability',
-    title: 'Ride Availability Now',
-    description: 'Which rides are open right now, and why are the others closed?',
-    roles: OPERATIONS,
-    filters: [{ key: 'CurrentState', label: 'State' }],
-    kpis: (rows) => [
-      { label: 'Open', value: rows.filter((r) => r.CurrentState === 'Open').length.toLocaleString('en-US') },
-      { label: 'Closed', value: rows.filter((r) => r.CurrentState !== 'Open').length.toLocaleString('en-US'), note: 'maintenance, weather or retired' },
+    sections: [
+      {
+        key: 'most-ridden',
+        title: 'Most Ridden Rides per Month',
+        sectionDescription: 'Which rides do visitors ride most? Pick a month, or look at all of them.',
+        endpoint: 'ride-traffic-by-month',
+        view: 'v_RideTrafficByMonth',
+        prepare: (rows) => toNumbers(withMonth('VisitYear', 'VisitMonth')(rows), ['Boardings']),
+        filters: [{ key: 'Month', label: 'Month' }],
+        kpis: (rows) => {
+          const byRide = sumBy(rows, 'RideName', 'Boardings')
+          const quiet = byRide[byRide.length - 1]
+          return [
+            { label: 'Total boardings', value: total(rows, 'Boardings').toLocaleString('en-US') },
+            { label: 'Most ridden', value: byRide[0] ? byRide[0].RideName : '—', note: byRide[0] ? `${byRide[0].Boardings.toLocaleString('en-US')} boardings` : '' },
+            { label: 'Least ridden', value: quiet ? quiet.RideName : '—', note: quiet ? `${quiet.Boardings.toLocaleString('en-US')} boardings` : '' },
+          ]
+        },
+        notes: [
+          'A boarding is one guest getting on a ride. Green rows are the five most ridden rides, red rows the five least ridden.',
+          'Open "Downtime vs demand" to see whether a quiet ride is quiet because it was closed or because guests do not want it.',
+        ],
+        chartRows: (rows) => sumBy(rows, 'RideName', 'Boardings').slice(0, 10),
+        chart: { type: 'bar', x: 'RideName', y: 'Boardings', yLabel: 'Top 10 rides by boardings', angle: true },
+        extraChart: {
+          title: 'Boardings per month (all rides in this selection)',
+          rows: (rows) => trendByMonth(rows, 'Boardings'),
+          chart: { type: 'line', x: 'Month', y: 'Boardings', yLabel: 'Boardings' },
+        },
+        tableRows: (rows) => {
+          const rides = sumBy(rows, 'RideName', 'Boardings')
+          return rides.map((r, i) => {
+            const top = i < 5
+            const bottom = rides.length > 10 && i >= rides.length - 5
+            return { Rank: i + 1, RideName: r.RideName, Boardings: r.Boardings, Note: top ? 'Most ridden' : bottom ? 'Least ridden' : '', _mark: top ? 'high' : bottom ? 'low' : undefined }
+          })
+        },
+        columns: ['Rank', 'RideName', 'Boardings', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'downtime-vs-demand',
+        title: 'Downtime vs demand',
+        sectionDescription: 'Is a ride quiet because it was closed for repairs, or because guests do not want to ride it?',
+        endpoint: 'ride-performance',
+        view: 'v_RidePerformance',
+        prepare: (rows) => toNumbers(withMonth('VisitYear', 'VisitMonth')(rows), ['Boardings', 'AvgWaitMinutes', 'DowntimeHours']),
+        filters: [
+          { key: 'ZoneName', label: 'Zone' },
+          { key: 'Month', label: 'Month' },
+        ],
+        kpis: (rows) => {
+          const d = rideDiagnosis(rows)
+          return [
+            { label: 'Rides', value: d.length.toLocaleString('en-US') },
+            { label: 'Quiet because of downtime', value: d.filter((r) => r.Cause === 'downtime').length.toLocaleString('en-US') },
+            { label: 'Quiet because of low demand', value: d.filter((r) => r.Cause === 'demand').length.toLocaleString('en-US') },
+            { label: 'Busy but often down', value: d.filter((r) => r.Cause === 'busy-down').length.toLocaleString('en-US') },
+          ]
+        },
+        insights: (rows) => {
+          const d = rideDiagnosis(rows)
+          const quiet = d.filter((r) => r.Cause === 'downtime' || r.Cause === 'demand' || r.Cause === 'unclear')
+          return quiet.length ? [`${quiet.length} of ${d.length} rides have less than half the average boardings.`] : ['No ride is below half the average boardings.']
+        },
+        notes: [
+          'A quiet ride is one with less than half the average boardings. If it was available less than 95% of the time, downtime is the likely cause. If it was open almost always and its waits are short, low demand is the likely cause.',
+          'Availability here counts every maintenance hour as closed, over the months in view, so it is an estimate. Repair hours are counted in the month the job started.',
+          'This is a rule of thumb, not proof. Rain-outs also lower boardings; see the Rain-outs tab.',
+        ],
+        chartRows: (rows) => rideDiagnosis(rows).sort((a, b) => b.Boardings - a.Boardings),
+        chart: { type: 'bar', x: 'RideName', y: 'Boardings', yLabel: 'Boardings', angle: true },
+        extraChart: {
+          title: 'Estimated availability by ride (%)',
+          rows: (rows) => rideDiagnosis(rows).sort((a, b) => a.AvailabilityPct - b.AvailabilityPct).map((r) => ({ RideName: r.RideName, AvailabilityPct: r.AvailabilityPct })),
+          chart: { type: 'bar', x: 'RideName', y: 'AvailabilityPct', yLabel: 'Availability (%)', angle: true },
+        },
+        tableRows: (rows) =>
+          rideDiagnosis(rows)
+            .sort((a, b) => a.Boardings - b.Boardings)
+            .map((r) => ({
+              ZoneName: r.ZoneName,
+              RideName: r.RideName,
+              Boardings: r.Boardings,
+              AvgWaitMinutes: r.AvgWaitMinutes,
+              DowntimeHours: r.DowntimeHours,
+              AvailabilityPct: r.AvailabilityPct,
+              Note: CAUSE_TEXT[r.Cause] ?? '',
+              _mark: r.Cause ? 'low' : undefined,
+            })),
+        columns: ['ZoneName', 'RideName', 'Boardings', 'AvgWaitMinutes', 'DowntimeHours', 'AvailabilityPct', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'availability',
+        title: 'Availability now',
+        sectionDescription: 'Which rides are open right now, and why are the others closed?',
+        endpoint: 'ride-availability',
+        view: 'v_RideAvailability',
+        prepare: (rows) => rows.map((r) => ({ ...r, WhatItMeans: STATE_TEXT[r.CurrentState] ?? '' })),
+        filters: [
+          { key: 'ZoneName', label: 'Zone' },
+          { key: 'CurrentState', label: 'State' },
+        ],
+        kpis: (rows) => [
+          { label: 'Open', value: rows.filter((r) => r.CurrentState === 'Open').length.toLocaleString('en-US'), note: rows.length ? `${pct(rows.filter((r) => r.CurrentState === 'Open').length, rows.length)}% of rides` : '' },
+          { label: 'Closed for maintenance', value: rows.filter((r) => r.CurrentState === 'Closed - Maintenance').length.toLocaleString('en-US') },
+          { label: 'Closed for weather', value: rows.filter((r) => r.CurrentState === 'Closed - Weather').length.toLocaleString('en-US') },
+          { label: 'Retired', value: rows.filter((r) => r.CurrentState === 'Closed - Retired').length.toLocaleString('en-US') },
+        ],
+        notes: [
+          'Each ride shows what its status means for guests (last column). Maintenance and weather closures are temporary; retired rides are out of service for good.',
+          'Red rows are closed for maintenance or weather right now.',
+        ],
+        chartRows: (rows) => groupSum(rows, ['CurrentState'], []).map((g) => ({ CurrentState: g.CurrentState, Rides: g.Rows })),
+        chart: { type: 'bar', x: 'CurrentState', y: 'Rides', yLabel: 'Rides' },
+        tableRows: (rows) =>
+          [...rows]
+            .sort((a, b) => (a.CurrentState === 'Open') - (b.CurrentState === 'Open') || a.ZoneName.localeCompare(b.ZoneName))
+            .map((r) => ({ ...r, _mark: r.CurrentState === 'Closed - Maintenance' || r.CurrentState === 'Closed - Weather' ? 'low' : undefined })),
+        columns: ['ZoneName', 'RideName', 'CurrentState', 'WhatItMeans'],
+        rowClass: markOf,
+      },
+      {
+        key: 'wait-times',
+        title: 'Wait times',
+        sectionDescription: 'Which rides have the longest waits?',
+        endpoint: 'wait-time-by-ride',
+        view: 'v_WaitTimeByRide',
+        prepare: (rows) => toNumbers(rows, ['Readings', 'AvgWaitMinutes', 'MaxWaitMinutes']),
+        filters: [{ key: 'ZoneName', label: 'Zone' }],
+        kpis: (rows) => {
+          const longest = extreme(rows, 'AvgWaitMinutes')
+          const worst = extreme(rows, 'MaxWaitMinutes')
+          return [
+            { label: 'Longest average wait', value: longest ? longest.row.RideName : '—', note: longest ? `${longest.v} min` : '' },
+            { label: 'Longest single wait', value: worst ? worst.row.RideName : '—', note: worst ? `${worst.v} min` : '' },
+            { label: 'Average of all rides', value: average(rows, 'AvgWaitMinutes') + ' min' },
+          ]
+        },
+        notes: [
+          'Waits come from the readings staff log during the day. A ride with few readings gives a less reliable average.',
+          'Red rows have an average wait at least 1.5 times the all-ride average: guests queue longer there than anywhere else, so they may need more capacity or a second queue.',
+        ],
+        chartRows: (rows) => [...rows].sort((a, b) => (b.AvgWaitMinutes ?? 0) - (a.AvgWaitMinutes ?? 0)).slice(0, 12),
+        chart: { type: 'bar', x: 'RideName', y: 'AvgWaitMinutes', y2: 'MaxWaitMinutes', yLabel: 'Average wait (min)', y2Label: 'Longest wait (min)', angle: true },
+        tableRows: (rows) => {
+          const avg = rows.length ? total(rows, 'AvgWaitMinutes') / rows.length : 0
+          return [...rows]
+            .sort((a, b) => (b.AvgWaitMinutes ?? 0) - (a.AvgWaitMinutes ?? 0))
+            .map((r) => {
+              const long = avg > 0 && (r.AvgWaitMinutes ?? 0) >= avg * 1.5
+              return { ...r, Note: long ? 'Long waits' : '', _mark: long ? 'low' : undefined }
+            })
+        },
+        columns: ['ZoneName', 'RideName', 'Readings', 'AvgWaitMinutes', 'MaxWaitMinutes', 'LastReadingAt', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'zones',
+        title: 'Traffic by zone',
+        sectionDescription: 'How many boardings does each zone get, and which rides carry it?',
+        endpoint: 'zone-ride-traffic',
+        view: 'v_ZoneRideTraffic',
+        prepare: (rows) => toNumbers(rows, ['Boardings']),
+        filters: [{ key: 'ZoneName', label: 'Zone' }],
+        kpis: (rows) => {
+          const zones = sumBy(rows, 'ZoneName', 'Boardings')
+          const top = extreme(rows, 'Boardings')
+          return [
+            { label: 'Total boardings', value: total(rows, 'Boardings').toLocaleString('en-US') },
+            { label: 'Busiest zone', value: zones[0] ? zones[0].ZoneName : '—', note: zones[0] ? `${pct(zones[0].Boardings, total(rows, 'Boardings'))}% of boardings` : '' },
+            { label: 'Busiest ride', value: top ? top.row.RideName : '—', note: top ? `${top.v.toLocaleString('en-US')} boardings` : '' },
+          ]
+        },
+        notes: ['Zones with a small share of boardings may need better signs or a new attraction. Green is the busiest zone, red a zone with less than half the average zone.'],
+        chartRows: (rows) => sumBy(rows, 'ZoneName', 'Boardings'),
+        chart: { type: 'bar', x: 'ZoneName', y: 'Boardings', yLabel: 'Boardings', angle: true },
+        tableRows: (rows) => {
+          const zones = groupSum(rows, ['ZoneName'], ['Boardings']).sort((a, b) => b.Boardings - a.Boardings)
+          const avg = zones.length ? total(zones, 'Boardings') / zones.length : 0
+          return zones.map((z, i) => {
+            const low = zones.length >= 3 && z.Boardings < avg / 2
+            const top = i === 0 && zones.length > 1
+            return {
+              ZoneName: z.ZoneName,
+              Rides: z.Rows,
+              Boardings: z.Boardings,
+              BoardingsPerRide: z.Rows ? Math.round(z.Boardings / z.Rows) : null,
+              Note: low ? 'Well below average' : top ? 'Busiest zone' : '',
+              _mark: low ? 'low' : top ? 'high' : undefined,
+            }
+          })
+        },
+        columns: ['ZoneName', 'Rides', 'Boardings', 'BoardingsPerRide', 'Note'],
+        rowClass: markOf,
+      },
+      // The TAs said not to build a weather report, but the professor's list includes "Rain-outs per month" (D2).
+      // So it stays as this one tab inside the ride report, not as a report of its own.
+      {
+        key: 'rain-outs',
+        title: 'Rain-outs per Month',
+        sectionDescription: 'Rain or storm events that closed outdoor rides, per month.',
+        endpoint: 'weather-impact',
+        view: 'v_WeatherImpact',
+        prepare: (rows) =>
+          toNumbers(rows, ['WeatherRefunds', 'RefundedAmount'])
+            .filter((r) => Number(r.ClosesOutdoorRides) === 1 && ['Rain', 'Storm'].includes(r.WeatherType))
+            .map((r) => ({ ...r, Month: monthOf(r.StartedAt) })),
+        filters: [{ key: 'WeatherType', label: 'Weather' }],
+        dateFilter: { key: 'StartedAt', label: 'Started' },
+        kpis: (rows) => {
+          const months = groupSum(rows, ['Month'], ['WeatherRefunds', 'RefundedAmount'])
+          const worst = extreme(months.map((m) => ({ Month: m.Month, RainOuts: m.Rows })), 'RainOuts')
+          return [
+            { label: 'Rain-outs', value: rows.length.toLocaleString('en-US') },
+            { label: 'Average per month', value: months.length ? (rows.length / months.length).toFixed(1) : '0', note: 'months with at least one' },
+            { label: 'Worst month', value: worst ? worst.row.Month : '—', note: worst ? `${worst.v} rain-outs` : '' },
+            { label: 'Weather refunds', value: total(rows, 'WeatherRefunds').toLocaleString('en-US'), note: money(total(rows, 'RefundedAmount')) },
+          ]
+        },
+        notes: [
+          'A rain-out is a rain or storm event that closed the outdoor rides. Months with none are not listed.',
+          'Weather refunds are tickets refunded because of the weather, so they show what rain-outs cost in ticket money.',
+          'Red months have far more rain-outs than a usual month.',
+        ],
+        chartRows: (rows) => groupSum(rows, ['Month'], []).map((m) => ({ Month: m.Month, RainOuts: m.Rows })).sort((a, b) => a.Month.localeCompare(b.Month)),
+        chart: { type: 'bar', x: 'Month', y: 'RainOuts' },
+        tableRows: (rows) => {
+          const months = groupSum(rows, ['Month'], ['WeatherRefunds', 'RefundedAmount']).map((m) => ({
+            Month: m.Month,
+            RainOuts: m.Rows,
+            WeatherRefunds: m.WeatherRefunds,
+            RefundedAmount: m.RefundedAmount,
+            All: 'all',
+          }))
+          return markCosts(months.sort((a, b) => a.Month.localeCompare(b.Month)), 'All', 'RainOuts').map((r) => (r.Note === 'Unusually costly' ? { ...r, Note: 'Unusually many rain-outs' } : r))
+        },
+        columns: ['Month', 'RainOuts', 'WeatherRefunds', 'RefundedAmount', 'Note'],
+        rowClass: markOf,
+      },
     ],
   },
-  {
-    key: 'zone-ride-traffic',
-    group: 'Ride reports',
-    endpoint: 'zone-ride-traffic',
-    view: 'v_ZoneRideTraffic',
-    title: 'Ride Traffic by Zone',
-    description: 'How many boardings does each ride get, grouped by zone?',
-    roles: OPERATIONS,
-    prepare: (rows) => toNumbers(rows, ['Boardings']),
-    filters: [{ key: 'ZoneName', label: 'Zone' }],
-    kpis: (rows) => {
-      const top = extreme(rows, 'Boardings')
-      return [
-        { label: 'Total boardings', value: total(rows, 'Boardings').toLocaleString('en-US') },
-        { label: 'Busiest ride', value: top ? top.row.RideName : '—', note: top ? `${top.v.toLocaleString('en-US')} boardings` : '' },
-      ]
-    },
-    chart: { type: 'bar', x: 'RideName', y: 'Boardings', angle: true },
-  },
-  {
-    key: 'wait-times',
-    group: 'Ride reports',
-    endpoint: 'wait-time-by-ride',
-    view: 'v_WaitTimeByRide',
-    title: 'Wait Times by Ride',
-    description: 'Which rides have the longest waits?',
-    roles: OPERATIONS,
-    prepare: (rows) => toNumbers(rows, ['Readings', 'AvgWaitMinutes', 'MaxWaitMinutes']),
-    filters: [{ key: 'ZoneName', label: 'Zone' }],
-    kpis: (rows) => {
-      const longest = extreme(rows, 'AvgWaitMinutes')
-      return [
-        { label: 'Longest average wait', value: longest ? longest.row.RideName : '—', note: longest ? `${longest.v} min` : '' },
-        { label: 'Average of all rides', value: average(rows, 'AvgWaitMinutes') + ' min' },
-      ]
-    },
-    chart: { type: 'bar', x: 'RideName', y: 'AvgWaitMinutes', yLabel: 'Average wait (min)', angle: true },
-  },
 
-  // ---- Weather ----
-  // The TAs said not to build a weather report, but the professor's list includes "Rain-outs per month".
-  // So Rain-outs per Month is shown (Admin and Manager only, under Ride reports) and the broader
-  // Weather Impact report stays hidden. Put `hidden: true` back on Rain-outs to hide it again.
-  {
-    key: 'rainouts-per-month',
-    group: 'Ride reports',
-    endpoint: 'weather-impact',
-    view: 'v_WeatherImpact (grouped by month here)',
-    title: 'Rain-outs per Month',
-    description: 'Rain or storm events that closed outdoor rides, per month.',
-    required: true,
-    roles: OPERATIONS,
-    prepare: (rows) =>
-      countByMonth(
-        rows.filter((r) => r.ClosesOutdoorRides && ['Rain', 'Storm'].includes(r.WeatherType)),
-        'StartedAt',
-        'RainOuts',
-      ),
-    chart: { type: 'bar', x: 'Month', y: 'RainOuts' },
-    summary: (rows) => `Average per month (months with at least one): ${average(rows, 'RainOuts')}`,
-  },
   {
     key: 'weather-impact',
     endpoint: 'weather-impact',

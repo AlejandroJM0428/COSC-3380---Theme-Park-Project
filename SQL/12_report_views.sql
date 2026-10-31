@@ -65,3 +65,33 @@ SELECT r.RideName AS FacilityName,
   CROSS JOIN (SELECT SUM(t.TicketPrice) AS Revenue FROM Ticket t
                WHERE NOT EXISTS (SELECT 1 FROM TicketRefund rf WHERE rf.TicketID = t.TicketID)) tk
   CROSS JOIN (SELECT COUNT(*) AS Boardings FROM RideLog WHERE EventType = 'Boarding') tot;
+
+-- [VIEW] v_RidePerformance: per ride per month, boardings, average wait and maintenance downtime (Report: Ride Performance & Availability).
+-- Answers "is low ridership caused by downtime or low demand?". A month appears for a ride when it has any ride log or maintenance that month.
+-- [RULE] A maintenance job's hours are counted in the month it started. No ID columns on purpose.
+CREATE OR REPLACE VIEW v_RidePerformance AS
+SELECT z.ZoneName, r.RideName, k.VisitYear, k.VisitMonth,
+       COALESCE(b.Boardings, 0)     AS Boardings,
+       w.AvgWaitMinutes,
+       COALESCE(d.DowntimeHours, 0) AS DowntimeHours
+  FROM Ride r
+  JOIN Zone z ON z.ZoneID = r.ZoneID
+  JOIN (SELECT RideID, YEAR(LoggedAt) AS VisitYear, MONTH(LoggedAt) AS VisitMonth
+          FROM RideLog GROUP BY RideID, YEAR(LoggedAt), MONTH(LoggedAt)
+        UNION
+        SELECT RideID, YEAR(StartDate), MONTH(StartDate)
+          FROM Maintenance WHERE RideID IS NOT NULL GROUP BY RideID, YEAR(StartDate), MONTH(StartDate)) k
+    ON k.RideID = r.RideID
+  LEFT JOIN (SELECT RideID, YEAR(LoggedAt) AS Y, MONTH(LoggedAt) AS M, COUNT(*) AS Boardings
+               FROM RideLog WHERE EventType = 'Boarding'
+              GROUP BY RideID, YEAR(LoggedAt), MONTH(LoggedAt)) b
+    ON b.RideID = r.RideID AND b.Y = k.VisitYear AND b.M = k.VisitMonth
+  LEFT JOIN (SELECT RideID, YEAR(LoggedAt) AS Y, MONTH(LoggedAt) AS M, ROUND(AVG(WaitMinutes), 1) AS AvgWaitMinutes
+               FROM RideLog WHERE EventType = 'Wait Reading'
+              GROUP BY RideID, YEAR(LoggedAt), MONTH(LoggedAt)) w
+    ON w.RideID = r.RideID AND w.Y = k.VisitYear AND w.M = k.VisitMonth
+  LEFT JOIN (SELECT RideID, YEAR(StartDate) AS Y, MONTH(StartDate) AS M,
+                    SUM(TIMESTAMPDIFF(HOUR, StartDate, COALESCE(EndDate, NOW()))) AS DowntimeHours
+               FROM Maintenance WHERE RideID IS NOT NULL
+              GROUP BY RideID, YEAR(StartDate), MONTH(StartDate)) d
+    ON d.RideID = r.RideID AND d.Y = k.VisitYear AND d.M = k.VisitMonth;
