@@ -5,6 +5,7 @@ import { useAuth } from '../auth/context.js'
 import { ADMIN_NAV_SECTIONS, PARK_SHORT, ROLE_INFO } from '../config/nav.js'
 import BrowsePanel from '../components/admin/BrowsePanel.jsx'
 import BuilderPanel from '../components/admin/BuilderPanel.jsx'
+import DataPanel from '../components/admin/DataPanel.jsx'
 import RowEditorPanel from '../components/admin/RowEditorPanel.jsx'
 import SqlConsolePanel from '../components/admin/SqlConsolePanel.jsx'
 import TransactionsPanel from '../components/admin/TransactionsPanel.jsx'
@@ -55,6 +56,7 @@ const TOOLS = [
   { key: 'rows', label: 'Row Editor' },
   { key: 'queries', label: 'Required Queries' },
   { key: 'triggers', label: 'Triggers' },
+  { key: 'importance', label: 'Data importance' },
 ]
 
 // Menu entries this admin may open, as { key, label, note, group }.
@@ -149,6 +151,7 @@ function ToolsBody({ tool, sql, onSqlChange, onUseInConsole }) {
     rows: <RowEditorPanel />,
     queries: <QueryPage />,
     triggers: <TriggerList />,
+    importance: <DataPanel />,
   }
 
   return (
