@@ -129,3 +129,81 @@ export function dismissNotification(id) {
   needLive()
   return http(`/notifications/${id}`, { method: 'DELETE' })
 }
+
+// ---------------------------------------------------------------------------
+// Admin tools (one-page admin). Live database only, Admin role only: the server
+// refuses anyone else with 403, so these are not just hidden in the UI.
+// ---------------------------------------------------------------------------
+
+function adminQuery(query = {}) {
+  const params = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '' && v != null))
+  const qs = params.toString()
+  return qs ? `?${qs}` : ''
+}
+
+// { ok, auditReady } for the admin guard check.
+export function adminPing() {
+  needLive()
+  return http('/admin/ping')
+}
+
+// Newest first. query: { limit }
+export function adminAudit(query = {}) {
+  needLive()
+  return http(`/admin/audit${adminQuery(query)}`)
+}
+
+// Tables and views with approximate row counts.
+export function adminListTables() {
+  needLive()
+  return http('/admin/tables')
+}
+
+// One page of a table. query: { page, size, sort, dir }. Response has columns, primaryKey and rows.
+export function adminBrowseTable(name, query = {}) {
+  needLive()
+  return http(`/admin/tables/${encodeURIComponent(name)}${adminQuery(query)}`)
+}
+
+// SQL console. Read mode by default. Write mode needs write: true and confirm: 'WRITE'.
+// Rows come back as arrays, with a `columns` list.
+export function adminRunSql(sql, { write = false, confirm } = {}) {
+  needLive()
+  const body = { sql }
+  if (write) {
+    body.write = true
+    body.confirm = confirm
+  }
+  return http('/admin/sql', { method: 'POST', body })
+}
+
+// Transactions per ID. type is 'customer', 'ticket' or 'membership'.
+export function adminTransactions(type, id) {
+  needLive()
+  return http(`/admin/transactions/${encodeURIComponent(type)}/${encodeURIComponent(id)}`)
+}
+
+// Dean mode. Triggers and constraints still apply, and every change is audited.
+export function adminInsertRow(table, values) {
+  needLive()
+  return http(`/admin/rows/${encodeURIComponent(table)}`, { method: 'POST', body: { values } })
+}
+
+// key must name exactly the primary key columns, e.g. { CustomerID: 1 }.
+export function adminUpdateRow(table, key, values) {
+  needLive()
+  return http(`/admin/rows/${encodeURIComponent(table)}`, { method: 'PUT', body: { key, values } })
+}
+
+// Delete is a POST because the server only reads a body on POST, PUT and PATCH.
+export function adminDeleteRow(table, key) {
+  needLive()
+  return http(`/admin/rows/${encodeURIComponent(table)}/delete`, { method: 'POST', body: { key } })
+}
+
+// SQL GUI. spec: { table, columns?, filters?, match?, sort?, dir?, limit? }.
+// Response is the console shape plus `table`, `type` and `sql`.
+export function adminBuild(spec) {
+  needLive()
+  return http('/admin/builder', { method: 'POST', body: spec })
+}
