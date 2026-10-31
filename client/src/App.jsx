@@ -5,7 +5,7 @@ import Layout from './components/Layout.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
-import AdminDashboard from './pages/AdminDashboard.jsx'
+import AdminOnePage from './pages/AdminOnePage.jsx'
 import ReportPage from './pages/ReportPage.jsx'
 import QueryPage from './pages/QueryPage.jsx'
 import TriggerDemo from './pages/TriggerDemo.jsx'
@@ -62,8 +62,10 @@ export default function App() {
 
       {/* Admin portal: Admin only. Everyone else who is signed in goes back to /staff. */}
       <Route path="/admin" element={<RequireAuth roles={ADMIN_ONLY} denyTo="/staff" />}>
+        {/* The one-page admin: no sidebar. Everything an admin does is a section on this page. */}
+        <Route index element={<AdminOnePage />} />
+        {/* The older admin pages keep working at their own addresses (with the sidebar). */}
         <Route element={<Layout base="/admin" sections={ADMIN_NAV_SECTIONS} brandSub="Admin portal" />}>
-          <Route index element={<AdminDashboard />} />
           <Route path="reports/:key" element={<ReportPage />} />
           {/* Not in any menu. Kept for the presentation: type the address to open them. */}
           <Route path="queries" element={<QueryPage />} />
