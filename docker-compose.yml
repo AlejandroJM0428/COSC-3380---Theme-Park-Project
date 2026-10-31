@@ -30,6 +30,7 @@ services:
       - ./SQL/08_simplify_triggers.sql:/docker-entrypoint-initdb.d/09_simplify_triggers.sql:ro
       - ./SQL/09_ride_maintenance_notice.sql:/docker-entrypoint-initdb.d/10_ride_maintenance_notice.sql:ro
       - ./SQL/10_admin_audit.sql:/docker-entrypoint-initdb.d/11_admin_audit.sql:ro
+      - ./SQL/11_restore_triggers.sql:/docker-entrypoint-initdb.d/12_restore_triggers.sql:ro
     # No "ports:" on purpose: MySQL is reachable only from the app container.
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
