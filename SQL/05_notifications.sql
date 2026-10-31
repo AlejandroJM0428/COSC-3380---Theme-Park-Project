@@ -12,7 +12,7 @@ USE theme_park;
 -- [RULE] IsActive = 0 means dismissed; ExpiresAt empty means no expiry.
 CREATE TABLE IF NOT EXISTS Notification (
     NotificationID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Kind           ENUM('SoldOut','Weather','MaintenanceClosed','Promo','Maintenance') NOT NULL,
+    Kind           ENUM('SoldOut','Weather','MaintenanceClosed','Promo','Maintenance','SellingFast') NOT NULL,
     Severity       ENUM('Info','Warning','Alert') NOT NULL,
     Title          VARCHAR(100) NOT NULL,
     Message        VARCHAR(255) NOT NULL,
@@ -48,7 +48,7 @@ SELECT 'SoldOut', 'Warning', 'Sold out',
 
 -- Existing databases created before the Maintenance kind need the enum widened. Safe to repeat.
 ALTER TABLE Notification
-  MODIFY Kind ENUM('SoldOut','Weather','MaintenanceClosed','Promo','Maintenance') NOT NULL;
+  MODIFY Kind ENUM('SoldOut','Weather','MaintenanceClosed','Promo','Maintenance','SellingFast') NOT NULL;
 
 DELIMITER $$
 
