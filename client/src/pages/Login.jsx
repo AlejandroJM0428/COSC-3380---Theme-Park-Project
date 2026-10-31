@@ -46,7 +46,7 @@ export default function Login({ audience = 'staff' }) {
         <div className="awning" />
       </div>
       <main className="login-main">
-          <form className="ticket" onSubmit={handleSubmit}>
+          <form className="ticket" onSubmit={handleSubmit} autoComplete="off">
           <div className="ticket-head">
             <h1>{PARK_NAME}</h1>
             <p className="muted">{isMember ? 'Member sign in' : 'Staff transaction portal'}</p>
@@ -56,11 +56,11 @@ export default function Login({ audience = 'staff' }) {
             <ErrorBanner message={error} />
             <label>
               Username
-              <input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus required />
+              <input name="login-id" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="off" autoCapitalize="none" spellCheck={false} autoFocus required />
             </label>
             <label>
               Password
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <input name="login-secret" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
             </label>
             <button type="submit" disabled={busy}>
             {busy ? 'Signing in…' : 'Sign in'}
