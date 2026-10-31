@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createTicket } from '../api'
 import ErrorBanner from '../components/ErrorBanner.jsx'
+import CustomerLookup from '../components/CustomerLookup.jsx'
 
 // Local date as YYYY-MM-DD.
 function today() {
@@ -38,6 +39,12 @@ export default function SellTicket() {
     <div>
       <h1>Sell Ticket</h1>
       <p className="muted">The database sets the price. Rules like weekday-only memberships are checked when you save.</p>
+      <CustomerLookup
+        onPick={(c) => {
+          setCustomerId(String(c.CustomerID))
+          setMembershipId(c.MembershipID ? String(c.MembershipID) : '') // the membership covering today, if any
+        }}
+      />
       <form onSubmit={submit} className="panel sell-form">
         <label>
           Customer ID
