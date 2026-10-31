@@ -114,6 +114,13 @@ export function getMyWork() {
   return http('/me/work')
 }
 
+// Customer lookup for the ticket forms. name and dob (YYYY-MM-DD) are each optional, but one is needed.
+export function searchCustomers(name, dob) {
+  needLive()
+  const qs = new URLSearchParams(Object.entries({ name, dob }).filter(([, v]) => v)).toString()
+  return http(`/customers/search?${qs}`)
+}
+
 // Notifications. The list is public (homepage); mock mode just shows none.
 export function listNotifications() {
   return USE_MOCK ? Promise.resolve([]) : http('/notifications')

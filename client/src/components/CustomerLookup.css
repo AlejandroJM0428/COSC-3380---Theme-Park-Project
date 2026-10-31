@@ -1,0 +1,8 @@
+.customer-lookup { display: grid; gap: 12px; max-width: 560px; margin-bottom: 16px; }
+.customer-lookup h2 { margin: 0; font-size: 1.05rem; }
+.cl-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.cl-row label { display: grid; gap: 4px; flex: 1 1 160px; }
+.cl-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.cl-results button { width: 100%; text-align: left; }
+.cl-member { display: block; font-size: 0.85em; color: var(--muted); }
+.cl-member.is-member { color: var(--good); font-weight: 600; }
