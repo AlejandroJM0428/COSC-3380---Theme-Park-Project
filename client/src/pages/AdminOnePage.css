@@ -1,7 +1,16 @@
-/* One-page admin. Every class starts with onepage- so nothing else is affected. */
+/* One-page admin workspace. Every class starts with onepage- so nothing else is affected. */
 
+/* The page fills the screen and does not scroll; only the right-hand pane does. */
 .onepage {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.onepage [hidden] {
+  display: none !important;
 }
 
 .onepage-top {
@@ -10,7 +19,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px 16px;
-  padding: 12px 36px;
+  padding: 8px 24px;
   background: var(--pine);
   color: #fff;
 }
@@ -28,82 +37,177 @@
 }
 
 .onepage-main {
-  padding: 24px 36px 64px;
-  max-width: 1200px;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 1500px;
   margin: 0 auto;
-}
-
-/* Jump links stay in view while scrolling. */
-.onepage-jump {
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  padding: 10px 24px 16px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 0;
-  margin-bottom: 16px;
-  background: var(--mist);
-  border-bottom: 1px solid var(--line);
+  flex-direction: column;
 }
 
-.onepage-jump a {
-  padding: 6px 12px;
-  border: 1.5px solid var(--ink);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--ink);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.onepage-jump a:hover {
-  background: var(--role-bright, var(--sun));
-}
-
-.onepage-section {
-  margin: 0 0 20px;
-  padding: 14px 18px 18px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-top: 6px solid var(--zone, var(--plum));
-  border-radius: 6px;
-  scroll-margin-top: 64px;
-}
-
-.onepage-section-head {
+/* Title on the left, the four headline numbers on one line to the right. */
+.onepage-strip {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 8px;
 }
 
-.onepage-section-head h2 {
+.onepage-strip h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.onepage .admin-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin: 0;
 }
 
-.onepage-entry {
-  margin-top: 8px;
+.onepage .admin-stat {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 12px;
+  border-top-width: 3px;
 }
 
-.onepage-tabs {
+.onepage .admin-stat-value {
+  font-size: 1.2rem;
+}
+
+.onepage .admin-stat-label,
+.onepage .admin-stat-note {
+  font-size: 0.8rem;
+}
+
+/* The five groups. */
+.onepage-groups {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0 14px;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
 }
 
-.onepage-tabs button[aria-selected='true'] {
+.onepage-groups button {
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+.onepage-groups button[aria-selected='true'] {
   background: var(--ink);
   color: #fff;
 }
 
+/* Items on the left, the chosen item on the right. */
+.onepage-work {
+  flex: 1;
+  min-height: 0;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.onepage-work.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.onepage-rail,
+.onepage-pane {
+  min-height: 0;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: 6px solid var(--zone, var(--plum));
+  border-radius: 6px;
+}
+
+.onepage-rail {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.onepage-rail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.onepage-rail-head {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.onepage-rail button {
+  text-align: left;
+  padding: 7px 10px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.onepage-rail button:hover:not(:disabled) {
+  background: #f1f7f5;
+}
+
+.onepage-rail button[aria-current='page'] {
+  background: var(--ink);
+  color: #fff;
+}
+
+.onepage-pane {
+  padding: 14px 18px 18px;
+}
+
+/* The drop-down replaces the left list on narrow screens. */
+.onepage-picker {
+  display: none;
+}
+
 @media (max-width: 820px) {
+  .onepage {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
   .onepage-top {
-    padding: 12px 16px;
+    padding: 8px 16px;
   }
 
   .onepage-main {
-    padding: 16px 16px 48px;
+    padding: 10px 16px 32px;
+  }
+
+  .onepage-work {
+    display: block;
+  }
+
+  .onepage-rail {
+    display: none;
+  }
+
+  .onepage-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .onepage-pane {
+    overflow: visible;
   }
 }
