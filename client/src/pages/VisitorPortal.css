@@ -235,3 +235,5 @@
   .vp-row-img { width: 100%; height: 160px; }
   .vp-hero { min-height: 480px; }
 }
+.vp-row-wait-locked { max-width: 130px; }
+.vp-row-wait-locked small { font-size: .78rem; line-height: 1.3; }

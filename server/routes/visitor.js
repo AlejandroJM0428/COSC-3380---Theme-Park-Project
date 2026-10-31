@@ -14,16 +14,22 @@ import { requireRole } from '../middleware/requireRole.js';
 
 const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`));
 
-// Rides: current state from v_RideAvailability, newest posted wait reading from RideLog.
+// Rides: current state from v_RideAvailability. Wait readings are NOT in this query: they are
+// loaded separately (RIDE_WAITS_SQL) and only for a signed-in customer with an active membership.
 const RIDES_SQL = `
-  SELECT a.RideID, a.RideName, a.ZoneName, a.CurrentState,
+  SELECT a.RideID, a.RideName, a.ZoneName, a.CurrentState
+    FROM v_RideAvailability a
+   ORDER BY (a.CurrentState = 'Open') DESC, a.ZoneName, a.RideName`;
+
+// Newest posted wait reading per ride. Members only.
+const RIDE_WAITS_SQL = `
+  SELECT a.RideID,
          (SELECT l.WaitMinutes FROM RideLog l
            WHERE l.RideID = a.RideID AND l.EventType = 'Wait Reading'
            ORDER BY l.LoggedAt DESC LIMIT 1) AS WaitMinutes,
          (SELECT MAX(l.LoggedAt) FROM RideLog l
            WHERE l.RideID = a.RideID AND l.EventType = 'Wait Reading') AS WaitAt
-    FROM v_RideAvailability a
-   ORDER BY (a.CurrentState = 'Open') DESC, a.ZoneName, a.RideName`;
+    FROM v_RideAvailability a`;
 
 // One customer's tickets (v_CustomerTickets already carries the refund flag).
 const TICKETS_SQL = `
@@ -64,8 +70,10 @@ function benefits(m) {
 }
 
 // GET /api/visitor/dashboard
-// Public part (anyone): prices and the ride board.
+// Public part (anyone): prices and the ride board (state only, NEVER wait times).
 // Member part (only when the session is a Customer): name, current membership and tickets.
+// Wait times: only a Customer with an ACTIVE membership today gets them. Everyone else gets
+// waitMinutes = null and updatedLabel = null, and the wait readings are not even queried.
 route('GET', '/api/visitor/dashboard', async (ctx) => {
   const [[park]] = await pool.query('SELECT DayPassPrice, ExpressAddOnPrice FROM Park WHERE ParkID = 1');
   const [rideRows] = await pool.query(RIDES_SQL);
@@ -73,49 +81,63 @@ route('GET', '/api/visitor/dashboard', async (ctx) => {
   const out = {
     customer: null,
     membership: null,
+    waitsVisible: false,
     prices: park ? { dayPass: Number(park.DayPassPrice), expressAddOn: Number(park.ExpressAddOnPrice) } : null,
     tickets: [],
-    rides: rideRows.map((r) => ({
+    rides: [],
+  };
+
+  const session = getSession(ctx.req);
+  if (session?.role === 'Customer' && session.CustomerID) {
+    const [[cust]] = await pool.query(
+      'SELECT CustomerID, FirstName, LastName FROM Customer WHERE CustomerID = ? AND IsActive = 1',
+      [session.CustomerID],
+    );
+    if (!cust) throw new HttpError(404, 'Your customer profile could not be found');
+    out.customer = { customerId: cust.CustomerID, firstName: cust.FirstName, lastName: cust.LastName };
+
+    const [[m]] = await pool.query(
+      `SELECT MembershipID, Tier, StartDate, EndDate, Price, AutoRenew, IncludesExpress, AnyDayAccess
+         FROM v_CustomerMemberships
+        WHERE CustomerID = ? AND IsActiveNow = 1
+        ORDER BY EndDate DESC LIMIT 1`,
+      [cust.CustomerID],
+    );
+    if (m) {
+      out.membership = {
+        membershipId: m.MembershipID,
+        tier: m.Tier,
+        startDate: m.StartDate,
+        endDate: m.EndDate,
+        annualPrice: Number(m.Price),
+        autoRenew: Boolean(m.AutoRenew),
+        benefits: benefits(m),
+      };
+      out.waitsVisible = true;
+    }
+
+    const [ticketRows] = await pool.query(`${TICKETS_SQL} ORDER BY t.VisitDate DESC, t.TicketID DESC LIMIT 200`, [cust.CustomerID]);
+    out.tickets = ticketRows.map(ticketJson);
+  }
+
+  // Wait readings are read only when allowed.
+  const waits = new Map();
+  if (out.waitsVisible) {
+    const [waitRows] = await pool.query(RIDE_WAITS_SQL);
+    for (const w of waitRows) waits.set(w.RideID, w);
+  }
+
+  out.rides = rideRows.map((r) => {
+    const w = waits.get(r.RideID);
+    return {
       rideId: r.RideID,
       rideName: r.RideName,
       zoneName: r.ZoneName,
       currentState: r.CurrentState,
-      waitMinutes: r.CurrentState === 'Open' ? r.WaitMinutes : null,
-      updatedLabel: r.WaitAt ? `Reading at ${String(r.WaitAt).slice(11, 16)}` : 'No reading yet',
-    })),
-  };
-
-  const session = getSession(ctx.req);
-  if (session?.role !== 'Customer' || !session.CustomerID) return out;
-
-  const [[cust]] = await pool.query(
-    'SELECT CustomerID, FirstName, LastName FROM Customer WHERE CustomerID = ? AND IsActive = 1',
-    [session.CustomerID],
-  );
-  if (!cust) throw new HttpError(404, 'Your customer profile could not be found');
-  out.customer = { customerId: cust.CustomerID, firstName: cust.FirstName, lastName: cust.LastName };
-
-  const [[m]] = await pool.query(
-    `SELECT MembershipID, Tier, StartDate, EndDate, Price, AutoRenew, IncludesExpress, AnyDayAccess
-       FROM v_CustomerMemberships
-      WHERE CustomerID = ? AND IsActiveNow = 1
-      ORDER BY EndDate DESC LIMIT 1`,
-    [cust.CustomerID],
-  );
-  if (m) {
-    out.membership = {
-      membershipId: m.MembershipID,
-      tier: m.Tier,
-      startDate: m.StartDate,
-      endDate: m.EndDate,
-      annualPrice: Number(m.Price),
-      autoRenew: Boolean(m.AutoRenew),
-      benefits: benefits(m),
+      waitMinutes: out.waitsVisible && r.CurrentState === 'Open' ? (w?.WaitMinutes ?? null) : null,
+      updatedLabel: out.waitsVisible ? (w?.WaitAt ? `Reading at ${String(w.WaitAt).slice(11, 16)}` : 'No reading yet') : null,
     };
-  }
-
-  const [ticketRows] = await pool.query(`${TICKETS_SQL} ORDER BY t.VisitDate DESC, t.TicketID DESC LIMIT 200`, [cust.CustomerID]);
-  out.tickets = ticketRows.map(ticketJson);
+  });
   return out;
 });
 

@@ -321,14 +321,18 @@ export default function VisitorPortal({ mode = 'public' }) {
                   <p>{ride.zoneName}</p>
                   <span className={`ride-status ${statusTone(ride.currentState)}`}><i />{ride.currentState}</span>
                 </div>
-                <div className="vp-row-wait">
-                  {ride.currentState === 'Open' ? <><strong>{ride.waitMinutes}</strong><small>min wait</small></> : <small>Not available</small>}
-                </div>
+                {dashboard?.waitsVisible ? (
+                  <div className="vp-row-wait">
+                    {ride.currentState === 'Open' && ride.waitMinutes != null ? <><strong>{ride.waitMinutes}</strong><small>min wait</small></> : <small>Not available</small>}
+                  </div>
+                ) : isMember ? (
+                  <div className="vp-row-wait vp-row-wait-locked"><small>Members see live wait times</small></div>
+                ) : null}
               </article>
             ))}
           </div>
           {!loading && visibleRides.length === 0 && <div className="empty-state ride-empty">No rides match those filters. Try a different search.</div>}
-          <p className="ride-disclaimer"><span aria-hidden="true">ⓘ</span> Status comes from the park’s live ride status. Wait times are the latest posted reading, not a guarantee.</p>
+          <p className="ride-disclaimer"><span aria-hidden="true">ⓘ</span> Status comes from the park’s live ride status.{dashboard?.waitsVisible ? ' Wait times are the latest posted reading, not a guarantee.' : ''}</p>
         </section>
       </div>
 
