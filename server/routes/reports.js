@@ -38,6 +38,7 @@ const REPORTS = {
   // New view from SQL/12_report_views.sql
   'item-sales': { view: 'v_ItemSales', roles: RETAIL },
   'membership-performance': { view: 'v_MembershipPerformance', roles: RETAIL },
+  'repair-impact': { view: 'v_RepairImpactEstimate', roles: MAINTENANCE },
 };
 
 route(

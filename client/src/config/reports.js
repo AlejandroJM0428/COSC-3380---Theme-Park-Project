@@ -171,6 +171,15 @@ function markOutliers(rows, groupKey, valueKey, z = 1.5) {
 
 const markOf = (row) => row._mark
 
+// Like markOutliers, but for costs: an unusually high month is bad (red) and an unusually low one is simply noted.
+function markCosts(rows, groupKey, valueKey) {
+  return markOutliers(rows, groupKey, valueKey).map((r) => {
+    if (r._mark === 'high') return { ...r, Note: 'Unusually costly', _mark: 'low' }
+    if (r._mark === 'low') return { ...r, Note: 'Unusually cheap', _mark: undefined }
+    return r
+  })
+}
+
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 // Add Month, Weekday and RefundRate (% of that day's tickets that were refunded) to a daily attendance row.
@@ -318,6 +327,7 @@ function facilityStats(rows) {
       Unplanned: unplanned,
       HoursDown: g.HoursDown,
       AvailabilityPct: Math.max(0, round2(100 - (100 * g.HoursDown) / windowHours)),
+      WindowDays: round2(windowHours / 24),
       RepairCost: g.RepairCost,
     }
   })
@@ -1071,32 +1081,200 @@ const ALL_REPORTS = [
       },
     ],
   },
+  // Kept (the TA liked it) and expanded into tabs: by facility, cost over time, repair frequency, estimated lost revenue.
   {
     key: 'maintenance-cost',
     group: 'Maintenance reports',
-    endpoint: 'maintenance-cost',
-    view: 'v_MaintenanceCostByFacility',
     title: 'Repair Cost by Facility',
-    description: 'Which rides, games and venues cost the most to repair, and how long are they down?',
+    description: 'What repairs cost, how the cost changes over time, which facilities need repair most often, and what downtime may have cost in lost sales.',
     roles: MAINTENANCE,
-    prepare: (rows) =>
-      toNumbers(rows, ['Jobs', 'EmergencyJobs', 'TotalCost', 'AvgCost', 'TotalHoursDown']).sort(
-        (a, b) => (b.TotalCost ?? 0) - (a.TotalCost ?? 0),
-      ),
-    filters: [{ key: 'FacilityKind', label: 'Type' }],
-    kpis: (rows) => {
-      const top = extreme(rows, 'TotalCost')
-      const jobs = total(rows, 'Jobs')
-      return [
-        { label: 'Total repair cost', value: money(total(rows, 'TotalCost')) },
-        { label: 'Most expensive', value: top ? top.row.FacilityName : '—', note: top ? money(top.v) : '' },
-        { label: 'Hours down', value: total(rows, 'TotalHoursDown').toLocaleString('en-US') },
-        { label: 'Emergency share', value: jobs ? `${Math.round((100 * total(rows, 'EmergencyJobs')) / jobs)}% of jobs` : '—' },
-      ]
-    },
-    chartRows: (rows) => rows.slice(0, 10),
-    chart: { type: 'bar', x: 'FacilityName', y: 'TotalCost', yLabel: 'Total repair cost ($)', angle: true },
-    columns: ['FacilityKind', 'FacilityName', 'Jobs', 'EmergencyJobs', 'TotalCost', 'AvgCost', 'TotalHoursDown'],
+    sections: [
+      {
+        key: 'by-facility',
+        title: 'By facility',
+        sectionDescription: 'Which rides, games and venues cost the most to repair, and how long are they down?',
+        endpoint: 'maintenance-cost',
+        view: 'v_MaintenanceCostByFacility',
+        prepare: (rows) =>
+          toNumbers(rows, ['Jobs', 'EmergencyJobs', 'TotalCost', 'AvgCost', 'TotalHoursDown']).sort(
+            (a, b) => (b.TotalCost ?? 0) - (a.TotalCost ?? 0),
+          ),
+        filters: [{ key: 'FacilityKind', label: 'Type' }],
+        kpis: (rows) => {
+          const top = extreme(rows, 'TotalCost')
+          const jobs = total(rows, 'Jobs')
+          return [
+            { label: 'Total repair cost', value: money(total(rows, 'TotalCost')) },
+            { label: 'Most expensive', value: top ? top.row.FacilityName : '—', note: top ? `${money(top.v)} (${pct(top.v, total(rows, 'TotalCost'))}% of the total)` : '' },
+            { label: 'Hours down', value: total(rows, 'TotalHoursDown').toLocaleString('en-US') },
+            { label: 'Emergency share', value: jobs ? `${Math.round((100 * total(rows, 'EmergencyJobs')) / jobs)}% of jobs` : '—' },
+          ]
+        },
+        notes: [
+          'Total cost is every repair bill for the facility. Average cost is the bill per job.',
+          'Red rows cost at least twice as much as the average facility. A high emergency share means repairs were not planned ahead.',
+        ],
+        chartRows: (rows) => rows.slice(0, 10),
+        chart: { type: 'bar', x: 'FacilityName', y: 'TotalCost', yLabel: 'Total repair cost ($)', angle: true },
+        tableRows: (rows) => {
+          const avg = rows.length ? total(rows, 'TotalCost') / rows.length : 0
+          return rows.map((r) => {
+            const costly = rows.length >= 4 && avg > 0 && r.TotalCost >= avg * 2
+            return { ...r, Note: costly ? 'Costs 2x the average' : '', _mark: costly ? 'low' : undefined }
+          })
+        },
+        columns: ['FacilityKind', 'FacilityName', 'Jobs', 'EmergencyJobs', 'TotalCost', 'AvgCost', 'TotalHoursDown', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'over-time',
+        title: 'Cost over time',
+        sectionDescription: 'Is the repair bill going up or down month by month?',
+        endpoint: 'maintenance-history',
+        view: 'v_MaintenanceHistory',
+        prepare: prepJobs,
+        filters: [{ key: 'FacilityKind', label: 'Type' }],
+        dateFilter: { key: 'StartDate', label: 'Started' },
+        kpis: (rows) => {
+          const months = groupSum(rows, ['Month'], ['RepairCost']).sort((a, b) => a.Month.localeCompare(b.Month))
+          const worst = extreme(months, 'RepairCost')
+          const last3 = months.slice(-3)
+          const prior3 = months.slice(-6, -3)
+          const change = prior3.length === 3 && total(prior3, 'RepairCost') > 0 ? ((total(last3, 'RepairCost') - total(prior3, 'RepairCost')) / total(prior3, 'RepairCost')) * 100 : null
+          return [
+            { label: 'Total repair cost', value: money(total(rows, 'RepairCost')) },
+            { label: 'Average per month', value: months.length ? money(total(months, 'RepairCost') / months.length) : '—' },
+            { label: 'Costliest month', value: worst ? worst.row.Month : '—', note: worst ? money(worst.v) : '' },
+            { label: 'Last 3 months vs the 3 before', value: change === null ? '—' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`, note: change === null ? 'Not enough months to compare' : '' },
+          ]
+        },
+        notes: [
+          'Cost is counted in the month a job started, even if it finished later.',
+          'The newest month may be unfinished. Red months cost far more than a usual month, which usually means one big repair.',
+        ],
+        chartRows: (rows) => groupSum(rows, ['Month'], ['RepairCost']).sort((a, b) => a.Month.localeCompare(b.Month)),
+        chart: { type: 'line', x: 'Month', y: 'RepairCost', yLabel: 'Repair cost per month ($)' },
+        extraChart: {
+          title: 'Unplanned vs planned repair cost',
+          rows: (rows) =>
+            groupSum(rows, ['Month'], [])
+              .map((m) => {
+                const mine = rows.filter((r) => r.Month === m.Month)
+                return {
+                  Month: m.Month,
+                  Planned: round2(total(mine.filter((r) => r.Kind === 'Planned'), 'RepairCost')),
+                  Unplanned: round2(total(mine.filter((r) => r.Kind === 'Unplanned'), 'RepairCost')),
+                }
+              })
+              .sort((a, b) => a.Month.localeCompare(b.Month)),
+          chart: { type: 'bar', x: 'Month', y: 'Planned', y2: 'Unplanned', yLabel: 'Planned work ($)', y2Label: 'Unplanned repairs ($)' },
+        },
+        tableRows: (rows) => {
+          const months = groupSum(rows, ['Month'], ['RepairCost']).map((m) => ({
+            Month: m.Month,
+            Jobs: m.Rows,
+            RepairCost: m.RepairCost,
+            AvgCostPerJob: m.Rows ? round2(m.RepairCost / m.Rows) : null,
+            All: 'all',
+          }))
+          return markCosts(months.sort((a, b) => a.Month.localeCompare(b.Month)), 'All', 'RepairCost')
+        },
+        columns: ['Month', 'Jobs', 'RepairCost', 'AvgCostPerJob', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'frequency',
+        title: 'Repair frequency',
+        sectionDescription: 'Which facilities need work most often, and how long do they run between jobs?',
+        endpoint: 'maintenance-history',
+        view: 'v_MaintenanceHistory',
+        prepare: prepJobs,
+        filters: [{ key: 'FacilityKind', label: 'Type' }],
+        dateFilter: { key: 'StartDate', label: 'Started' },
+        kpis: (rows) => {
+          const f = facilityStats(rows)
+          const top = extreme(f, 'Jobs')
+          const unplanned = rows.filter((r) => r.Kind === 'Unplanned').length
+          return [
+            { label: 'Most repaired', value: top ? top.row.FacilityName : '—', note: top ? `${top.v} jobs` : '' },
+            { label: 'Jobs per facility', value: f.length ? (rows.length / f.length).toFixed(1) : '—', note: 'on average' },
+            { label: 'Unplanned jobs', value: unplanned.toLocaleString('en-US'), note: rows.length ? `${pct(unplanned, rows.length)}% of all jobs` : '' },
+          ]
+        },
+        notes: [
+          'Days between jobs is the length of the period covered divided by the number of jobs. Fewer days means more frequent work.',
+          'Red rows need work at least twice as often as the average facility.',
+        ],
+        chartRows: (rows) => facilityStats(rows).sort((a, b) => b.Jobs - a.Jobs).slice(0, 10),
+        chart: { type: 'bar', x: 'FacilityName', y: 'Jobs', yLabel: 'Jobs in the period', angle: true },
+        tableRows: (rows) => {
+          const f = facilityStats(rows).sort((a, b) => b.Jobs - a.Jobs)
+          const avg = f.length ? total(f, 'Jobs') / f.length : 0
+          return f.map((x) => {
+            const often = f.length >= 4 && x.Jobs >= avg * 2
+            return {
+              FacilityKind: x.FacilityKind,
+              FacilityName: x.FacilityName,
+              Jobs: x.Jobs,
+              Unplanned: x.Unplanned,
+              DaysBetweenJobs: x.Jobs ? round2(x.WindowDays / x.Jobs) : null,
+              RepairCost: x.RepairCost,
+              Note: often ? 'Repaired twice as often as average' : '',
+              _mark: often ? 'low' : undefined,
+            }
+          })
+        },
+        columns: ['FacilityKind', 'FacilityName', 'Jobs', 'Unplanned', 'DaysBetweenJobs', 'RepairCost', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'lost-revenue',
+        title: 'Lost revenue (estimate)',
+        sectionDescription: 'ESTIMATE: what each ride\'s downtime may have cost in ticket money. Rides only.',
+        endpoint: 'repair-impact',
+        view: 'v_RepairImpactEstimate',
+        prepare: (rows) =>
+          toNumbers(rows, ['DowntimeOpenHours', 'BoardingsPerOpenHour', 'RevenuePerBoarding']).map((r) => {
+            const lostBoardings = Math.round((r.DowntimeOpenHours ?? 0) * (r.BoardingsPerOpenHour ?? 0))
+            return { ...r, LostBoardings: lostBoardings, EstimatedLostRevenue: round2(lostBoardings * (r.RevenuePerBoarding ?? 0)) }
+          }),
+        kpis: (rows) => {
+          const worst = extreme(rows, 'EstimatedLostRevenue')
+          return [
+            { label: 'Lost revenue (estimate)', value: money(total(rows, 'EstimatedLostRevenue')) },
+            { label: 'Hardest hit ride (estimate)', value: worst ? worst.row.FacilityName : '—', note: worst ? money(worst.v) : '' },
+            { label: 'Missed rides (estimate)', value: total(rows, 'LostBoardings').toLocaleString('en-US') },
+            { label: 'Ticket money per ride taken', value: rows[0] ? money2(rows[0].RevenuePerBoarding) : '—', note: 'average' },
+          ]
+        },
+        notes: [
+          'This is an estimate, not an accounting figure. Lost revenue = open hours lost x boardings per open hour x ticket revenue per boarding.',
+          'Open hours lost are the maintenance hours scaled to the park\'s opening hours, because a repair at night costs no sales.',
+          'Ticket revenue per boarding spreads all ticket money over all rides taken. It leaves out food, shop and game sales, so the real loss may be higher.',
+          'Games and venues are not included: only rides have a boarding log. Red rows are the rides with the largest estimated loss.',
+        ],
+        chartRows: (rows) => [...rows].sort((a, b) => b.EstimatedLostRevenue - a.EstimatedLostRevenue).slice(0, 10),
+        chart: { type: 'bar', x: 'FacilityName', y: 'EstimatedLostRevenue', yLabel: 'Estimated lost revenue ($)', angle: true },
+        tableRows: (rows) => {
+          const sorted = [...rows].sort((a, b) => b.EstimatedLostRevenue - a.EstimatedLostRevenue)
+          const avg = sorted.length ? total(sorted, 'EstimatedLostRevenue') / sorted.length : 0
+          return sorted.map((r) => {
+            const big = sorted.length >= 4 && avg > 0 && r.EstimatedLostRevenue >= avg * 2
+            return {
+              FacilityName: r.FacilityName,
+              DowntimeOpenHours: r.DowntimeOpenHours,
+              BoardingsPerOpenHour: r.BoardingsPerOpenHour,
+              LostBoardings: r.LostBoardings,
+              EstimatedLostRevenue: r.EstimatedLostRevenue,
+              Note: big ? 'Largest estimated losses' : '',
+              _mark: big ? 'low' : undefined,
+            }
+          })
+        },
+        columns: ['FacilityName', 'DowntimeOpenHours', 'BoardingsPerOpenHour', 'LostBoardings', 'EstimatedLostRevenue', 'Note'],
+        rowClass: markOf,
+      },
+    ],
   },
 
   // ---- Employees ----

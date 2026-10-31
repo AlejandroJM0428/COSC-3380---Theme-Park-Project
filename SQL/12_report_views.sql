@@ -44,3 +44,24 @@ SELECT m.Tier, m.StartDate, m.EndDate, m.Price, m.AutoRenew,
                   WHERE t.MembershipID = m.MembershipID
                     AND NOT EXISTS (SELECT 1 FROM TicketRefund r WHERE r.TicketID = t.TicketID)), 0) AS ExtrasSpend
   FROM Membership m;
+
+-- [VIEW] v_RepairImpactEstimate: per ride, an ESTIMATE of what its downtime cost (Report: Repair Cost by Facility, lost revenue tab).
+-- How the estimate works (rides only, games and venues have no boarding log):
+--   DowntimeOpenHours    = hours the ride was under maintenance, scaled to the park's opening hours (nights are not lost sales).
+--   BoardingsPerOpenHour = the ride's boardings divided by (days it had boardings x opening hours per day).
+--   RevenuePerBoarding   = all non-refunded ticket revenue divided by all boardings (what one ride taken is worth in ticket money).
+-- Lost revenue is then DowntimeOpenHours x BoardingsPerOpenHour x RevenuePerBoarding, worked out in the report. No ID columns.
+CREATE OR REPLACE VIEW v_RepairImpactEstimate AS
+SELECT r.RideName AS FacilityName,
+       ROUND(dt.HoursDown * TIME_TO_SEC(TIMEDIFF(p.ClosingTime, p.OpeningTime)) / 86400, 1) AS DowntimeOpenHours,
+       ROUND(rb.Boardings / NULLIF(rb.ActiveDays * TIME_TO_SEC(TIMEDIFF(p.ClosingTime, p.OpeningTime)) / 3600, 0), 2) AS BoardingsPerOpenHour,
+       ROUND(tk.Revenue / NULLIF(tot.Boardings, 0), 2) AS RevenuePerBoarding
+  FROM Ride r
+  JOIN Park p ON p.ParkID = 1
+  JOIN (SELECT RideID, COUNT(*) AS Boardings, COUNT(DISTINCT DATE(LoggedAt)) AS ActiveDays
+          FROM RideLog WHERE EventType = 'Boarding' GROUP BY RideID) rb ON rb.RideID = r.RideID
+  JOIN (SELECT m.RideID, SUM(TIMESTAMPDIFF(HOUR, m.StartDate, COALESCE(m.EndDate, NOW()))) AS HoursDown
+          FROM Maintenance m WHERE m.RideID IS NOT NULL GROUP BY m.RideID) dt ON dt.RideID = r.RideID
+  CROSS JOIN (SELECT SUM(t.TicketPrice) AS Revenue FROM Ticket t
+               WHERE NOT EXISTS (SELECT 1 FROM TicketRefund rf WHERE rf.TicketID = t.TicketID)) tk
+  CROSS JOIN (SELECT COUNT(*) AS Boardings FROM RideLog WHERE EventType = 'Boarding') tot;
