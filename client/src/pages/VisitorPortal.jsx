@@ -147,7 +147,7 @@ export default function VisitorPortal({ mode = 'public' }) {
           <span className="visitor-auth">
             <Link to="/member/login" className="text-button">Member sign in</Link>
             <Link to="/member/register" className="text-button">Join</Link>
-            <Link to="/staff/login" className="text-button">Staff portal</Link>
+            <Link to="/staff/login" className="text-button">Staff sign in</Link>
           </span>
         )}
       </header>
