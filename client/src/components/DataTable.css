@@ -38,3 +38,12 @@ td.dt-num {
   font: inherit;
   cursor: pointer;
 }
+
+/* Rows a report flags as unusual (the Note column says why, so colour is never the only signal). */
+tr.dt-row-high td {
+  background: #e3f4ea;
+}
+
+tr.dt-row-low td {
+  background: #fde8e4;
+}

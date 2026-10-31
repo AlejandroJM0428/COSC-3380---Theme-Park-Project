@@ -35,6 +35,8 @@ const REPORTS = {
   'open-maintenance': { view: 'v_OpenMaintenance', roles: MAINTENANCE },
   'employee-performance': { view: 'v_EmployeePerformance', roles: HR },
   'retail-sales': { view: 'v_RetailSalesByVenue', roles: RETAIL },
+  // New view from SQL/12_report_views.sql
+  'item-sales': { view: 'v_ItemSales', roles: RETAIL },
 };
 
 route(

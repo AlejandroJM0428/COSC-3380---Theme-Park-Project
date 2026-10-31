@@ -30,9 +30,12 @@ function compareValues(a, b) {
   return String(a).localeCompare(String(b), undefined, { numeric: true })
 }
 
-// <DataTable rows={[...]} columns={['A','B']} />   (columns optional: defaults to every key)
+const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-low' : undefined)
+
+// <DataTable rows={[...]} columns={['A','B']} rowClass={(row) => 'high' | 'low' | undefined} />   (columns optional: defaults to every key)
+// rowClass is optional: 'high' shades the row green and 'low' shades it red, so unusual rows stand out.
 // Click a column header to sort: first click ascending, second descending, third back to the original order.
-export default function DataTable({ rows, columns }) {
+export default function DataTable({ rows, columns, rowClass }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
   const [showAll, setShowAll] = useState(false)
 
@@ -92,7 +95,7 @@ export default function DataTable({ rows, columns }) {
           </thead>
           <tbody>
             {visible.map((row, i) => (
-              <tr key={i}>
+              <tr key={i} className={rowClass ? markClass(rowClass(row)) : undefined}>
                 {cols.map((c) => (
                   <td key={c} className={numeric.has(c) ? 'dt-num' : undefined}>
                     {formatCell(row[c])}

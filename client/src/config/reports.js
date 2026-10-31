@@ -16,6 +16,13 @@
 //   chart       optional: { type: 'bar' | 'line', x, y, y2?, yLabel?, y2Label?, angle? }  y2 = comparison series
 //   columns     optional: which columns the table shows, in order
 //   summary     optional: older style, one line of text above the data
+//   sections    optional: [{ key, title, sectionDescription, endpoint, ...the settings above }] one tab each (a merged report).
+//               The report itself then only needs key, group, title, description and roles.
+//   insights    optional: (rows) => ['plain sentence', ...] calculated notes for the filtered rows
+//   notes       optional: ['plain sentence', ...] fixed notes, shown with the insights in "What the numbers mean"
+//   extraChart  optional: { title, rows: (rows) => rows, chart } a second chart under the first
+//   tableRows   optional: (rows) => rows to show in the table (a summary instead of raw records; the CSV matches)
+//   rowClass    optional: (row) => 'high' | 'low' | undefined shades that table row (see markOutliers)
 
 // Keep in step with the lists in server/routes/reports.js
 // Role matrix (TA fixes plan). Admin sees every report; each manager sees only the reports for their own area.
@@ -111,6 +118,59 @@ function periodChange(rows, dateKey, valueKey, days = 30) {
   return { recent, prior, pct: ((recent - prior) / prior) * 100 }
 }
 
+const money2 = (n) =>
+  n === null || n === undefined || Number.isNaN(n) ? '—' : '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+const round2 = (n) => Math.round(n * 100) / 100
+
+// Share of a whole, as a percentage with one decimal (0 when the whole is 0).
+const pct = (part, whole) => (whole ? Math.round((1000 * part) / whole) / 10 : 0)
+
+// Group rows by one or more columns and add up the listed number columns -> one row per group (`Rows` = how many rows were added up).
+function groupSum(rows, keys, sumKeys) {
+  const groups = new Map()
+  for (const r of rows) {
+    const id = keys.map((k) => r[k]).join('\u0000')
+    let g = groups.get(id)
+    if (!g) {
+      g = { Rows: 0 }
+      for (const k of keys) g[k] = r[k]
+      for (const s of sumKeys) g[s] = 0
+      groups.set(id, g)
+    }
+    g.Rows += 1
+    for (const s of sumKeys) g[s] += num(r[s]) ?? 0
+  }
+  return [...groups.values()].map((g) => {
+    for (const s of sumKeys) g[s] = round2(g[s])
+    return g
+  })
+}
+
+// Totals per month, oldest first (for trend charts).
+const trendByMonth = (rows, valueKey) => sumBy(rows, 'Month', valueKey).sort((a, b) => a.Month.localeCompare(b.Month))
+
+// Add a `Note` column and a `_mark` flag ('high' / 'low') to rows far from their group's usual value
+// (more than `z` standard deviations from the group average; needs at least 4 rows in the group).
+function markOutliers(rows, groupKey, valueKey, z = 1.5) {
+  const values = {}
+  for (const r of rows) (values[r[groupKey]] ??= []).push(num(r[valueKey]) ?? 0)
+  const stats = {}
+  for (const [g, v] of Object.entries(values)) {
+    const mean = v.reduce((a, b) => a + b, 0) / v.length
+    stats[g] = { n: v.length, mean, sd: Math.sqrt(v.reduce((a, b) => a + (b - mean) ** 2, 0) / v.length) }
+  }
+  return rows.map((r) => {
+    const s = stats[r[groupKey]]
+    const v = num(r[valueKey]) ?? 0
+    if (s.n >= 4 && s.sd > 0 && v > s.mean + z * s.sd) return { ...r, Note: 'Unusually high', _mark: 'high' }
+    if (s.n >= 4 && s.sd > 0 && v < s.mean - z * s.sd) return { ...r, Note: 'Unusually low', _mark: 'low' }
+    return { ...r, Note: '' }
+  })
+}
+
+const markOf = (row) => row._mark
+
 const withMonth = (yearKey, monthKey) => (rows) =>
   rows.map((r) => ({ ...r, Month: `${r[yearKey]}-${String(r[monthKey]).padStart(2, '0')}` }))
 
@@ -118,87 +178,271 @@ const withMonth = (yearKey, monthKey) => (rows) =>
 
 const ALL_REPORTS = [
   // ---- Revenue and retail ----
+  // One merged report. Each tab is a section with its own data, filters, chart and plain-words notes.
+  // No profit margin: items have a price but no cost in the database (see the project document).
   {
     key: 'revenue',
     group: 'Revenue reports',
-    endpoint: 'revenue-by-source',
-    view: 'v_RevenueBySource',
-    title: 'Revenue by Source',
-    description: 'Where does the money come from, and is it growing?',
+    title: 'Revenue & Sales Performance',
+    description: 'Where the money comes from, what sells best and worst, and what visitors spend. Pick a tab.',
     roles: RETAIL,
-    prepare: (rows) => toNumbers(rows, ['Revenue']).map((r) => ({ ...r, Month: monthOf(r.RevenueDate) })),
-    filters: [{ key: 'Source', label: 'Source' }],
-    dateFilter: { key: 'RevenueDate', label: 'Date' },
-    kpis: (rows) => {
-      const bySource = sumBy(rows, 'Source', 'Revenue')
-      const change = periodChange(rows, 'RevenueDate', 'Revenue')
-      return [
-        { label: 'Total revenue', value: money(total(rows, 'Revenue')) },
-        { label: 'Biggest source', value: bySource[0] ? bySource[0].Source : '—', note: bySource[0] ? money(bySource[0].Revenue) : '' },
-        {
-          label: 'Last 30 days vs the 30 before',
-          value: change ? `${change.pct >= 0 ? '+' : ''}${change.pct.toFixed(1)}%` : '—',
-          note: change ? `${money(change.recent)} vs ${money(change.prior)}` : 'Not enough data to compare',
+    sections: [
+      {
+        key: 'overview',
+        title: 'Revenue by source',
+        sectionDescription: 'Where does the money come from, and is it growing? Refunded tickets are left out.',
+        endpoint: 'revenue-by-source',
+        view: 'v_RevenueBySource',
+        prepare: (rows) => toNumbers(rows, ['Revenue']).map((r) => ({ ...r, Month: monthOf(r.RevenueDate) })),
+        filters: [{ key: 'Source', label: 'Source' }],
+        dateFilter: { key: 'RevenueDate', label: 'Date' },
+        kpis: (rows) => {
+          const bySource = sumBy(rows, 'Source', 'Revenue')
+          const change = periodChange(rows, 'RevenueDate', 'Revenue')
+          const months = trendByMonth(rows, 'Revenue')
+          const best = extreme(months, 'Revenue')
+          return [
+            { label: 'Total revenue', value: money(total(rows, 'Revenue')) },
+            { label: 'Biggest source', value: bySource[0] ? bySource[0].Source : '—', note: bySource[0] ? money(bySource[0].Revenue) : '' },
+            { label: 'Best month', value: best ? best.row.Month : '—', note: best ? money(best.v) : '' },
+            {
+              label: 'Last 30 days vs the 30 before',
+              value: change ? `${change.pct >= 0 ? '+' : ''}${change.pct.toFixed(1)}%` : '—',
+              note: change ? `${money(change.recent)} vs ${money(change.prior)}` : 'Not enough data to compare',
+            },
+          ]
         },
-      ]
-    },
-    chartRows: (rows) => sumBy(rows, 'Source', 'Revenue'),
-    chart: { type: 'bar', x: 'Source', y: 'Revenue' },
-    columns: ['RevenueDate', 'Source', 'Revenue'],
-  },
-  {
-    key: 'retail-sales',
-    group: 'Revenue reports',
-    endpoint: 'retail-sales',
-    view: 'v_RetailSalesByVenue',
-    title: 'Sales by Venue',
-    description: 'What sells best at each restaurant and shop, and which venues earn the most?',
-    roles: RETAIL,
-    prepare: (rows) =>
-      toNumbers(rows, ['Orders', 'Units', 'Revenue']).map((r) => ({
-        ...r,
-        Month: `${r.SaleYear}-${String(r.SaleMonth).padStart(2, '0')}`,
-      })),
-    filters: [
-      { key: 'VenueType', label: 'Venue type' },
-      { key: 'Month', label: 'Month' },
+        insights: (rows) => {
+          const by = sumBy(rows, 'Source', 'Revenue')
+          const all = total(rows, 'Revenue')
+          if (by.length === 0) return []
+          const last = by[by.length - 1]
+          const out = [`${by[0].Source} is the biggest source: ${pct(by[0].Revenue, all)}% of all revenue.`]
+          if (by.length > 1) out.push(`${last.Source} is the smallest: ${pct(last.Revenue, all)}%.`)
+          return out
+        },
+        notes: [
+          'Memberships are counted in full on the day they start, so they make single days or months look high.',
+          'The newest month may be unfinished, so it can look low. Shaded table rows are far from that source\'s usual month: green is high, red is low.',
+        ],
+        chartRows: (rows) => sumBy(rows, 'Source', 'Revenue'),
+        chart: { type: 'bar', x: 'Source', y: 'Revenue', yLabel: 'Revenue ($)' },
+        extraChart: { title: 'Revenue per month (all sources)', rows: (rows) => trendByMonth(rows, 'Revenue'), chart: { type: 'line', x: 'Month', y: 'Revenue', yLabel: 'Revenue ($)' } },
+        tableRows: (rows) =>
+          markOutliers(groupSum(rows, ['Month', 'Source'], ['Revenue']), 'Source', 'Revenue').sort(
+            (a, b) => a.Month.localeCompare(b.Month) || a.Source.localeCompare(b.Source),
+          ),
+        columns: ['Month', 'Source', 'Revenue', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'categories',
+        title: 'By category',
+        sectionDescription: 'Which kinds of food and merchandise earn the most?',
+        endpoint: 'item-sales',
+        view: 'v_ItemSales',
+        prepare: (rows) =>
+          toNumbers(rows, ['Units', 'Revenue']).map((r) => ({
+            ...r,
+            Month: r.SaleYear ? `${r.SaleYear}-${String(r.SaleMonth).padStart(2, '0')}` : 'Never sold',
+          })),
+        filters: [
+          { key: 'VenueType', label: 'Venue type' },
+          { key: 'Month', label: 'Month' },
+        ],
+        kpis: (rows) => {
+          const by = sumBy(rows, 'Category', 'Revenue')
+          const all = total(rows, 'Revenue')
+          const worst = by[by.length - 1]
+          return [
+            { label: 'Food and shop revenue', value: money(all) },
+            { label: 'Top category', value: by[0] ? by[0].Category : '—', note: by[0] ? `${money(by[0].Revenue)} (${pct(by[0].Revenue, all)}%)` : '' },
+            { label: 'Weakest category', value: worst ? worst.Category : '—', note: worst ? `${money(worst.Revenue)} (${pct(worst.Revenue, all)}%)` : '' },
+            { label: 'Units sold', value: total(rows, 'Units').toLocaleString('en-US') },
+          ]
+        },
+        notes: [
+          'Category groups items the way the menu and shops do (Entree, Drink, Toy, Souvenir...). Tickets, memberships and games are not items, so they are not here.',
+          'Green rows lead their category group; red rows earn less than half the average category.',
+        ],
+        chartRows: (rows) => sumBy(rows, 'Category', 'Revenue'),
+        chart: { type: 'bar', x: 'Category', y: 'Revenue', yLabel: 'Revenue ($)' },
+        tableRows: (rows) => {
+          const cats = groupSum(rows, ['Category'], ['Units', 'Revenue']).sort((a, b) => b.Revenue - a.Revenue)
+          const all = total(cats, 'Revenue')
+          const avg = cats.length ? all / cats.length : 0
+          return cats.map((c, i) => ({
+            Category: c.Category,
+            Units: c.Units,
+            Revenue: c.Revenue,
+            ShareOfSales: `${pct(c.Revenue, all)}%`,
+            Note: i === 0 ? 'Top category' : c.Revenue < avg / 2 ? 'Well below average' : '',
+            _mark: i === 0 ? 'high' : c.Revenue < avg / 2 ? 'low' : undefined,
+          }))
+        },
+        columns: ['Category', 'Units', 'Revenue', 'ShareOfSales', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'sellers',
+        title: 'Best & worst sellers',
+        sectionDescription: 'Which items sell best, and which barely sell at all?',
+        endpoint: 'item-sales',
+        view: 'v_ItemSales',
+        prepare: (rows) =>
+          toNumbers(rows, ['Units', 'Revenue']).map((r) => ({
+            ...r,
+            Month: r.SaleYear ? `${r.SaleYear}-${String(r.SaleMonth).padStart(2, '0')}` : 'Never sold',
+          })),
+        filters: [
+          { key: 'VenueName', label: 'Venue' },
+          { key: 'Category', label: 'Category' },
+          { key: 'Month', label: 'Month' },
+        ],
+        kpis: (rows) => {
+          const items = groupSum(rows, ['ItemName', 'VenueName'], ['Units', 'Revenue']).sort((a, b) => b.Revenue - a.Revenue)
+          const best = items[0]
+          const worst = items[items.length - 1]
+          return [
+            { label: 'Best seller', value: best ? best.ItemName : '—', note: best ? `${money(best.Revenue)} at ${best.VenueName}` : '' },
+            { label: 'Weakest seller', value: worst ? worst.ItemName : '—', note: worst ? `${money(worst.Revenue)} at ${worst.VenueName}` : '' },
+            { label: 'Items with no sales', value: items.filter((i) => i.Units === 0).length.toLocaleString('en-US'), note: 'in this selection' },
+          ]
+        },
+        notes: [
+          'Items that were never sold show with 0 units. They only appear while Month is "All" or "Never sold", because they have no month.',
+          'Green rows are the five best sellers, red rows the five weakest. A weak seller may need a promotion, a new price, or removal from the menu.',
+        ],
+        chartRows: (rows) => groupSum(rows, ['ItemName'], ['Revenue']).sort((a, b) => b.Revenue - a.Revenue).slice(0, 10),
+        chart: { type: 'bar', x: 'ItemName', y: 'Revenue', yLabel: 'Top 10 items by revenue ($)', angle: true },
+        tableRows: (rows) => {
+          const items = groupSum(rows, ['ItemName', 'VenueName', 'Category'], ['Units', 'Revenue']).sort((a, b) => b.Revenue - a.Revenue)
+          return items.map((r, i) => {
+            const top = i < 5
+            const bottom = items.length > 10 && i >= items.length - 5
+            return {
+              Rank: i + 1,
+              ItemName: r.ItemName,
+              VenueName: r.VenueName,
+              Category: r.Category,
+              Units: r.Units,
+              Revenue: r.Revenue,
+              Note: top ? 'Top seller' : bottom ? (r.Units === 0 ? 'Never sold' : 'Weak seller') : '',
+              _mark: top ? 'high' : bottom ? 'low' : undefined,
+            }
+          })
+        },
+        columns: ['Rank', 'ItemName', 'VenueName', 'Category', 'Units', 'Revenue', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'venues',
+        title: 'By venue',
+        sectionDescription: 'Which restaurants and shops earn the most, and how big is an average sale?',
+        endpoint: 'retail-sales',
+        view: 'v_RetailSalesByVenue',
+        prepare: (rows) =>
+          toNumbers(rows, ['Orders', 'Units', 'Revenue']).map((r) => ({
+            ...r,
+            Month: `${r.SaleYear}-${String(r.SaleMonth).padStart(2, '0')}`,
+          })),
+        filters: [
+          { key: 'VenueType', label: 'Venue type' },
+          { key: 'Month', label: 'Month' },
+        ],
+        kpis: (rows) => {
+          const byVenue = sumBy(rows, 'VenueName', 'Revenue')
+          const worst = byVenue[byVenue.length - 1]
+          const orders = total(rows, 'Orders')
+          return [
+            { label: 'Total sales', value: money(total(rows, 'Revenue')) },
+            { label: 'Top venue', value: byVenue[0] ? byVenue[0].VenueName : '—', note: byVenue[0] ? money(byVenue[0].Revenue) : '' },
+            { label: 'Lowest venue', value: worst ? worst.VenueName : '—', note: worst ? money(worst.Revenue) : '' },
+            { label: 'Average sale', value: orders ? money2(total(rows, 'Revenue') / orders) : '—', note: 'per purchase line' },
+          ]
+        },
+        notes: [
+          'A purchase line is one item bought in one sale, not a whole basket, so "average sale" is the average spend on one line.',
+          'Green rows are venues earning well above the average venue, red rows well below it.',
+        ],
+        chartRows: (rows) => sumBy(rows, 'VenueName', 'Revenue'),
+        chart: { type: 'bar', x: 'VenueName', y: 'Revenue', yLabel: 'Revenue ($)', angle: true },
+        tableRows: (rows) => {
+          const venues = groupSum(rows, ['VenueName', 'VenueType'], ['Orders', 'Units', 'Revenue']).sort((a, b) => b.Revenue - a.Revenue)
+          const avg = venues.length ? total(venues, 'Revenue') / venues.length : 0
+          return venues.map((v) => {
+            const mark = venues.length >= 4 && v.Revenue > avg * 1.5 ? 'high' : venues.length >= 4 && v.Revenue < avg * 0.5 ? 'low' : undefined
+            return {
+              VenueName: v.VenueName,
+              VenueType: v.VenueType,
+              Orders: v.Orders,
+              Units: v.Units,
+              Revenue: v.Revenue,
+              AverageSale: v.Orders ? round2(v.Revenue / v.Orders) : null,
+              Note: mark === 'high' ? 'Well above average' : mark === 'low' ? 'Well below average' : '',
+              _mark: mark,
+            }
+          })
+        },
+        columns: ['VenueName', 'VenueType', 'Orders', 'Units', 'Revenue', 'AverageSale', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'spending',
+        title: 'Spending per visit',
+        sectionDescription: 'How much does a visitor spend on food, shopping and games on top of the ticket? Refunded tickets are left out.',
+        endpoint: 'visit-spending',
+        view: 'v_VisitSpending',
+        prepare: (rows) =>
+          toNumbers(rows, ['TicketPrice', 'FoodTotal', 'ShopTotal', 'GameTotal']).map((r) => ({
+            ...r,
+            Month: monthOf(r.VisitDate),
+            ExtrasTotal: round2((r.FoodTotal ?? 0) + (r.ShopTotal ?? 0) + (r.GameTotal ?? 0)),
+          })),
+        dateFilter: { key: 'VisitDate', label: 'Visit date' },
+        kpis: (rows) => {
+          const spenders = rows.filter((r) => r.ExtrasTotal > 0)
+          return [
+            { label: 'Visits', value: rows.length.toLocaleString('en-US') },
+            { label: 'Average extra spend per visit', value: '$' + average(rows, 'ExtrasTotal'), note: 'food + shop + games' },
+            { label: 'Average basket', value: spenders.length ? '$' + average(spenders, 'ExtrasTotal') : '—', note: 'visits that bought something' },
+            { label: 'Visits with no extra spend', value: rows.length ? `${pct(rows.length - spenders.length, rows.length)}%` : '—' },
+          ]
+        },
+        notes: [
+          'Extra spend is everything bought after the ticket: food, gift shop items and games.',
+          'Average basket only counts visits that bought something. A high share of no-spend visits means guests are not buying inside the park.',
+          'Red months spend at least a fifth less per visit than the overall average, green months at least a fifth more.',
+        ],
+        chartRows: (rows) => [
+          { Type: 'Food', Average: Number(average(rows, 'FoodTotal')) },
+          { Type: 'Shop', Average: Number(average(rows, 'ShopTotal')) },
+          { Type: 'Games', Average: Number(average(rows, 'GameTotal')) },
+        ],
+        chart: { type: 'bar', x: 'Type', y: 'Average', yLabel: 'Average spend per visit ($)' },
+        tableRows: (rows) => {
+          const overall = rows.length ? total(rows, 'ExtrasTotal') / rows.length : 0
+          return groupSum(rows, ['Month'], ['FoodTotal', 'ShopTotal', 'GameTotal', 'ExtrasTotal'])
+            .sort((a, b) => a.Month.localeCompare(b.Month))
+            .map((m) => {
+              const avg = m.Rows ? m.ExtrasTotal / m.Rows : 0
+              const mark = overall > 0 && m.Rows >= 5 ? (avg < overall * 0.8 ? 'low' : avg > overall * 1.2 ? 'high' : undefined) : undefined
+              return {
+                Month: m.Month,
+                Visits: m.Rows,
+                AvgFood: round2(m.FoodTotal / m.Rows),
+                AvgShop: round2(m.ShopTotal / m.Rows),
+                AvgGames: round2(m.GameTotal / m.Rows),
+                AvgExtras: round2(avg),
+                Note: mark === 'high' ? 'Spending well above average' : mark === 'low' ? 'Spending well below average' : '',
+                _mark: mark,
+              }
+            })
+        },
+        columns: ['Month', 'Visits', 'AvgFood', 'AvgShop', 'AvgGames', 'AvgExtras', 'Note'],
+        rowClass: markOf,
+      },
     ],
-    kpis: (rows) => {
-      const byVenue = sumBy(rows, 'VenueName', 'Revenue')
-      const worst = byVenue[byVenue.length - 1]
-      return [
-        { label: 'Total sales', value: money(total(rows, 'Revenue')) },
-        { label: 'Top venue', value: byVenue[0] ? byVenue[0].VenueName : '—', note: byVenue[0] ? money(byVenue[0].Revenue) : '' },
-        { label: 'Lowest venue', value: worst ? worst.VenueName : '—', note: worst ? money(worst.Revenue) : '' },
-        { label: 'Units sold', value: total(rows, 'Units').toLocaleString('en-US') },
-      ]
-    },
-    chartRows: (rows) => sumBy(rows, 'VenueName', 'Revenue'),
-    chart: { type: 'bar', x: 'VenueName', y: 'Revenue', angle: true },
-    columns: ['Month', 'VenueName', 'VenueType', 'Orders', 'Units', 'Revenue'],
-  },
-  {
-    key: 'visit-spending',
-    group: 'Revenue reports',
-    endpoint: 'visit-spending',
-    view: 'v_VisitSpending',
-    title: 'Spending per Visit',
-    description: 'How much does a visitor spend on food, shopping and games on top of the ticket?',
-    roles: RETAIL,
-    prepare: (rows) => toNumbers(rows, ['TicketPrice', 'FoodTotal', 'ShopTotal', 'GameTotal']),
-    dateFilter: { key: 'VisitDate', label: 'Visit date' },
-    kpis: (rows) => [
-      { label: 'Visits', value: rows.length.toLocaleString('en-US') },
-      { label: 'Average food spend', value: '$' + average(rows, 'FoodTotal') },
-      { label: 'Average shop spend', value: '$' + average(rows, 'ShopTotal') },
-      { label: 'Average game spend', value: '$' + average(rows, 'GameTotal') },
-    ],
-    chartRows: (rows) => [
-      { Type: 'Food', Average: Number(average(rows, 'FoodTotal')) },
-      { Type: 'Shop', Average: Number(average(rows, 'ShopTotal')) },
-      { Type: 'Games', Average: Number(average(rows, 'GameTotal')) },
-    ],
-    chart: { type: 'bar', x: 'Type', y: 'Average', yLabel: 'Average spend per visit ($)' },
   },
   {
     key: 'memberships',

@@ -50,6 +50,11 @@ async function login(username, password) {
 }
 
 // Fields a report needs to find in its rows.
+// A merged report has one tab per entry in `sections`; each tab is checked like a report of its own.
+const CHECKS = REPORTS.flatMap((r) =>
+  (r.sections ?? [r]).map((sec) => ({ ...sec, key: sec === r ? r.key : `${r.key}/${sec.key}`, roles: r.roles })),
+);
+
 function neededKeys(report) {
   const keys = new Set(report.columns ?? []);
   for (const f of report.filters ?? []) keys.add(f.key);
@@ -93,6 +98,23 @@ function checkReportLogic(report, rows) {
   } catch (e) {
     fail(`${label} kpis() threw: ${e.message}`);
   }
+  if (report.tableRows) {
+    try {
+      const table = report.tableRows(prepared);
+      for (const k of report.columns ?? []) if (table.length > 0 && !(k in table[0])) fail(`${label} table column "${k}" is not in the table rows (has: ${Object.keys(table[0]).join(', ')})`);
+      if (JSON.stringify(table).match(/NaN|undefined|Infinity/)) fail(`${label} table rows contain NaN or undefined`);
+    } catch (e) {
+      fail(`${label} tableRows() threw: ${e.message}`);
+    }
+  }
+  if (report.extraChart) {
+    try {
+      const extra = report.extraChart.rows(prepared);
+      for (const k of [report.extraChart.chart.x, report.extraChart.chart.y]) if (extra.length > 0 && !(k in extra[0])) fail(`${label} second chart field "${k}" is not in its rows`);
+    } catch (e) {
+      fail(`${label} extraChart rows() threw: ${e.message}`);
+    }
+  }
   if (report.summary) {
     try {
       const text = report.summary(prepared);
@@ -127,9 +149,9 @@ async function main() {
     process.exit(2);
   }
 
-  console.log(`\n${REPORTS.length} visible reports x ${sessions.length} roles\n`);
+  console.log(`\n${REPORTS.length} visible reports (${CHECKS.length} tabs or pages) x ${sessions.length} roles\n`);
   const checkedData = new Set();
-  for (const report of REPORTS) {
+  for (const report of CHECKS) {
     const cells = [];
     for (const s of sessions) {
       const should = report.roles.includes(s.role);

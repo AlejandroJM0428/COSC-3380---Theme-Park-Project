@@ -98,3 +98,56 @@
     width: 100%;
   }
 }
+
+.rp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 6px;
+  border-bottom: 2px solid var(--line, #d5e1dd);
+}
+
+.rp-tab {
+  padding: 8px 14px;
+  border: 1px solid var(--line, #d5e1dd);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rp-tab[aria-selected='true'] {
+  background: var(--panel, #fff);
+  font-weight: 700;
+  box-shadow: inset 0 3px 0 var(--lagoon, #1c9aa8);
+}
+
+.rp-section-desc {
+  margin: 10px 0 0;
+}
+
+.rp-notes {
+  margin: 12px 0;
+  padding: 10px 14px;
+  background: var(--panel, #fff);
+  border: 1px solid var(--line, #d5e1dd);
+  border-left: 6px solid var(--sun, #f2b14f);
+  border-radius: 6px;
+  font-size: 0.92rem;
+}
+
+.rp-notes strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.rp-notes ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.rp-chart-title {
+  margin: 14px 0 0;
+  font-size: 1rem;
+}

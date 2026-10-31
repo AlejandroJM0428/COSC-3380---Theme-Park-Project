@@ -72,15 +72,9 @@ function downloadCsv(name, columns, rows) {
   URL.revokeObjectURL(url)
 }
 
-// One page for EVERY report: it looks up its settings in config/reports.js.
-// `reportKey` lets the one-page admin show a report in place. Without it the key comes from the URL (/reports/:key).
-export default function ReportPage({ reportKey }) {
-  const params = useParams()
-  const key = reportKey ?? params.key
-  const { user } = useAuth()
-  const report = REPORTS.find((r) => r.key === key)
-  const allowed = Boolean(report) && (!report.roles || report.roles.includes(user.role))
-
+// The body of one report or one section: filters, headline numbers, notes, charts and table.
+// `report` is either a whole report or one entry of report.sections (both use the same settings, see config/reports.js).
+function ReportBody({ report, csvName }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -89,13 +83,7 @@ export default function ReportPage({ reportKey }) {
   const [to, setTo] = useState('')
 
   useEffect(() => {
-    if (!report || !allowed) return undefined
-    let cancelled = false // ignore a slow response if the user already switched reports
-    setLoading(true)
-    setError('')
-    setSelects({})
-    setFrom('')
-    setTo('')
+    let cancelled = false // ignore a slow response if the user already switched tabs (this component is remounted per report and tab, so state starts fresh)
     getReport(report.endpoint)
       .then((data) => {
         if (!cancelled) setRows(report.prepare ? report.prepare(data) : data)
@@ -109,45 +97,48 @@ export default function ReportPage({ reportKey }) {
     return () => {
       cancelled = true
     }
-  }, [report, allowed])
+  }, [report])
 
   // Values for each drop-down, taken from the rows themselves.
   const options = useMemo(() => {
     const out = {}
-    for (const f of report?.filters ?? []) {
+    for (const f of report.filters ?? []) {
       out[f.key] = [...new Set(rows.map((r) => r[f.key]).filter((v) => v !== null && v !== undefined))].map(String).sort()
     }
     return out
   }, [rows, report])
 
-  const filtered = useMemo(() => {
-    if (!report) return rows
-    return rows.filter((r) => {
-      for (const f of report.filters ?? []) {
-        const chosen = selects[f.key]
-        if (chosen && String(r[f.key]) !== chosen) return false
-      }
-      if (report.dateFilter) {
-        const day = String(r[report.dateFilter.key]).slice(0, 10)
-        if (from && day < from) return false
-        if (to && day > to) return false
-      }
-      return true
-    })
-  }, [rows, selects, from, to, report])
-
-  if (!report) return <NotFound />
-  if (!allowed) return <p className="page-note">Your role ({user.role}) cannot open this report.</p>
+  const filtered = useMemo(
+    () =>
+      rows.filter((r) => {
+        for (const f of report.filters ?? []) {
+          const chosen = selects[f.key]
+          if (chosen && String(r[f.key]) !== chosen) return false
+        }
+        if (report.dateFilter) {
+          const day = String(r[report.dateFilter.key]).slice(0, 10)
+          if (from && day < from) return false
+          if (to && day > to) return false
+        }
+        return true
+      }),
+    [rows, selects, from, to, report],
+  )
 
   const kpis = report.kpis ? safely(() => report.kpis(filtered), []) : []
+  const insights = report.insights ? safely(() => report.insights(filtered), []) : []
+  const notes = [...insights, ...(report.notes ?? [])]
   const chartRows = report.chartRows ? safely(() => report.chartRows(filtered), []) : filtered
+  const extra = report.extraChart
+  const extraRows = extra ? safely(() => extra.rows(filtered), []) : []
+  // tableRows lets a report show a summary (one row per month, venue, item...) instead of the raw rows.
+  const tableRows = report.tableRows ? safely(() => report.tableRows(filtered), []) : filtered
   const hasFilters = (report.filters?.length ?? 0) > 0 || Boolean(report.dateFilter)
   const filtersOn = Object.values(selects).some(Boolean) || from || to
 
   return (
     <div>
-      <h1>{report.title}</h1>
-      <p className="muted">{report.description}</p>
+      {report.sectionDescription && <p className="muted rp-section-desc">{report.sectionDescription}</p>}
       <ErrorBanner message={error} onClose={() => setError('')} />
       {loading ? (
         <p className="muted">Loading report…</p>
@@ -208,22 +199,81 @@ export default function ReportPage({ reportKey }) {
             </div>
           )}
 
+          {notes.length > 0 && (
+            <div className="rp-notes">
+              <strong>What the numbers mean</strong>
+              <ul>
+                {notes.map((n) => (
+                  <li key={n}>{n}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {report.summary && <p className="summary">{safely(() => report.summary(filtered), '')}</p>}
           <Chart chart={report.chart} rows={chartRows} />
+          {extra && extraRows.length > 0 && (
+            <>
+              <h3 className="rp-chart-title">{extra.title}</h3>
+              <Chart chart={extra.chart} rows={extraRows} />
+            </>
+          )}
           <div className="rp-actions">
-            <span className="muted">{filtered.length.toLocaleString('en-US')} rows</span>
+            <span className="muted">{tableRows.length.toLocaleString('en-US')} rows</span>
             <button
               type="button"
               className="rp-export"
-              disabled={filtered.length === 0}
-              onClick={() => downloadCsv(report.key, report.columns ?? Object.keys(filtered[0]), filtered)}
+              disabled={tableRows.length === 0}
+              onClick={() => downloadCsv(csvName, report.columns ?? Object.keys(tableRows[0]), tableRows)}
             >
               Download CSV
             </button>
           </div>
-          <DataTable key={report.key} rows={filtered} columns={report.columns} />
+          <DataTable key={csvName} rows={tableRows} columns={report.columns} rowClass={report.rowClass} />
         </>
       )}
+    </div>
+  )
+}
+
+// One page for EVERY report: it looks up its settings in config/reports.js.
+// A report with `sections` shows one tab per section (each with its own data, filters and chart); the others show a single body.
+// `reportKey` lets the one-page admin show a report in place. Without it the key comes from the URL (/reports/:key).
+export default function ReportPage({ reportKey }) {
+  const params = useParams()
+  const key = reportKey ?? params.key
+  const { user } = useAuth()
+  const report = REPORTS.find((r) => r.key === key)
+  const allowed = Boolean(report) && (!report.roles || report.roles.includes(user.role))
+  const [tab, setTab] = useState('')
+
+  if (!report) return <NotFound />
+  if (!allowed) return <p className="page-note">Your role ({user.role}) cannot open this report.</p>
+
+  const sections = report.sections ?? null
+  const active = sections ? (sections.find((s) => s.key === tab) ?? sections[0]) : report
+
+  return (
+    <div>
+      <h1>{report.title}</h1>
+      <p className="muted">{report.description}</p>
+      {sections && (
+        <div className="rp-tabs" role="tablist">
+          {sections.map((s) => (
+            <button
+              key={s.key}
+              type="button"
+              role="tab"
+              className="rp-tab"
+              aria-selected={s.key === active.key}
+              onClick={() => setTab(s.key)}
+            >
+              {s.title}
+            </button>
+          ))}
+        </div>
+      )}
+      <ReportBody key={`${report.key}/${active.key}`} report={active} csvName={sections ? `${report.key}-${active.key}` : report.key} />
     </div>
   )
 }

@@ -89,6 +89,12 @@ const reports = {
     { Tier: 'Plus', Memberships: 45, ActiveNow: 33, ExpiringIn30Days: 4, MembershipRevenue: 8999.55, Visits: 610, VisitsPerMembership: 13.56 },
     { Tier: 'Premier', Memberships: 25, ActiveNow: 19, ExpiringIn30Days: 2, MembershipRevenue: 9999.75, Visits: 480, VisitsPerMembership: 19.2 },
   ],
+  'item-sales': [
+    { VenueName: 'Burger Barn', VenueType: 'Restaurant', Category: 'Entree', ItemName: 'Cheeseburger', SaleYear: 2026, SaleMonth: 7, Units: 320, Revenue: 2880 },
+    { VenueName: 'Burger Barn', VenueType: 'Restaurant', Category: 'Drink', ItemName: 'Lemonade', SaleYear: 2026, SaleMonth: 7, Units: 410, Revenue: 1435 },
+    { VenueName: 'Sunny Gifts', VenueType: 'Gift Shop', Category: 'Toy', ItemName: 'Plush Dragon', SaleYear: 2026, SaleMonth: 7, Units: 45, Revenue: 899.55 },
+    { VenueName: 'Sunny Gifts', VenueType: 'Gift Shop', Category: 'Candy', ItemName: 'Fudge Box', SaleYear: null, SaleMonth: null, Units: 0, Revenue: 0 },
+  ],
   'revenue-by-source': [
     { RevenueDate: '2026-07-04', Source: 'Tickets', Revenue: 16828.13 },
     { RevenueDate: '2026-07-04', Source: 'Food', Revenue: 5240.5 },
