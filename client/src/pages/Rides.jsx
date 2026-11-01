@@ -8,7 +8,7 @@ import { BRAND, LANDS, ZONE_MAP } from '../config/brand.js'
 import { money, rideImage } from '../utils/portalFormat.js'
 
 const MAX_PREMIER = 4
-const MAX_GAMES = 6
+const MAX_GAMES = 10
 
 
 const RIDE_CATEGORIES = [
@@ -44,6 +44,7 @@ const RIDE_IMAGES = {
 const GAME_IMAGES = {
   'Dunk Tank': '/images/dunk-tank.jpg',
   'Whack-a-Gator': '/images/whack-a-gator.jpg',
+  'Fantasy Grove': '/images/fantasy-grove.jpg',
   'Skee Ball': '/images/skee-ball.jpg',
   'Basketball Shot': '/images/basketball-shot.jpg',
   'Ring Toss': '/images/ring-toss.jpg',
@@ -124,7 +125,11 @@ useEffect(() => {
   const selected = picked ?? fromLink
 
   const rides = useMemo(() => site?.rides ?? [], [site])
-  const games = useMemo(() => site?.games ?? [], [site])
+ const games = useMemo(() => site?.games ?? [], [site])
+
+console.log('Games:', games)
+  console.log("GAMES:", games)
+  console.log('Games from database:', games.map(g => g.gameName))
   const venues = useMemo(() => site?.venues ?? [], [site])
 
   const premier = useMemo(
@@ -257,6 +262,7 @@ const filteredRides = useMemo(() => {
           <h2 id="pub-ent-title" className="pub-h2 pub-h2-spaced">
             Entertainment
           </h2>
+          
 
           <p className="pub-lede">
             Step right up! Discover exciting midway games
@@ -264,7 +270,14 @@ const filteredRides = useMemo(() => {
           </p>
 
           <ul className="pub-games pub-games-enhanced">
-            {games.slice(0, MAX_GAMES).map((g) => (
+            {[...games]
+              .sort((a, b) => {
+               if (a.gameName === 'Balloon Pop') return -1
+               if (b.gameName === 'Balloon Pop') return 1
+               return 0
+             })
+             .slice(0, MAX_GAMES)
+             .map((g) => (
               <li key={g.gameId} className="pub-game-card">
                 <div className="pub-game-image">
                   <img
