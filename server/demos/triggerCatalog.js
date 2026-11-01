@@ -219,9 +219,15 @@ export function describeTrigger(name) {
 }
 
 // Which trigger sent this message? Used so the browser can show "trigger fired" cards.
-// Exact match on the catalog's error list; the first entry wins when two triggers share a message.
-export function triggerForMessage(message) {
+// Exact match on the catalog's error list. An insert trigger and its edit trigger share the same messages,
+// so `where` ({ event: 'INSERT' | 'UPDATE' | 'DELETE', table }) says which statement failed. The trigger that
+// matches both event and table wins, then the one that matches the event, then the first one in the list.
+export function triggerForMessage(message, where = {}) {
   const text = String(message ?? '');
-  const t = TRIGGER_CATALOG.find((x) => x.errors?.includes(text));
+  const matches = TRIGGER_CATALOG.filter((x) => x.errors?.includes(text));
+  const t =
+    matches.find((x) => x.event === where.event && x.table === where.table) ||
+    matches.find((x) => x.event === where.event) ||
+    matches[0];
   return t ? describeTrigger(t.name) : null;
 }
