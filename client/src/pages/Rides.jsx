@@ -11,12 +11,23 @@ const MAX_PREMIER = 4
 const MAX_GAMES = 10
 
 
+// The tab row. 'all' is the default and shows everything; 'food' shows only games and dining & shops.
 const RIDE_CATEGORIES = [
+  { key: 'all', label: 'All' },
   { key: 'premier', label: 'Premier Rides' },
   { key: 'thrill', label: 'Thrill Rides' },
   { key: 'family', label: 'Family Favorites' },
   { key: 'kids', label: 'Kids Rides' },
+  { key: 'food', label: 'Food, Drinks & Games' },
 ]
+
+// Which tab a link opens: ?land=thrill|family|kids picks that land, #dining-shops opens the food tab, anything else is All.
+function categoryFromUrl(params, hash) {
+  const land = params.get('land')
+  if (['thrill', 'family', 'kids'].includes(land)) return land
+  if (hash === '#dining-shops') return 'food'
+  return 'all'
+}
 
 
 const RIDE_IMAGES = {
@@ -73,23 +84,15 @@ export default function Rides() {
   const location = useLocation()
   const [picked, setPicked] = useState(null)
   
-  const [rideCategory, setRideCategory] = useState(() => {
-    const land = params.get('land')
-    return ['thrill', 'family', 'kids'].includes(land)
-      ? land
-      : 'premier'
-  })
+  const [rideCategory, setRideCategory] = useState(() => categoryFromUrl(params, location.hash))
 
-  
-useEffect(() => {
-  const land = params.get('land')
-
-  setRideCategory(
-    ['thrill', 'family', 'kids'].includes(land)
-      ? land
-      : 'premier'
-  )
-}, [params])
+  // When the link changes (for example ?land=kids), follow it. Clicking a tab does not touch the URL, so it sticks.
+  const urlKey = `${params.get('land') ?? ''}|${location.hash}`
+  const [seenUrlKey, setSeenUrlKey] = useState(urlKey)
+  if (seenUrlKey !== urlKey) {
+    setSeenUrlKey(urlKey)
+    setRideCategory(categoryFromUrl(params, location.hash))
+  }
 
 
 
@@ -145,9 +148,6 @@ useEffect(() => {
   ]
 }, [site])
 
-console.log('Games:', games)
-  console.log("GAMES:", games)
-  console.log('Games from database:', games.map(g => g.gameName))
   const venues = useMemo(() => site?.venues ?? [], [site])
 
   const premier = useMemo(
@@ -157,6 +157,10 @@ console.log('Games:', games)
 
   
 const filteredRides = useMemo(() => {
+  if (rideCategory === 'all') {
+    return rides
+  }
+
   if (rideCategory === 'premier') {
     return premier
   }
@@ -192,6 +196,10 @@ const filteredRides = useMemo(() => {
   const land = LANDS.find((l) => selected.length > 1 && l.zones.length === selected.length && l.zones.every((z) => selected.includes(z)))
   const title = selected.length === 0 ? 'Pick a zone' : land ? land.title : selected.join(', ')
 
+  // Rides show on every tab except Food, Drinks & Games; games and dining show on All and on that tab.
+  const showRides = rideCategory !== 'food'
+  const showFood = rideCategory === 'all' || rideCategory === 'food'
+
   function toggleZone(name) {
     setPicked(selected.length === 1 && selected[0] === name ? [] : [name])
   }
@@ -207,14 +215,14 @@ const filteredRides = useMemo(() => {
       
       <section id="explore-rides" aria-labelledby="pub-rides-title">
         <h2 id="pub-rides-title" className="pub-h2">
-          Explore Our Rides
+          Explore the Park
         </h2>
 
         <p className="pub-lede">
-          Discover exciting attractions for every kind of adventure.
+          Discover exciting attractions, midway games and good food for every kind of adventure.
         </p>
 
-        <div className="pub-ride-filters" aria-label="Ride categories">
+        <div className="pub-ride-filters" role="group" aria-label="Browse by category">
           {RIDE_CATEGORIES.map((category) => (
             <button
               key={category.key}
@@ -230,7 +238,7 @@ const filteredRides = useMemo(() => {
           ))}
         </div>
 
-        {filteredRides.length > 0 ? (
+        {!showRides ? null : filteredRides.length > 0 ? (
           <ul className="pub-premier">
             {filteredRides.map((r) => (
               <li key={r.rideId}>
@@ -275,7 +283,7 @@ const filteredRides = useMemo(() => {
 
 
       
-      {games.length > 0 && (
+      {showFood && games.length > 0 && (
         <section aria-labelledby="pub-ent-title">
           <h2 id="pub-ent-title" className="pub-h2 pub-h2-spaced">
             Entertainment
@@ -333,7 +341,7 @@ const filteredRides = useMemo(() => {
         </section>
       )}
 
-      
+      {showFood && (
         <section id="dining-shops" aria-labelledby="pub-dining-title">
           <h2 id="pub-dining-title" className="pub-h2 pub-h2-spaced">
             Dining &amp; Shops
@@ -369,6 +377,7 @@ const filteredRides = useMemo(() => {
             <p className="pub-empty">No dining or shops listed yet.</p>
           )}
         </section>
+      )}
 
 
       <section aria-labelledby="pub-map-title">
