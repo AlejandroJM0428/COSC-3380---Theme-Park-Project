@@ -134,6 +134,25 @@ export function requestCancellation(reason) {
   return http('/cancellations', { method: 'POST', body: { reason } })
 }
 
+// Cancellation review (Admin and RetailManager). The server sends every request, Pending first, then newest.
+// Each row: { requestId, customerName, tier, startDate, endDate, autoRenew, requestedAt, reason, status, decidedAt, decidedBy, decisionNote }.
+export function listCancellations() {
+  needLive()
+  return http('/cancellations')
+}
+
+// Approving turns auto-renew off and marks the request Approved. Nothing is refunded and the end date does not change.
+// note is optional (200 characters or fewer). A request that was already decided comes back as a 409 error.
+export function approveCancellation(requestId, note) {
+  needLive()
+  return http(`/cancellations/${requestId}/approve`, { method: 'POST', body: { note } })
+}
+
+export function rejectCancellation(requestId, note) {
+  needLive()
+  return http(`/cancellations/${requestId}/reject`, { method: 'POST', body: { note } })
+}
+
 // Public site data for the homepage and public pages: prices, hours, membership tiers, rides
 // (Open/Closed only, never wait times) and venues. No sign-in needed. Works in mock mode too.
 export function getPublicSite() {

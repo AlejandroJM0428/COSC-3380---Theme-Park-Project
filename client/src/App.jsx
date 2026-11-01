@@ -15,6 +15,7 @@ import TicketSalesPage from './pages/TicketSalesPage.jsx'
 import ShiftRatingsPage from './pages/ShiftRatingsPage.jsx'
 import MyWork from './pages/MyWork.jsx'
 import NotificationsPage from './pages/NotificationsPage.jsx'
+import CancellationsPage from './pages/CancellationsPage.jsx'
 import { CustomersPage, FacilitiesPage, GamePlaysPage, MembershipsPage, PurchasesPage, RideLogPage, UsersPage, WeatherPage } from './pages/DataEntryPages.jsx'
 import Placeholder from './pages/Placeholder.jsx'
 import NotFound from './pages/NotFound.jsx'
@@ -38,6 +39,7 @@ const PAGE_COMPONENTS = {
   'my-work': MyWork,
   customers: CustomersPage,
   memberships: MembershipsPage,
+  cancellations: CancellationsPage,
   purchases: PurchasesPage,
   'game-plays': GamePlaysPage,
   'ride-log': RideLogPage,
