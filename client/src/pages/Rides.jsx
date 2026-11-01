@@ -248,7 +248,16 @@ const filteredRides = useMemo(() => {
 
 
       <section aria-labelledby="pub-map-title">
-        <h2 id="pub-map-title" className="pub-h2 pub-h2-spaced">Park map</h2>
+        
+        <h2 id="pub-map-title" className="pub-h2 pub-h2-spaced">
+          Explore Thunder Valley
+        </h2>
+
+        <p className="pub-lede">
+          Discover our five themed zones! Select an area on the map
+          to explore rides, games, dining, and attractions.
+        </p>
+
         <div className="pub-mapwrap">
           <ParkMap counts={counts} selected={selected} onSelect={toggleZone} />
 

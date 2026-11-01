@@ -1059,3 +1059,102 @@
     transform: none;
   }
 }
+
+
+/* THUNDER VALLEY - Interactive Park Map */
+
+.pub-mapwrap {
+  gap: 24px;
+  align-items: start;
+}
+
+/* Map background */
+.pub-map-bg {
+  fill: #DDEAF7;
+}
+
+/* Walking paths */
+.pub-map-paths path {
+  stroke: #FFFFFF;
+  stroke-width: 12;
+}
+
+/* Park zones */
+.pub-zone {
+  cursor: pointer;
+  transition: opacity 0.25s ease;
+}
+
+.pub-zone rect {
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 3;
+  transition: stroke 0.25s ease,
+              stroke-width 0.25s ease,
+              filter 0.25s ease;
+}
+
+/* Hover effect */
+.pub-zone:hover rect {
+  stroke: #3B82F6;
+  stroke-width: 6;
+  filter: brightness(1.06);
+}
+
+/* Selected zone */
+.pub-zone.on rect {
+  stroke: #2459B8;
+  stroke-width: 7;
+  filter: drop-shadow(0 4px 6px rgba(36, 89, 184, 0.25));
+}
+
+/* Dim other zones when one is selected */
+.pub-zone.dim {
+  opacity: 0.5;
+}
+
+/* Zone labels */
+.pub-zone-name {
+  font-weight: 900;
+  fill: #14213D;
+}
+
+.pub-zone-count {
+  fill: #334155;
+  font-weight: 700;
+}
+
+/* Entrance label */
+.pub-map-entrance {
+  fill: #2459B8;
+  font-weight: 900;
+}
+
+/* Information panel */
+.pub-zonepanel {
+  border: 2px solid #DCE8F8;
+  border-radius: 20px;
+  padding: 26px;
+  background: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(20, 33, 61, 0.08);
+}
+
+.pub-zonepanel h3 {
+  color: #14213D;
+  font-weight: 900;
+}
+
+.pub-zonelist li {
+  transition: background 0.2s ease;
+}
+
+.pub-zonelist li:hover {
+  background: #F0F7FF;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-zone,
+  .pub-zone rect,
+  .pub-zonelist li {
+    transition: none;
+  }
+}
