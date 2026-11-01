@@ -6,9 +6,21 @@ import { BRAND, LANDS } from '../../config/brand.js'
 const MAX_CHIPS = 9
 
 const RIDE_IMAGES = {
+  // Thrill Rides
   'Canyon Cyclone': '/images/canyon-cyclone.jpg',
   'Rapids Rampage': '/images/rapids-rampage.jpg',
   'Thunder Run': '/images/thunder-run.jpg',
+
+  // Family Favorites
+  "Kraken's Lair": '/images/krakens-lair.jpg',
+  "Pirate's Plunge": '/images/pirates-plunge.jpg',
+  'Tidal Simulator': '/images/tidal-simulator.jpg',
+  'Enchanted Journey': '/images/enchanted-journey.jpg',
+  'Forest Express': '/images/forest-express.jpg',
+  "Wizard's Workshop": '/images/wizards-workshop.jpg',
+  'Heritage Railroad': '/images/heritage-railroad.jpg',
+  "Dragon's Nest": '/images/dragons-nest.jpg',
+  'Grand Carousel': '/images/grand-carousel.jpg',
 }
 
 const TABS = [
