@@ -3,6 +3,7 @@ import { route } from '../router.js';
 import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { createSession, getSession, destroySession } from '../session.js';
+import { lockedForSeconds, recordFailure, recordSuccess } from '../loginLimiter.js';
 
 // Compared against when the username does not exist, so both failures take similar time.
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
@@ -34,15 +35,27 @@ route('POST', '/api/auth/login', async (ctx) => {
   }
   if (audience !== undefined && !AUDIENCES.includes(audience)) throw new HttpError(400, 'Unknown sign in page');
 
+  // Too many recent failures for this username / address: refuse before touching the database or bcrypt.
+  const ip = ctx.req.socket?.remoteAddress ?? 'unknown';
+  const wait = lockedForSeconds(username, ip);
+  if (wait > 0) {
+    ctx.res.setHeader('Retry-After', String(wait));
+    throw new HttpError(429, `Too many failed sign-in attempts. Try again in ${Math.ceil(wait / 60)} minute(s).`);
+  }
+
   const [rows] = await pool.query(
     'SELECT UserID, Username, PasswordHash, Role, CustomerID, EmployeeID FROM AppUser WHERE Username = ? AND IsActive = 1',
     [username],
   );
   const user = rows[0];
   const ok = await bcrypt.compare(password, user ? user.PasswordHash : DUMMY_HASH);
-  if (!user || !ok) throw new HttpError(401, BAD_LOGIN);
-  const isCustomer = user.Role === 'Customer';
-  if ((audience === 'staff' && isCustomer) || (audience === 'member' && !isCustomer)) throw new HttpError(401, BAD_LOGIN);
+  const isCustomer = user?.Role === 'Customer';
+  const wrongPage = (audience === 'staff' && isCustomer) || (audience === 'member' && user && !isCustomer);
+  if (!user || !ok || wrongPage) {
+    recordFailure(username, ip);
+    throw new HttpError(401, BAD_LOGIN);
+  }
+  recordSuccess(username, ip);
 
   createSession(ctx.res, { userId: user.UserID, username: user.Username, role: user.Role, CustomerID: user.CustomerID, EmployeeID: user.EmployeeID });
   return { username: user.Username, role: user.Role, name: await nameFor(user.EmployeeID, user.CustomerID) };
