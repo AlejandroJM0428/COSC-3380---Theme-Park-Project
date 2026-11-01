@@ -4,6 +4,7 @@ import { useAuth } from '../auth/context.js'
 import { buyVisitorMembership, buyVisitorTicket, getVisitorDashboard, refundVisitorTicket } from '../api/index.js'
 import PortalLayout from '../components/PortalLayout.jsx'
 import TriggerNotice from '../components/TriggerNotice.jsx'
+import FamilyTab from '../components/portal/FamilyTab.jsx'
 import MembershipTab from '../components/portal/MembershipTab.jsx'
 import OverviewTab from '../components/portal/OverviewTab.jsx'
 import RidesTab from '../components/portal/RidesTab.jsx'
@@ -13,6 +14,7 @@ import { formatDate, localDate, money } from '../utils/portalFormat.js'
 const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'tickets', label: 'Tickets' },
+  { key: 'family', label: 'My Family' },
   { key: 'membership', label: 'Membership' },
   { key: 'rides', label: 'Rides' },
 ]
@@ -165,6 +167,9 @@ export default function MemberPortal() {
     }
   }
 
+  // What the Family tab and the cancel card use to show results in the page's own banners.
+  const messages = { clear: clearMessages, fail: showFailure, ok: setSuccess, notice: setNotice }
+
   const form = { visitDate, setVisitDate, hasExpress, setHasExpress, isPremier, membership, passPrice, expressPrice, totalPrice, purchasing, onSubmit: handlePurchase }
   const title = TABS.find((t) => t.key === tab).label
 
@@ -182,7 +187,8 @@ export default function MemberPortal() {
 
       {tab === 'overview' && <OverviewTab customer={dashboard?.customer} membership={membership} tiers={tiers} upcoming={upcoming} rides={rides} onGo={go} onBuyMembership={handleBuyMembership} buyingMembership={buyingMembership} />}
       {tab === 'tickets' && <TicketsTab form={form} upcoming={upcoming} past={past} loading={loading} refundBusy={refundBusy} onRefund={handleRefund} />}
-      {tab === 'membership' && <MembershipTab membership={membership} perks={perks} tiers={tiers} tickets={tickets} dayPassPrice={passPrice} onBuy={handleBuyMembership} buying={buyingMembership} />}
+      {tab === 'family' && <FamilyTab messages={messages} />}
+      {tab === 'membership' && <MembershipTab membership={membership} perks={perks} tiers={tiers} tickets={tickets} dayPassPrice={passPrice} onBuy={handleBuyMembership} buying={buyingMembership} messages={messages} />}
       {tab === 'rides' && <RidesTab rides={rides} waitsVisible={Boolean(dashboard?.waitsVisible)} loading={loading} />}
     </PortalLayout>
   )

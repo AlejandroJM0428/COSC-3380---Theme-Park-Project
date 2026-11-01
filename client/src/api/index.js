@@ -77,6 +77,63 @@ export function refundVisitorTicket(ticketId) {
   return http(`/visitor/tickets/${ticketId}/refund`, { method: 'POST', body: {} })
 }
 
+// My Family (dependents under 18). Live database only. The server uses the CustomerID of the session and
+// checks every dependent id against that parent, so these never need a parent id.
+// getFamily resolves to { limit, dependents: [{ customerId, firstName, dob, age, heightCm, consentedAt, tickets[] }] }.
+export function getFamily() {
+  needLive()
+  return http('/family')
+}
+
+// data: { firstName, dob (YYYY-MM-DD), heightCm, consent: true }. The parent must have ticked the consent box.
+export function addDependent(data) {
+  needLive()
+  return http('/family/dependents', { method: 'POST', body: data })
+}
+
+// data: { firstName, dob, heightCm }
+export function updateDependent(id, data) {
+  needLive()
+  return http(`/family/dependents/${id}`, { method: 'PUT', body: data })
+}
+
+// The row is anonymised on the server (past tickets stay for reporting). Refused while a ticket is upcoming.
+export function removeDependent(id) {
+  needLive()
+  return http(`/family/dependents/${id}`, { method: 'DELETE' })
+}
+
+// What the database will charge. Saves nothing. Resolves to { dayPass, expressAddOn, discountPct, discount, total, ... }.
+export function quoteDependentTicket(id, visitDate, hasExpress) {
+  needLive()
+  const qs = new URLSearchParams({ visitDate, hasExpress: hasExpress ? '1' : '0' }).toString()
+  return http(`/family/dependents/${id}/quote?${qs}`)
+}
+
+// Send { visitDate, hasExpress } only. The server sets the price. Resolves to the ticket plus { discount, firedTriggers }.
+export function buyDependentTicket(id, data) {
+  needLive()
+  return http(`/family/dependents/${id}/tickets`, { method: 'POST', body: data })
+}
+
+export function refundDependentTicket(ticketId) {
+  needLive()
+  return http(`/family/tickets/${ticketId}/refund`, { method: 'POST', body: {} })
+}
+
+// Membership cancellation. A request, not an instant cancel: a manager approves or rejects it.
+// Resolves to { membership, canRequest, blockedReason, requests[] } for the signed-in member.
+export function getMyCancellations() {
+  needLive()
+  return http('/cancellations/mine')
+}
+
+// Send { reason } only (required, 200 characters or fewer). The server picks the membership that is active today.
+export function requestCancellation(reason) {
+  needLive()
+  return http('/cancellations', { method: 'POST', body: { reason } })
+}
+
 // Public site data for the homepage and public pages: prices, hours, membership tiers, rides
 // (Open/Closed only, never wait times) and venues. No sign-in needed. Works in mock mode too.
 export function getPublicSite() {

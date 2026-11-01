@@ -207,3 +207,30 @@
   .pt-search { flex: 1 1 100%; order: 3; }
   .pt .pt-table th, .pt .pt-table td { padding: 8px 10px; }
 }
+
+/* My Family and Cancel membership */
+.pt-form input[type="text"], .pt-form input[type="number"], .pt-form textarea { padding: 9px 10px; border: 1px solid var(--brand-line); border-radius: 8px; background: #fff; color: var(--brand-ink); font: inherit; width: 100%; box-sizing: border-box; }
+.pt-form textarea { resize: vertical; }
+.pt-form input:disabled, .pt-form textarea:disabled { opacity: .6; }
+.pt-fine-error { color: #8e3126; font-weight: 600; }
+.pt-consent { align-items: start; }
+.pt-consent input { margin-top: 3px; }
+.pt-dep { margin-bottom: 12px; }
+.pt-dep-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.pt-dep-name { margin: 0 0 2px; font-size: 1.15rem; font-weight: 800; letter-spacing: -.02em; color: var(--brand-ink); }
+.pt-dep-head .pt-sub { margin-bottom: 0; }
+.pt-dep-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--brand-line); }
+.pt-dep-sub { margin: 14px 0 6px; font-size: .75rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--brand-muted); }
+.pt-dep-none { margin-bottom: 4px; }
+.pt-dep-past { margin-top: 8px; }
+.pt-dep-past summary { padding: 8px 0; }
+.pt-pill-pending { background: #fff3c4; color: #6b5200; }
+.pt-pill-approved { background: #e3f5e8; color: #1b6a35; }
+.pt-pill-rejected { background: #eceff2; color: #4c5b68; }
+.pt-cancel { margin-top: 12px; }
+.pt-cancel-facts { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .9rem; color: var(--brand-ink); }
+.pt-cancel-pending p { margin: 0 0 6px; }
+.pt-cancel-history summary { padding: 10px 0 4px; }
+.pt-cancel-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.pt-cancel-list li { padding-top: 10px; border-top: 1px solid var(--brand-line); }
+.pt-cancel-list p { margin: 0 0 4px; }
