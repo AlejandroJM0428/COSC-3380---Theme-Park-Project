@@ -934,3 +934,66 @@
 .pub-games-enhanced .pub-game-price {
   color: #2454ba;
 }
+
+
+/* THUNDER VALLEY - Enhanced Premier Ride Cards */
+
+.pub-premier > li {
+  min-width: 0;
+  padding: 10px;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
+}
+
+.pub-premier > li:hover {
+  transform: translateY(-6px);
+  border-color: #3B82F6;
+  background: #FFFFFF;
+  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.16);
+}
+
+.pub-premier-img {
+  overflow: hidden;
+  border-radius: 14px;
+  transition: filter 0.25s ease;
+}
+
+.pub-premier > li:hover .pub-premier-img {
+  filter: brightness(1.07);
+}
+
+.pub-premier > li:hover .pub-premier-img.is-closed {
+  filter: grayscale(0.7);
+}
+
+.pub-premier h3 {
+  color: #14213D;
+  font-size: 1.15rem;
+  font-weight: 900;
+  margin-top: 12px;
+}
+
+.pub-premier .pub-badge.open {
+  background: #E3F9E9;
+  color: #16733A;
+  border: 1px solid #B4E8C4;
+}
+
+.pub-premier .pub-badge.closed {
+  background: #F1F3F5;
+  color: #64748B;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-premier > li,
+  .pub-premier-img {
+    transition: none;
+  }
+
+  .pub-premier > li:hover {
+    transform: none;
+  }
+}
