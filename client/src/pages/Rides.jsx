@@ -10,6 +10,15 @@ import { money, rideImage } from '../utils/portalFormat.js'
 const MAX_PREMIER = 4
 const MAX_GAMES = 6
 
+
+const RIDE_CATEGORIES = [
+  { key: 'premier', label: 'Premier Rides' },
+  { key: 'thrill', label: 'Thrill Rides' },
+  { key: 'family', label: 'Family Favorites' },
+  { key: 'kids', label: 'Kids Corner' },
+]
+
+
 const RIDE_IMAGES = {
   // Thrill Rides
   'Canyon Cyclone': '/images/canyon-cyclone.jpg',
@@ -49,6 +58,7 @@ export default function Rides() {
   const { site, loading, error, retry } = usePublicSite()
   const [params] = useSearchParams()
   const [picked, setPicked] = useState(null)
+  const [rideCategory, setRideCategory] = useState('premier')
 
   const fromLink = useMemo(() => {
     const zone = params.get('zone')
@@ -65,6 +75,24 @@ export default function Rides() {
     () => rides.filter((r) => r.expressEligible).sort((a, b) => (b.state === 'Open') - (a.state === 'Open')).slice(0, MAX_PREMIER),
     [rides],
   )
+
+  
+const filteredRides = useMemo(() => {
+  if (rideCategory === 'premier') {
+    return premier
+  }
+
+  const selectedLand = LANDS.find(
+    (land) => land.key === rideCategory
+  )
+
+  if (!selectedLand) return []
+
+  return rides.filter((ride) =>
+    selectedLand.zones.includes(ride.zoneName)
+  )
+}, [rideCategory, rides, premier])
+
 
   const counts = useMemo(() => {
     const out = {}
@@ -97,26 +125,75 @@ export default function Rides() {
       {error && <LoadError message={error} onRetry={retry} />}
       {loading && <p className="pub-empty">Loading…</p>}
 
-      {premier.length > 0 && (
-        <section aria-labelledby="pub-premier-title">
-          <h2 id="pub-premier-title" className="pub-h2">Premier rides</h2>
+      
+      <section aria-labelledby="pub-rides-title">
+        <h2 id="pub-rides-title" className="pub-h2">
+          Explore Our Rides
+        </h2>
+
+        <p className="pub-lede">
+          Discover exciting attractions for every kind of adventure.
+        </p>
+
+        <div className="pub-ride-filters" aria-label="Ride categories">
+          {RIDE_CATEGORIES.map((category) => (
+            <button
+              key={category.key}
+              type="button"
+              className={`pub-ride-filter ${
+                rideCategory === category.key ? 'active' : ''
+              }`}
+              aria-pressed={rideCategory === category.key}
+              onClick={() => setRideCategory(category.key)}
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
+
+        {filteredRides.length > 0 ? (
           <ul className="pub-premier">
-            {premier.map((r) => (
+            {filteredRides.map((r) => (
               <li key={r.rideId}>
                 <BrandImage
                   src={RIDE_IMAGES[r.rideName] ?? rideImage(r.zoneName)}
-                  className={`pub-premier-img ${r.state === 'Open' ? '' : 'is-closed'}`}
+                  className={`pub-premier-img ${
+                    r.state === 'Open' ? '' : 'is-closed'
+                  }`}
                 >
-                  <span className={`pub-badge ${r.state === 'Open' ? 'open' : 'closed'}`}>{r.state}</span>
+                  <span
+                    className={`pub-badge ${
+                      r.state === 'Open' ? 'open' : 'closed'
+                    }`}
+                  >
+                    {r.state}
+                  </span>
                 </BrandImage>
+
                 <h3>{r.rideName}</h3>
-                <p>{r.zoneName} · {r.rideType}{r.minHeightCm ? ` · Min ${r.minHeightCm} cm` : ''}</p>
-                <p className="pub-premier-tag">Express queue available</p>
+
+                <p>
+                  {r.zoneName} · {r.rideType}
+                  {r.minHeightCm ? ` · Min ${r.minHeightCm} cm` : ''}
+                </p>
+
+                {r.expressEligible && (
+                  <p className="pub-premier-tag">
+                    Express queue available
+                  </p>
+                )}
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        ) : (
+          <p className="pub-empty">
+            {loading
+              ? 'Loading rides...'
+              : 'No rides available in this category.'}
+          </p>
+        )}
+      </section>
+
 
       
       {games.length > 0 && (
