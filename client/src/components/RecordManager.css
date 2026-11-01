@@ -16,6 +16,7 @@
 .rm-actions { white-space: nowrap; }
 .rm-actions button { padding: 4px 10px; margin-right: 6px; font-size: 0.85rem; }
 .rm-danger { color: var(--bad); border-color: var(--bad); }
+.rm-group th { text-align: left; background: #e8efed; color: #123c36; font-size: 0.95rem; padding: 8px 12px; border-top: 2px solid var(--line); }
 
 .corner-toast {
   position: fixed;

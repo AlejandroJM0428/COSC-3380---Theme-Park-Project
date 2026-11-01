@@ -520,6 +520,13 @@ export const USERS = {
     'Staff logins for this site. Every login belongs to an employee and is named after them (first name plus the last four digits of their ID). Add an account, change its role, set a new password, or deactivate it. A deactivated account cannot log in. You cannot deactivate yourself or change your own role.',
   resource: 'users',
   idKey: 'UserID',
+  // Optional "Group by: Role" view: the accounts under a heading per role, in this order.
+  groupBy: {
+    key: 'Role',
+    label: 'Group by',
+    optionLabel: 'Role',
+    order: ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker'],
+  },
   hideIds: true, // the page never shows user numbers
   noun: 'user',
   deleteRoles: ['Admin'],

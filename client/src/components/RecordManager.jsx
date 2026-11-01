@@ -22,6 +22,7 @@ export default function RecordManager({ entity }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [toast, setToast] = useState(null)
+  const [grouped, setGrouped] = useState(false) // entity.groupBy: show the rows under a heading per group
 
   useEffect(() => {
     let alive = true
@@ -212,6 +213,43 @@ export default function RecordManager({ entity }) {
     if (e.target.id === `f-${kindFieldKey}`) setForm((f) => ({ ...f, facilityId: '' }))
   }
 
+  // Grouped view: one heading row per group (for example per role), in the order the entity lists, with the group size.
+  function buildGroups(list) {
+    const by = new Map()
+    for (const row of list) {
+      const key = row[entity.groupBy.key] ?? ''
+      if (!by.has(key)) by.set(key, [])
+      by.get(key).push(row)
+    }
+    const order = entity.groupBy.order ?? []
+    const known = order.filter((k) => by.has(k))
+    const others = [...by.keys()].filter((k) => !order.includes(k)).sort()
+    return [...known, ...others].map((k) => ({ key: k, rows: by.get(k) }))
+  }
+  const groupName = (key) => String(key || 'Other').replace(/([a-z])([A-Z])/g, '$1 $2')
+
+  function renderRow(row) {
+    return (
+      <tr key={row[entity.idKey]}>
+        {entity.columns.map((c) => (
+          <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
+        ))}
+        <td className="rm-actions">
+          {canWrite && (entity.canEditRow?.(row) ?? true) && (
+            <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
+              Edit
+            </button>
+          )}
+          {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
+            <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null}>
+              {deleteLabel}
+            </button>
+          )}
+        </td>
+      </tr>
+    )
+  }
+
   return (
     <div className="rm">
       <h1>{entity.title}</h1>
@@ -244,6 +282,15 @@ export default function RecordManager({ entity }) {
             </select>
           </label>
         ))}
+        {entity.groupBy && (
+          <label className="rm-filter">
+            {entity.groupBy.label ?? 'Group by'}
+            <select value={grouped ? 'on' : ''} onChange={(e) => setGrouped(e.target.value === 'on')}>
+              <option value="">None</option>
+              <option value="on">{entity.groupBy.optionLabel ?? 'Group'}</option>
+            </select>
+          </label>
+        )}
       </div>
 
       {form && (
@@ -288,25 +335,16 @@ export default function RecordManager({ entity }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row[entity.idKey]}>
-                  {entity.columns.map((c) => (
-                    <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
-                  ))}
-                  <td className="rm-actions">
-                    {canWrite && (entity.canEditRow?.(row) ?? true) && (
-                      <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
-                        Edit
-                      </button>
-                    )}
-                    {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
-                      <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null}>
-                        {deleteLabel}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {entity.groupBy && grouped
+                ? buildGroups(rows).map((g) => [
+                    <tr key={`group-${g.key}`} className="rm-group">
+                      <th colSpan={entity.columns.length + 1}>
+                        {groupName(g.key)} ({g.rows.length})
+                      </th>
+                    </tr>,
+                    ...g.rows.map(renderRow),
+                  ])
+                : rows.map(renderRow)}
             </tbody>
           </table>
         </div>
