@@ -42,7 +42,7 @@ echo "== 2. Logins"
 ADMINS=$(q <<<"SELECT COUNT(*) FROM AppUser WHERE Role IN ('Manager','Admin');")
 if [ "${ADMINS:-0}" -lt 1 ]; then
   echo "ERROR: AppUser has no Manager or Admin, so the 33 decided cancellation requests would be skipped." >&2
-  echo "       Run:  docker compose exec app npm run seed    then run this script again." >&2
+  echo "       Run:  docker compose exec -e FORCE_SEED=1 app npm run seed    then run this script again." >&2
   exit 1
 fi
 echo "   $ADMINS Manager/Admin login(s) found"
@@ -108,6 +108,6 @@ if [ "$BAD" != 0 ]; then
 fi
 echo "Done. Backup kept at $BACKUP."
 echo "Expect about 25,000 tickets, 133,000 ride-log rows, 90 employees, 3,506 customers plus 1,732 dependents, 421 memberships, 40 cancellation requests."
-echo "Next: docker compose exec app npm run seed   (ties every login to its employee; a second run adds nothing)"
+echo "Next: bash apply-logins-on-server.sh   (employees came back as ids 1 to 90: this renumbers them, links every login and renames it; safe to run twice)"
 echo "Then: deploy-now --allow-infra"
 echo "Then: open the Triggers tab (32), the five required reports and the home page (sold out, selling fast, and the closed rides)."

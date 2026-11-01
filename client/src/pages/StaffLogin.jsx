@@ -52,7 +52,7 @@ export default function StaffLogin() {
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
         </label>
         <button type="submit" className="auth-submit" disabled={!canSubmit}>{busy ? 'Signing in…' : 'Sign in'}</button>
-        {USE_MOCK && <p className="muted auth-note">Demo mode: the password is &quot;password&quot;.</p>}
+        {USE_MOCK && <p className="muted auth-note">Demo mode: sign in as avery0001, blake0002 or casey0003 with the password &quot;password&quot;.</p>}
       </form>
     </AuthShell>
   )

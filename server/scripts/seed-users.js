@@ -5,15 +5,19 @@ import { pool } from '../db.js';
 // One account per role. Safe to run twice: one row per account, no duplicates. An existing account keeps
 // its password unless you set the matching SEED_*_PASSWORD variable.
 //
+// Guard: once the park has any staff login this script does nothing, so it cannot bring back admin, manager, cashier
+// and the other role-named logins. Staff logins are added and changed on the Users page. FORCE_SEED=1 skips the guard
+// (an empty database, or a deliberate RESEED).
+//
 // RESEED=1 is the one-time reseed for the final: every account below gets a NEW random password of its own
 // (printed once, never stored in the repo), and every other staff login is switched off. Customer logins are not touched.
-//   docker compose exec -e RESEED=1 app npm run seed
+//   docker compose exec -e FORCE_SEED=1 -e RESEED=1 app npm run seed
 //
 // Accounts with `titles` are linked to a real Employee row (the nth active employee with one of
 // those job titles), so the employee portal can show that person's own shifts and jobs.
 // Without RESEED, accounts of the same kind share a password variable, to keep the demo easy to hand out.
 //
-// Named staff: after the 8 role accounts, a few more accounts are made for real, active employees (username first.last),
+// Named staff: after the 8 role accounts, a few more accounts are made for real, active employees (username: first name + last four digits of the id),
 // so the portals show a person's own shifts and jobs. Technician -> Maintenance crew, Cook and Server -> Restaurant team,
 // Shop Associate -> Ticket booth, and the Managers take the four desk roles in turn. Employees who already have a login are
 // skipped. All of them use SEED_STAFF_PASSWORD, or one random password printed once (own password each with RESEED=1).
@@ -27,6 +31,13 @@ const ACCOUNTS = [
   { username: 'tech', role: 'MaintenanceWorker', env: 'SEED_TECH_PASSWORD', titles: ['Technician'], nth: 0 },
   { username: 'cook', role: 'RestaurantWorker', env: 'SEED_COOK_PASSWORD', titles: ['Cook'], nth: 0 },
 ];
+
+const [[{ staffLogins }]] = await pool.query("SELECT COUNT(*) AS staffLogins FROM AppUser WHERE CustomerID IS NULL AND Role <> 'Customer'");
+if (staffLogins > 0 && process.env.FORCE_SEED !== '1') {
+  console.log(`Nothing to do: ${staffLogins} staff login(s) already exist. Manage them on the Users page. (FORCE_SEED=1 runs the seed anyway.)`);
+  await pool.end();
+  process.exit(0);
+}
 
 const RESEED = process.env.RESEED === '1';
 const passwords = new Map(); // env name -> password, so accounts sharing a variable share a password (own key per account when reseeding)
@@ -100,7 +111,7 @@ const usernames = new Set(taken.map((r) => r.Username));
 const namedChosen = process.env.SEED_STAFF_PASSWORD;
 const namedShared = namedChosen || randomBytes(9).toString('base64url');
 for (const { employee, role } of named) {
-  let username = `${plain(employee.FirstName)}.${plain(employee.LastName)}`;
+  let username = `${plain(employee.FirstName) || 'user'}${String(employee.EmployeeID).padStart(4, '0').slice(-4)}`;
   if (usernames.has(username)) username += `.${employee.EmployeeID}`;
   usernames.add(username);
   const password = RESEED ? randomBytes(9).toString('base64url') : namedShared;

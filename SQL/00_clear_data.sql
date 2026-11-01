@@ -1,6 +1,6 @@
 -- 00_clear_data.sql: empties all data tables so 01 and the history files (02, or history/10 to 80) can be reloaded.
 -- Keeps AppUser (logins), AdminAudit, MembershipTier (price list) and promo notices. Needs the full schema (files 14 and 16 add three of the tables it empties). Run only before re-loading 01 and the history.
--- AppUser.EmployeeID is not cleared: re-run server/scripts/seed-users.js afterwards so every login points at a real employee.
+-- AppUser.EmployeeID is not cleared, but employees come back as ids 1 to 90: run apply-logins-on-server.sh afterwards so every login points at a real employee again.
 USE theme_park;
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE RideLog;

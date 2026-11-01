@@ -2,11 +2,10 @@
 const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const USERS = {
-  admin: { username: 'admin', role: 'Admin' },
-  manager: { username: 'manager', role: 'Manager' },
-  cashier: { username: 'cashier', role: 'Cashier' },
+  avery0001: { username: 'avery0001', role: 'Admin' },
+  blake0002: { username: 'blake0002', role: 'Manager' },
+  casey0003: { username: 'casey0003', role: 'Cashier' },
   customer: { username: 'customer', role: 'Customer' },
-  
 }
 
 export async function login(username, password, audience) {

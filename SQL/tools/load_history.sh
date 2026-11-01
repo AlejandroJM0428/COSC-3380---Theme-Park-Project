@@ -41,4 +41,4 @@ for f in SQL/history/[0-9][0-9]_*.sql; do
 done
 echo "== row counts"; mysql_run < SQL/history/99_row_counts.sql
 echo "Total $(( $(now) - T0 ))s."
-echo "Next: re-run server/scripts/seed-users.js (logins were not touched), then check the home page notices."
+echo "Next: bash apply-logins-on-server.sh (employees come back as ids 1 to 90, so logins must be re-linked), then check the home page notices."

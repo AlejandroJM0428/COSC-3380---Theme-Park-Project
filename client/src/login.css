@@ -1,6 +1,6 @@
 /* Sign in and sign up pages (AuthShell). One frame, two looks:
    .auth-member = the public site look (brand tokens in theme.css)
-   .auth-staff  = the staff portal look (palette in index.css), tinted by the chosen portal */
+   .auth-staff  = the staff portal look (palette in index.css) */
 .auth { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
 .auth-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 32px 16px 48px; }
 .auth-card { width: 100%; max-width: 420px; border-radius: var(--auth-radius, 12px); overflow: hidden; }
@@ -32,7 +32,6 @@
 .auth-staff .auth-head { background: var(--pine); color: #fff; }
 .auth-staff .auth-head .wordmark small { color: inherit; }
 .auth-staff .auth-body { padding-top: 22px; }
-.auth-staff select:disabled { background: #f1f4f3; color: var(--muted); cursor: not-allowed; }
 
 @media (max-width: 480px) {
   .auth-main { justify-content: flex-start; padding-top: 24px; }

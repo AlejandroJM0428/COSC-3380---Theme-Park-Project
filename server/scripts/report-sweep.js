@@ -6,20 +6,22 @@
 //   2. The endpoint answers 200 for an allowed role and has rows.
 //   3. Every column, filter, date filter and chart field the report uses exists in the rows it gets.
 //   4. The report's own prepare / kpis / chartRows code runs without throwing and shows no NaN.
-// Passwords come from the SEED_*_PASSWORD variables in .env. A role without one is skipped.
+// Passwords come from the SEED_*_PASSWORD variables in .env. Usernames come from SWEEP_*_USER variables (staff names are
+// first name + last four digits of the employee id, so they are not guessed here), for example SWEEP_MANAGER_USER=blake0002.
+// A role without both its password and its username is skipped.
 import { REPORTS } from '../../client/src/config/reports.js';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:3100';
 
 const ACCOUNTS = [
-  ['admin', 'Admin', 'SEED_ADMIN_PASSWORD'],
-  ['manager', 'Manager', 'SEED_MANAGER_PASSWORD'],
-  ['cashier', 'Cashier', 'SEED_CASHIER_PASSWORD'],
-  ['retail', 'RetailManager', 'SEED_RETAIL_PASSWORD'],
-  ['hr', 'HRManager', 'SEED_HR_PASSWORD'],
-  ['maintmgr', 'MaintenanceManager', 'SEED_MAINTMGR_PASSWORD'],
-  ['tech', 'MaintenanceWorker', 'SEED_TECH_PASSWORD'],
-  ['cook', 'RestaurantWorker', 'SEED_COOK_PASSWORD'],
+  ['SWEEP_ADMIN_USER', 'Admin', 'SEED_ADMIN_PASSWORD'],
+  ['SWEEP_MANAGER_USER', 'Manager', 'SEED_MANAGER_PASSWORD'],
+  ['SWEEP_CASHIER_USER', 'Cashier', 'SEED_CASHIER_PASSWORD'],
+  ['SWEEP_RETAIL_USER', 'RetailManager', 'SEED_RETAIL_PASSWORD'],
+  ['SWEEP_HR_USER', 'HRManager', 'SEED_HR_PASSWORD'],
+  ['SWEEP_MAINTMGR_USER', 'MaintenanceManager', 'SEED_MAINTMGR_PASSWORD'],
+  ['SWEEP_TECH_USER', 'MaintenanceWorker', 'SEED_TECH_PASSWORD'],
+  ['SWEEP_COOK_USER', 'RestaurantWorker', 'SEED_COOK_PASSWORD'],
 ];
 
 const problems = [];
@@ -128,20 +130,21 @@ function checkReportLogic(report, rows) {
 async function main() {
   console.log(`Report sweep against ${BASE}\n`);
   const sessions = [];
-  for (const [username, role, envName] of ACCOUNTS) {
+  for (const [userEnv, role, envName] of ACCOUNTS) {
+    const username = process.env[userEnv];
     const password = process.env[envName];
-    if (!password) {
-      console.log(`  skip ${username.padEnd(9)} (${envName} not set)`);
+    if (!username || !password) {
+      console.log(`  skip ${role.padEnd(18)} (${!username ? userEnv : envName} not set)`);
       continue;
     }
     const s = await login(username, password);
     if (s.error) {
       fail(`login as ${username}: ${s.error}`);
-      console.log(`  FAIL ${username.padEnd(9)} ${s.error}`);
+      console.log(`  FAIL ${username.padEnd(12)} ${s.error}`);
       continue;
     }
     if (s.role !== role) fail(`login as ${username}: expected role ${role}, got ${s.role}`);
-    console.log(`  ok   ${username.padEnd(9)} logged in as ${s.role}`);
+    console.log(`  ok   ${username.padEnd(12)} logged in as ${s.role}`);
     sessions.push({ username, role: s.role, cookie: s.cookie });
   }
   if (sessions.length === 0) {
