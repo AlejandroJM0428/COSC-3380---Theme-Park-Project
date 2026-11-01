@@ -932,20 +932,72 @@ RF_COLS = ['TicketID','WeatherID','RefundedAt','RefundReason']
 insert(part('TicketRefund'), 'TicketRefund', RF_COLS, [r for r in refunds if r[0] not in dep_ids])
 insert(parts['52_dependent_tickets'], 'TicketRefund', RF_COLS, [r for r in refunds if r[0] in dep_ids])
 
-# shifts
-shifts = []
+# shifts (stage 10): every employee works from their hire date to yesterday (or to the day before they left), week by week.
+# Own generator RS: nothing earlier changes. A week holds as many 6 to 9 hour shifts as fit inside the person's scheduled
+# HoursPerWeek (so no week is over 40 by construction; it is asserted below), fewer in the slow months, now and then a week off.
+# Ratings follow a quality per person, so a few are clearly weak and a few clearly strong; the newest shifts are still unrated.
+RS = random.Random(3380 + 10)
+OPEN_SHIFT_STAFF = (1, 13, 17, 28, 33)                  # clocked in today (the demo relies on these)
+OPEN_HOURS = 16                                         # an open shift counts as 16 hours in its week: SQL/17 counts it up to NOW(), and it clocked in at 08:30
+DAY_W_OPS = [1.0, 1.0, 1.0, 1.0, 1.4, 1.8, 1.5]         # Monday to Sunday: ride, game, food and shop crews work the weekends
+DAY_W_DAY = [1.0, 1.0, 1.0, 1.0, 1.0, 0.4, 0.2]         # technicians and managers work weekdays
+slots = {}                                              # (employee, Monday) -> hours, for the 40-hour self-check
+quality = {}                                            # employee -> mean rating
+tenured = [e[0] for e in emps if e[0] not in DEMO_STAY and e[5] <= TODAY - timedelta(days=150) and e[4] not in ('Manager',)]
+weak = set(RS.sample(tenured, 4)); strong = set(RS.sample([i for i in tenured if i not in weak], 5))
 for e in emps:
-    wk = FIRST
-    while wk <= LAST:
-        for off in R.sample(range(7), R.randint(2,4)):
-            d = wk + timedelta(days=off)
-            if FIRST <= d <= LAST and d >= hire[e[0]] and d < left_on.get(e[0], LAST + timedelta(days=1)):
-                cin = dtm(d, 8 + R.choice([0,1,2]))
-                cout = cin + timedelta(hours=R.choice([6,7,8,9]))
-                shifts.append((e[0], cin, cout, R.choices([5,4,3,2,1],[30,35,20,8,2])[0] if R.random() < 0.6 else None))
-        wk += timedelta(days=7)
+    quality[e[0]] = 2.4 if e[0] in weak else 4.8 if e[0] in strong else min(4.5, max(3.2, RS.gauss(3.9, 0.3)))
+def rate(emp, d):
+    newest = (LAST - d).days <= 2 or (d - hire[emp]).days <= 14
+    if RS.random() < (0.55 if newest else 0.06): return None
+    return max(1, min(5, round(RS.gauss(quality[emp], 0.7))))
+shifts = []
+wk = START - timedelta(days=START.weekday())
+while wk <= LAST:
+    f_slow = max(0.75, min(1.0, 0.65 + 0.35 * SEASON[(wk + timedelta(days=3)).month]))
+    for e in emps:
+        emp, title, hrs = e[0], e[4], e[7]
+        end_work = min(left_on[emp] - timedelta(days=1), LAST) if emp in left_on else LAST
+        days = [wk + timedelta(days=k) for k in range(7) if hire[emp] <= wk + timedelta(days=k) <= end_work]
+        if not days or RS.random() < 0.05: continue                        # not employed this week, or a week off
+        full = title in ('Technician', 'Manager')
+        budget = int(hrs * (1.0 if full else f_slow))
+        if emp in OPEN_SHIFT_STAFF and wk <= TODAY < wk + timedelta(days=7): budget -= OPEN_HOURS
+        lens, total = [], 0
+        while len(lens) < min(6, len(days)):
+            L = RS.choice([6, 7, 8, 8, 9])
+            if total + L > budget: L = 6
+            if total + L > budget: break
+            lens.append(L); total += L
+        wts = DAY_W_DAY if full else DAY_W_OPS
+        pool, picked = list(days), []
+        for _ in lens:
+            d = RS.choices(pool, [wts[x.weekday()] for x in pool])[0]
+            pool.remove(d); picked.append(d)
+        for d, L in zip(sorted(picked), lens):
+            cin = dtm(d, 8 + RS.choice([0, 1, 2]))
+            shifts.append((emp, cin, cin + timedelta(hours=L), rate(emp, d)))
+        slots[(emp, wk)] = total + (OPEN_HOURS if emp in OPEN_SHIFT_STAFF and wk <= TODAY < wk + timedelta(days=7) else 0)
+    wk += timedelta(days=7)
 shifts.sort(key=lambda s: (s[1], s[0]))
-for emp in (1, 13, 17, 28, 33): shifts.append((emp, dtm(TODAY, 8, 30), None, None))   # open shifts (clocked in now)
+for emp in OPEN_SHIFT_STAFF: shifts.append((emp, dtm(TODAY, 8, 30), None, None))   # open shifts (clocked in now)
+sched = {e[0]: e[7] for e in emps}
+assert all(h <= 40 and h <= sched[k[0]] for k, h in slots.items()), 'a week is over the scheduled hours'
+# 40 hours on ACTUAL hours (SQL/17_shift_hours_cap.sql), recomputed from the rows themselves and not from the plan above: Monday to Sunday by the week
+# of the clock-in, seconds, an open shift at OPEN_HOURS (the database counts it up to now, so it is never more than that on the day of the load).
+_wk = {}
+for s in shifts:
+    key = (s[0], (s[1].date() - timedelta(days=s[1].weekday())))
+    _wk[key] = _wk.get(key, 0) + ((s[2] - s[1]).total_seconds() if s[2] is not None else OPEN_HOURS * 3600)
+_over = sorted((k, v / 3600) for k, v in _wk.items() if v > 40 * 3600)
+assert not _over, ('a week is over 40 clocked hours (SQL/17 would refuse it)', _over[:3])
+assert len({(s[0], s[1]) for s in shifts}) == len(shifts), 'duplicate clock-in'
+_by = {}
+for s in shifts:
+    if s[2] is not None: _by.setdefault(s[0], []).append((s[1], s[2]))
+assert all(a[1] <= b[0] for v in _by.values() for a, b in zip(sorted(v), sorted(v)[1:])), 'overlapping shifts'
+assert all(s[1] >= datetime.combine(hire[s[0]], time(0)) for s in shifts), 'shift before hire date'
+assert not any(s[0] in left_on and s[1].date() >= left_on[s[0]] for s in shifts), 'shift after leaving'
 insert(part('Shift'), 'Shift', ['EmployeeID','ClockIn','ClockOut','ShiftRating'], shifts)
 # leavers are switched off only now: trg_Shift_BI refuses a shift for an inactive employee, so their shifts go in first
 part('Shift').append("-- people who have left the park (their shifts are above; they have none after the leave date)\n" +
@@ -992,3 +1044,5 @@ print('employees', len(emps), 'left', len(left_on), 'avg hours/wk', round(avg_ho
 print('customers', len(cust), 'inactive', len(inactive), 'dependents', len(deps), 'parents with dependents', len({d[6] for d in deps}))
 print('sign-ups per month', {m.strftime('%Y-%m'): sum(1 for c in range(7, CUST_END+1) if signup[c].year == m.year and signup[c].month == m.month) for m in month_starts})
 print('closing weather per month', dict(sorted(Counter(e['start'].strftime('%Y-%m') for e in wev if e['closes']).items())))
+rated = [x[3] for x in shifts if x[3] is not None]
+print('shifts', len(shifts), 'open', sum(1 for x in shifts if x[2] is None), 'rated', len(rated), 'avg rating', round(sum(rated)/len(rated), 2), 'max week hours', max(slots.values()), 'avg week hours', round(sum(slots.values())/len(slots), 1))
