@@ -1,10 +1,23 @@
 
-import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { formatDate } from '../utils/portalFormat.js'
 
 export default function Tickets() {
   const [params] = useSearchParams()
+  const location = useLocation()
+
+useEffect(() => {
+  if (location.hash === '#ticket-checkout') {
+    requestAnimationFrame(() => {
+      document.getElementById('ticket-checkout')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    })
+  }
+}, [location.hash])
   const { user, ready } = useAuth()
   const date = params.get('date')
   const express = params.get('express') === '1'
@@ -68,7 +81,7 @@ export default function Tickets() {
           ))}
         </div>
 
-        <div className="tv-ticket-checkout">
+        <div id="ticket-checkout" className="tv-ticket-checkout">
           <span className="tv-ticket-eyebrow">READY FOR THE FUN?</span>
           <h2>Get Your Tickets Today!</h2>
 
