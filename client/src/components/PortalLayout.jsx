@@ -3,52 +3,43 @@ import { useAuth } from '../auth/context.js'
 import NotificationBar from './NotificationBar.jsx'
 import Wordmark from './Wordmark.jsx'
 import { BRAND } from '../config/brand.js'
-import '../pages/VisitorPortal.css'
+import '../portal.css'
 
-// Shell shared by the member portal (/member) and, later, the guest portal (/guest).
-// links: [{ href, label }] shown in the nav. cta: { href, label } shown as the button.
-// children: the page content (the hero and the content area).
-export default function PortalLayout({ links = [], cta, children }) {
+// Compact app-style shell shared by the member portal (/member) and, later, the guest portal (/guest).
+//   title:    the current page name, shown in the bar
+//   tabs:     [{ key, label }]. The guest portal passes a list without Membership.
+//   active:   the key of the current tab
+//   onSelect: called with a tab key when a tab is chosen
+export default function PortalLayout({ title, tabs = [], active, onSelect, children }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   return (
-    <main className="visitor-portal">
-      <header className="vp-header">
-        <div className="vp-utility">
-          <span>{BRAND.name}</span>
-          <span className="vp-utility-links">
-            <span>{user?.username}</span>
-            <button type="button" className="vp-link-button" onClick={() => { logout(); navigate('/') }}>Sign out</button>
-          </span>
+    <div className="pt">
+      <header className="pt-bar">
+        <div className="pt-bar-inner">
+          <Link to="/" className="pt-brand" aria-label={`${BRAND.name} home`}><Wordmark tagline={false} /></Link>
+          <span className="pt-title">{title}</span>
+          <details className="pt-account">
+            <summary>{user?.username ?? 'Account'}</summary>
+            <div className="pt-menu">
+              <Link to="/">Park website</Link>
+              <button type="button" onClick={() => { logout(); navigate('/') }}>Sign out</button>
+            </div>
+          </details>
         </div>
-        <div className="vp-navbar">
-          <Link to="/" className="visitor-brand" aria-label={`${BRAND.name} home`}>
-            <Wordmark />
-          </Link>
-          <nav className="vp-nav" aria-label="Main navigation">
-            {links.map((link) => <a key={link.href} href={link.href}>{link.label}</a>)}
+        {tabs.length > 0 && (
+          <nav className="pt-tabs" aria-label="Portal sections">
+            {tabs.map((tab) => (
+              <button type="button" key={tab.key} className={tab.key === active ? 'active' : ''} aria-current={tab.key === active ? 'page' : undefined} onClick={() => onSelect?.(tab.key)}>{tab.label}</button>
+            ))}
           </nav>
-          {cta ? <a href={cta.href} className="vp-buy">{cta.label}</a> : null}
-        </div>
+        )}
       </header>
 
       <NotificationBar />
 
-      {children}
-
-      <footer className="vp-footer">
-        <div className="vp-footer-inner">
-          <div className="vp-footer-brand"><Wordmark tagline={false} light /></div>
-          <nav aria-label="Footer">
-            <Link to="/member/login">Member sign in</Link>
-            <Link to="/member/register">Join</Link>
-            <Link to="/staff/login">Staff sign in</Link>
-            <a href="#top" onClick={(event) => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</a>
-          </nav>
-        </div>
-        <p>{BRAND.name} · Visitor portal prototype</p>
-      </footer>
-    </main>
+      <main className="pt-main">{children}</main>
+    </div>
   )
 }
