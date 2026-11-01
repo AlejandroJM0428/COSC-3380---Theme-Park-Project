@@ -2090,3 +2090,206 @@
 .pub-nav {
   z-index: 2;
 }
+
+
+/* Price card as a ticket stub (homepage step 5).
+   Two parts joined by a dashed tear line with a notch on each side. The shadow is a drop-shadow on the form,
+   because a mask on each part would clip a box-shadow. Colors come from the theme variables. */
+
+.pub-pc {
+  display: block;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 22px 34px rgba(5, 15, 35, 0.4));
+  --stub-notch: 11px;
+}
+
+.pub-pc-main,
+.pub-pc-stub {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+}
+
+.pub-pc-main {
+  border-radius: 18px 18px 0 0;
+  padding-bottom: 22px;
+  -webkit-mask:
+    radial-gradient(circle var(--stub-notch) at 0 100%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--stub-notch) at 100% 100%, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle var(--stub-notch) at 0 100%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--stub-notch) at 100% 100%, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+
+.pub-pc-stub {
+  border-radius: 0 0 18px 18px;
+  padding-top: 22px;
+  gap: 12px;
+  -webkit-mask:
+    radial-gradient(circle var(--stub-notch) at 0 0, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--stub-notch) at 100% 0, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle var(--stub-notch) at 0 0, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--stub-notch) at 100% 0, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+
+.pub-pc-stub .pub-pc-total {
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* The tear line, drawn between the two notches */
+.pub-pc-stub::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--stub-notch);
+  right: var(--stub-notch);
+  border-top: 2px dashed var(--brand-line);
+}
+
+.pub-pc-stub { position: relative; }
+
+.pub-pc-includes {
+  margin: -6px 0 0;
+  color: var(--brand-muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.pub-pc-note {
+  margin: 0;
+  text-align: center;
+  color: var(--brand-muted);
+  font-size: 0.84rem;
+}
+
+.pub .pub-pc .pub-pc-members {
+  justify-self: center;
+  color: var(--brand-muted);
+  font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 6px 4px;
+}
+
+.pub .pub-pc .pub-pc-members:hover {
+  color: var(--brand-primary);
+}
+
+/* Date picker */
+.pub-dp { display: grid; gap: 8px; }
+
+.pub .pub-pc .pub-dp-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--brand-line);
+  border-radius: 10px;
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pub .pub-pc .pub-dp-toggle:hover:not(:disabled) {
+  background: var(--brand-surface-alt);
+  color: var(--brand-ink);
+  box-shadow: none;
+}
+
+.pub-dp-panel {
+  border: 1px solid var(--brand-line);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--brand-surface);
+}
+
+.pub-dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.pub .pub-pc .pub-dp-head button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--brand-primary);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pub .pub-pc .pub-dp-head button:hover:not(:disabled) {
+  background: var(--brand-surface-alt);
+  color: var(--brand-primary);
+  box-shadow: none;
+}
+
+.pub-dp-head button:disabled { opacity: 0.3; cursor: default; }
+
+.pub-dp-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+.pub-dp-grid th {
+  padding: 4px 0;
+  color: var(--brand-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pub-dp-grid td { padding: 1px; text-align: center; }
+
+.pub .pub-pc .pub-dp-day {
+  width: 100%;
+  min-height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--brand-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pub .pub-pc .pub-dp-day:hover:not(:disabled) {
+  background: var(--brand-surface-alt);
+  color: var(--brand-ink);
+  box-shadow: none;
+}
+
+.pub .pub-pc .pub-dp-day.on,
+.pub .pub-pc .pub-dp-day.on:hover:not(:disabled) {
+  background: var(--brand-primary);
+  color: var(--brand-primary-contrast);
+}
+
+.pub-dp-day:disabled { cursor: default; color: var(--brand-muted); opacity: 0.45; }
+
+.pub-dp-day.sold:disabled {
+  opacity: 1;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  background: var(--brand-surface-alt);
+}
+
+.pub-dp-legend { margin: 8px 0 0; color: var(--brand-muted); font-size: 0.78rem; text-align: center; }
+.pub-dp-key { display: inline-block; text-decoration: line-through; font-weight: 800; margin-right: 4px; }
+
+@media (max-width: 560px) {
+  .pub-pc-main, .pub-pc-stub { padding: 18px; }
+}

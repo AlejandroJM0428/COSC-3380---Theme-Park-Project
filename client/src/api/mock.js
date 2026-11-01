@@ -128,12 +128,21 @@ export async function getReport(endpoint) {
   return rows.map((r) => ({ ...r })) // copy so pages can't mutate the originals
 }
 
+// A date a few days from now as YYYY-MM-DD, for the demo's sold-out dates.
+function mockDay(offset) {
+  const d = new Date()
+  d.setHours(12, 0, 0, 0)
+  d.setDate(d.getDate() + offset)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // Public site data (same shape as GET /api/public/site). No wait times, on purpose.
 export async function getPublicSite() {
   await delay()
   return {
     prices: { dayPass: 59, expressAddOn: 25 },
     hours: { open: '09:00', close: '22:00' },
+    soldOutDates: [mockDay(3), mockDay(4), mockDay(10)],
     tiers: [
       { tier: 'Basic', annualPrice: 69, anyDayAccess: false, includesExpress: false, benefits: ['Weekday admission', 'Standard queues included'] },
       { tier: 'Plus', annualPrice: 89, anyDayAccess: true, includesExpress: false, benefits: ['Any-day admission', 'Standard queues included'] },

@@ -43,7 +43,7 @@ export default function HomePage() {
             )}
             <a href="#explore" className="pub-hero-link">Explore the park <span aria-hidden="true">↓</span></a>
           </div>
-          <PriceCheck prices={site?.prices} />
+          <PriceCheck prices={site?.prices} soldOutDates={site?.soldOutDates} />
         </div>
       </BrandImage>
 

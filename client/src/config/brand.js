@@ -24,6 +24,8 @@ export const BRAND = {
 
   // Placeholder homepage copy. Change it here.
   hero: { headline: TAGLINE, sub: 'Day passes, Express queues and memberships for every kind of adventure.' },
+  // One line on what a day pass includes, shown on the homepage price card. Change it here.
+  dayPass: { includes: 'One-day admission to the whole park. Express and midway games are extra.' },
   // Placeholder "Plan your visit" copy. Hours and height rules come from the database.
   plan: { directions: 'Address, parking and transit details will be added here.' },
   images: {
