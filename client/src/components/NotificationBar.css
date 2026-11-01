@@ -11,9 +11,10 @@
 .notice-tag-warning { background: #4b92db; color: #0c2340; }
 .notice-tag-alert { background: #fff; color: #0c2340; }
 .notice-more { flex: none; min-height: 44px; padding: 0 12px; background: transparent; border: 0; color: #9cc7f1; font-weight: 800; font-size: .82rem; cursor: pointer; border-radius: 6px; }
-.notice-more:hover, .notice-more:focus-visible { background: rgba(255, 255, 255, .14); color: #fff; }
+/* The global `button:hover` rule in index.css would turn these white, so the hover rules below are more specific. */
+.notice-strip .notice-more:hover:not(:disabled), .notice-strip .notice-more:focus-visible { background: rgba(255, 255, 255, .14); color: #fff; }
 .notice-strip-close { flex: none; width: 44px; height: 44px; display: grid; place-items: center; background: transparent; border: 0; color: inherit; font-size: 1.5rem; line-height: 1; cursor: pointer; border-radius: 6px; }
-.notice-strip-close:hover, .notice-strip-close:focus-visible { background: rgba(255, 255, 255, .18); }
+.notice-strip .notice-strip-close:hover:not(:disabled), .notice-strip .notice-strip-close:focus-visible { background: rgba(255, 255, 255, .18); color: #fff; }
 
 /* Scoreboard ticker (closed and Happy Hour): a ribbon board that crawls right to left. */
 .ticker { position: relative; display: flex; align-items: stretch; background: #0a1c36; color: #fff; overflow: hidden; border-bottom: 2px solid #4b92db; }
@@ -29,7 +30,7 @@
 .ticker-dot { margin-left: 22px; color: #4b92db; font-size: .7rem; }
 .ticker-btn, .ticker-close { position: relative; z-index: 2; flex: none; width: 44px; display: grid; place-items: center; background: rgba(10, 28, 54, .92); border: 0; border-left: 1px solid rgba(255, 255, 255, .12); color: #fff; font-size: .7rem; cursor: pointer; }
 .ticker-close { font-size: 1.5rem; line-height: 1; }
-.ticker-btn:hover, .ticker-btn:focus-visible { background: #17407a; }
+.ticker .ticker-btn:hover:not(:disabled), .ticker .ticker-btn:focus-visible { background: #17407a; color: #fff; }
 .ticker.is-paused .ticker-track, .ticker:hover .ticker-track { animation-play-state: paused; }
 .ticker :focus-visible { outline: 3px solid #4b92db; outline-offset: -3px; }
 .ticker .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

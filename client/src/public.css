@@ -1936,3 +1936,157 @@
   .pub-map-legend { display: none; }
   .pub-map-hubtext { font-size: 22px; }
 }
+
+
+/* Header on blue: white text everywhere, and an "Est." line you can actually read.
+   `.pub a { color: inherit }` outranks single-class rules, so these are scoped under .pub. */
+.pub .pub-wordmark,
+.pub .pub-signin,
+.pub .pub-nav a {
+  color: #FFFFFF;
+}
+
+.pub .pub-nav a:hover,
+.pub .pub-nav a.active {
+  color: #14213D;
+}
+
+.pub-header .wordmark small {
+  color: #081A33;
+  font-weight: 700;
+  opacity: 1;
+}
+
+.pub-header :focus-visible {
+  outline-color: #FFFFFF;
+}
+
+/* The global `button:hover` rule in index.css turns buttons light, which hides the white menu icon (and on a
+   phone the hover sticks after a tap). Keep the header's menu button dark-on-blue when hovered. */
+.pub-header .pub-menu-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .2);
+  color: #FFFFFF;
+}
+
+
+/* Hero and awning (homepage step 4).
+   Earlier hero layers above set a red headline shadow, very tight letters and a near-black overlay;
+   this is the last word on them. Red stays reserved for "Buy Tickets". */
+
+.pub-hero-inner {
+  max-width: 1240px; /* same width and 20px gutter as the header, so the left edges line up */
+  padding-inline: 20px;
+}
+
+.pub-hero::before {
+  background: linear-gradient(
+    90deg,
+    rgba(12, 35, 64, 0.94) 0%,
+    rgba(12, 35, 64, 0.72) 36%,
+    rgba(12, 35, 64, 0) 82%
+  );
+}
+
+.pub-hero-copy h1 {
+  font-size: clamp(3rem, 5.6vw, 5.25rem);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  max-width: 15ch;
+  text-wrap: balance;
+  text-shadow: none;
+}
+
+/* Today's hours and ride count */
+.pub-hero-facts {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pub-hero-facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: rgba(12, 35, 64, 0.55);
+  color: #FFFFFF;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pub-fact-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4B92DB;
+}
+
+.pub-hero-facts li.off .pub-fact-dot {
+  background: transparent;
+  border: 2px solid #FFFFFF;
+  box-sizing: border-box;
+}
+
+/* "Explore the park": a quiet outline button, so there is no third accent color next to the blue and red */
+.pub .pub-hero .pub-hero-link {
+  background: transparent;
+  color: #FFFFFF;
+  border: 2px solid #FFFFFF;
+  box-shadow: none;
+  padding: 14px 30px;
+  transform: none;
+}
+
+.pub .pub-hero .pub-hero-link:hover {
+  background: #FFFFFF;
+  color: #0C2340;
+  box-shadow: none;
+  transform: none;
+}
+
+@media (max-width: 980px) {
+  .pub-hero-copy h1 {
+    font-size: clamp(2.6rem, 8vw, 4.25rem);
+  }
+
+  /* One column: the text spans the whole width, so the navy runs top to bottom instead of left to right */
+  .pub-hero::before {
+    background: linear-gradient(180deg, rgba(12, 35, 64, 0.9) 0%, rgba(12, 35, 64, 0.76) 55%, rgba(12, 35, 64, 0.55) 100%);
+  }
+}
+
+@media (max-width: 560px) {
+  .pub-hero-copy h1 {
+    font-size: 2.6rem;
+  }
+}
+
+/* Awning: a scalloped stripe hanging from the header, like the one in the staff portal */
+.pub-header {
+  border-bottom: 0;
+}
+
+.pub-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 1;
+  height: 14px;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg, #3B82F6 0 28px, #A9C9FA 28px 56px);
+  -webkit-mask: radial-gradient(circle at 14px 0, #000 13.5px, transparent 14px) 0 0 / 28px 14px repeat-x;
+  mask: radial-gradient(circle at 14px 0, #000 13.5px, transparent 14px) 0 0 / 28px 14px repeat-x;
+}
+
+/* The phone menu drops down over the awning */
+.pub-nav {
+  z-index: 2;
+}

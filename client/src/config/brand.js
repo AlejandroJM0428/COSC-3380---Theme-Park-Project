@@ -2,11 +2,14 @@
 // Real name, photos and theme come later: change them here and nothing else.
 // Images: any path that is missing or fails to load falls back to a neutral gradient
 // (see components/BrandImage.jsx), so the layout still holds with no photos.
+// The tagline is also the homepage headline, so it is written once.
+const TAGLINE = 'Every Road Leads to Fun!'
+
 export const BRAND = {
   name: 'Beltway Park',   // the same name as Park.ParkName in the database
   shortName: 'Beltway Park',             // compact wordmark in the headers
   established: 2025,                       // shown as "Est. 2025"; no database column for it
-  tagline: 'Every Road Leads to Fun!',
+  tagline: TAGLINE,
 
   // Park clock. Everything on the site that depends on "now" uses this time zone, not the visitor's.
   timeZone: 'America/Chicago',
@@ -20,7 +23,7 @@ export const BRAND = {
   },
 
   // Placeholder homepage copy. Change it here.
-  hero: { headline: 'More thrills. Less waiting.', sub: 'Day passes, Express queues and memberships for every kind of adventure.' },
+  hero: { headline: TAGLINE, sub: 'Day passes, Express queues and memberships for every kind of adventure.' },
   // Placeholder "Plan your visit" copy. Hours and height rules come from the database.
   plan: { directions: 'Address, parking and transit details will be added here.' },
   images: {

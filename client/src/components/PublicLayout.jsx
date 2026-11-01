@@ -14,7 +14,8 @@ const NAV = [
   { to: '/plan', label: 'Plan Your Visit' },
 ]
 
-// Layout for the public site: notices strip, one-row header, page, footer.
+// Layout for the public site: top banner, one-row header, page, footer.
+// Staff sign in lives in the footer only; the header has one "Member sign in" (or "Staff portal" once a staff member is signed in).
 export default function PublicLayout() {
   const { user } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -37,10 +38,7 @@ export default function PublicLayout() {
             {isStaff ? (
               <Link to="/staff" className="pub-signin-mobile" onClick={close}>Staff portal</Link>
             ) : (
-              <>
-                <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin-mobile" onClick={close}>{isCustomer ? 'My account' : 'Member sign in'}</Link>
-                {!isCustomer && <Link to="/staff/login" className="pub-signin-mobile" onClick={close}>Staff sign in</Link>}
-              </>
+              <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin-mobile" onClick={close}>{isCustomer ? 'My account' : 'Member sign in'}</Link>
             )}
           </nav>
 
@@ -48,10 +46,7 @@ export default function PublicLayout() {
             {isStaff ? (
               <Link to="/staff" className="pub-signin">Staff portal</Link>
             ) : (
-              <>
-                <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin">{isCustomer ? 'My account' : 'Member sign in'}</Link>
-                {!isCustomer && <Link to="/staff/login" className="pub-signin">Staff sign in</Link>}
-              </>
+              <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin">{isCustomer ? 'My account' : 'Member sign in'}</Link>
             )}
             <Link to="/tickets" className="pub-buy" onClick={close}>Buy Tickets</Link>
             <button type="button" className="pub-menu-button" aria-expanded={menuOpen} aria-controls="pub-nav" onClick={() => setMenuOpen((v) => !v)}>
