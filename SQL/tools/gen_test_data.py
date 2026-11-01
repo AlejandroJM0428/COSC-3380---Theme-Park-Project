@@ -129,9 +129,9 @@ SET FOREIGN_KEY_CHECKS = 0;
 HIST = OUT / 'history'
 HIST.mkdir(exist_ok=True)
 for old in HIST.glob('*.sql'): old.unlink()
-FILES = {'Employee': '10_people', 'EmployeeZone': '10_people', 'RideCertification': '10_people', 'Customer': '10_people', 'DependentCustomer': '12_dependents', 'DependentConsent': '12_dependents', 'Membership': '20_memberships', 'WeatherLog': '30_weather', 'Maintenance': '40_maintenance', 'MaintenanceCrew': '40_maintenance', 'Ticket': '50_tickets', 'TicketRefund': '50_tickets', 'RideLog': '60_ride_log', 'GamePlay': '70_purchases_games', 'Purchase': '70_purchases_games', 'Shift': '80_shifts'}
+FILES = {'Employee': '10_people', 'EmployeeZone': '10_people', 'RideCertification': '10_people', 'Customer': '10_people', 'DependentCustomer': '12_dependents', 'DependentConsent': '12_dependents', 'Membership': '20_memberships', 'MemberPerk': '22_member_perks', 'MembershipCancellationRequest': '24_cancellations', 'WeatherLog': '30_weather', 'Maintenance': '40_maintenance', 'MaintenanceCrew': '40_maintenance', 'Ticket': '50_tickets', 'TicketRefund': '50_tickets', 'RideLog': '60_ride_log', 'GamePlay': '70_purchases_games', 'Purchase': '70_purchases_games', 'Shift': '80_shifts'}
 # file name -> description, in load order. Each file loads on its own and is committed as one transaction.
-DESC = {'10_people':'employees, zones, certifications, customers','12_dependents':'dependents and their consent (needs file 16)','20_memberships':'memberships','30_weather':'weather log',
+DESC = {'10_people':'employees, zones, certifications, customers','12_dependents':'dependents and their consent (needs file 16)','20_memberships':'memberships','22_member_perks':'member perks (needs file 14)','24_cancellations':'cancellation requests (needs file 16 and a Manager or Admin login)','30_weather':'weather log',
         '40_maintenance':'maintenance jobs and crews','50_tickets':'tickets and refunds','60_ride_log':'ride boardings and wait readings',
         '70_purchases_games':'purchases and game plays','80_shifts':'shifts and ratings'}
 parts = {k: [] for k in DESC}
@@ -221,26 +221,111 @@ assert all(p in adult for p in parent_of.values()) and not set(parent_of) & set(
 insert(part('DependentCustomer'), 'Customer', ['CustomerID','FirstName','LastName','DOB','HeightCm','IsActive','ParentCustomerID'], deps)
 insert(part('DependentConsent'), 'DependentConsent', ['CustomerID','ParentCustomerID','ConsentedAt'], consent)
 
-# memberships (Price is overwritten by trigger)
+# memberships (Price is overwritten by the trigger with the current tier price, so history carries today's prices).
+# Each member has one or more yearly terms: some lapse for good, some renew straight away, some renew after a gap,
+# and a few end in the next 40 days. A customer's terms never overlap (CHK_Membership_Term, sp_AssertNoMembershipOverlap).
 def end_of(s):
     try: e = date(s.year+1, s.month, s.day)
     except ValueError: e = date(s.year+1, s.month, 28)
     return e - timedelta(days=1)
-members, mrows = {}, []
-def add_mem(cid, tier, start):
-    mid = len(mrows)+1; members[cid] = dict(id=mid, tier=tier, start=start, end=end_of(start))
-    mrows.append((mid, cid, tier, start, end_of(start), 0, R.random()<0.5))
-add_mem(3,'Basic',dd(2026,3,1)); add_mem(4,'Plus',dd(2026,2,1)); add_mem(5,'Basic',dd(2025,1,15))
+MEMBER_SHARE = 0.095         # share of active adults who ever hold a membership
+TIER_MIX = (['Basic', 'Plus', 'Premier'], [40, 35, 25])
+terms = []                   # dicts: cust, tier, start, end, auto
+def add_term(cid, tier, start, auto=False):
+    terms.append(dict(cust=cid, tier=tier, start=start, end=end_of(start), auto=auto))
+    return terms[-1]
+# demo members keep their ids 1 to 3: Bailey (Basic, current), Pat (Plus, current), Eve (expired, no renewal)
+add_term(3,'Basic',dd(2026,3,1),True); add_term(4,'Plus',dd(2026,2,1),True); add_term(5,'Basic',START + timedelta(days=40))
+assert terms[2]['end'] < TODAY
+demo_terms = len(terms)
 pool = [c for c in sorted(adult) if c > 6]
-chosen = R.sample(pool, 36)
-tiers = ['Basic']*14 + ['Plus']*12 + ['Premier']*10; R.shuffle(tiers)
-expiring = [dd(2025,10,24), dd(2025,11,2), dd(2025,11,10), dd(2025,11,18)]
-for k, (cid, tier) in enumerate(zip(chosen, tiers)):
-    s = expiring[k] if k < 4 else dd(2025,9,1) + timedelta(days=R.randint(0, 313))
-    add_mem(cid, tier, s)
-for cid_, m_ in members.items():     # a member has signed up by the day the membership starts
-    signup[cid_] = max(START, min(signup[cid_], m_['start'] - timedelta(days=R.randint(0, 20))))
+n_members = int(len(pool) * MEMBER_SHARE)
+chosen = R.sample(pool, n_members)
+soon = chosen[:10]           # these end 3 to 40 days from now
+mstart_w = [(3.0 if k < 2 else 1.6 if k < 4 else 1.0) * SEASON[m.month] for k, m in enumerate(month_starts)]
+for cid in chosen:
+    tier = R.choices(*TIER_MIX)[0]
+    if cid in soon:
+        endt = TODAY + timedelta(days=R.randint(3, 40))
+        st = date(endt.year-1, endt.month, endt.day) + timedelta(days=1)
+        assert end_of(st) == endt, (st, endt)
+    else:
+        ms = R.choices(month_starts, mstart_w)[0]
+        st = min(TODAY, max(START, ms + timedelta(days=R.randint(0, 27))))
+    t = add_term(cid, tier, st)
+    while t['end'] < TODAY:                      # the term is over: renew, renew after a gap, or lapse
+        r = R.random()
+        if r < 0.58:   nxt = t['end'] + timedelta(days=1)
+        elif r < 0.70: nxt = t['end'] + timedelta(days=R.randint(16, 150))
+        else:          break
+        if nxt > TODAY: break
+        t['auto'] = nxt == t['end'] + timedelta(days=1) and R.random() < 0.7
+        nt = R.random()
+        tier = tier if nt < 0.8 else {'Basic':'Plus','Plus':'Premier','Premier':'Plus'}[tier] if nt < 0.9 else {'Basic':'Basic','Plus':'Basic','Premier':'Plus'}[tier]
+        t = add_term(cid, tier, nxt)
+    if t['end'] >= TODAY: t['auto'] = R.random() < 0.65       # a current term: auto-renew on for about two thirds
+terms[demo_terms:] = sorted(terms[demo_terms:], key=lambda t: (t['start'], t['cust']))
+for i, t in enumerate(terms, 1): t['id'] = i
+members = {}
+for t in terms: members.setdefault(t['cust'], []).append(t)
+for t in terms:      # self-check: terms never overlap, sit in the park's life, belong to active adults
+    assert t['start'] <= TODAY and t['cust'] not in inactive and t['cust'] in adult
+    assert t['cust'] <= 6 or t['start'] >= START
+for lst in members.values():
+    lst.sort(key=lambda t: t['start'])
+    assert all(a['end'] < b['start'] for a, b in zip(lst, lst[1:]))
+def term_on(cid, d):
+    for t in members.get(cid, ()):
+        if t['start'] <= d <= t['end']: return t
+    return None
+for cid_, lst in members.items():     # a member has signed up by the day the first term starts
+    signup[cid_] = max(START, min(signup[cid_], lst[0]['start'] - timedelta(days=R.randint(0, 20))))
+
+# cancellation requests (SQL/16 table). Pending: current terms still on auto-renew, asked in the last 12 days.
+# Approved: auto-renew is off (the server does the same on approval). Rejected: auto-renew stays on.
+REASONS = ['Moving out of the area','Not visiting enough','Too expensive','Switching to a different tier','Health reasons',
+           'Found another park closer to home','Family circumstances changed','Cannot visit on weekdays']
+REJECT_NOTES = ['Member chose to keep the membership after a call','Offered a tier change instead','Request made in error']
+cur = [t for t in terms[demo_terms:] if t['start'] <= TODAY <= t['end']]
+auto_cur = [t for t in cur if t['auto']]
+R.shuffle(auto_cur)
+reqs = []     # (term, requested_at, reason, status, decided_at, note)
+def req_time(t, lo, hi):      # a moment between day lo and day hi after the term start, never in the future
+    d = min(t['start'] + timedelta(days=R.randint(lo, hi)), LAST - timedelta(days=5))   # decided 1 to 3 days later, still in the past
+    return dtm(max(d, t['start']), R.randint(8, 20), R.randint(0, 59))
+for t in auto_cur[:7]:
+    reqs.append((t, dtm(TODAY - timedelta(days=R.randint(1, 12)), R.randint(8, 20), R.randint(0, 59)), R.choice(REASONS), 'Pending', None, None))
+for t in auto_cur[7:11]:
+    at = req_time(t, 20, 300); reqs.append((t, at, R.choice(REASONS), 'Rejected', at + timedelta(days=R.randint(1, 3), hours=R.randint(0, 5)), R.choice(REJECT_NOTES)))
+for t in auto_cur[11:19]:
+    at = req_time(t, 20, 300); t['auto'] = False
+    reqs.append((t, at, R.choice(REASONS), 'Approved', at + timedelta(days=R.randint(1, 3), hours=R.randint(0, 5)), None))
+lapsed = [t for t in terms[demo_terms:] if t['end'] < TODAY and (t['end'] - TODAY).days > -240 and not t['auto']
+          and not any(u['start'] > t['end'] for u in members[t['cust']])]
+for t in lapsed:              # people who left in the last 8 months: about a third had asked to cancel
+    if R.random() < 0.33:
+        at = max(dtm(t['end'] - timedelta(days=R.randint(20, 120)), R.randint(8, 20), R.randint(0, 59)), dtm(t['start'] + timedelta(days=5), 9))
+        reqs.append((t, at, R.choice(REASONS), 'Approved', at + timedelta(days=R.randint(1, 3)), None))
+assert all(r[4] is None or r[4] <= dtm(TODAY, 0) for r in reqs) and len({r[0]['id'] for r in reqs if r[3] == 'Pending'}) == sum(1 for r in reqs if r[3] == 'Pending')
+mrows = [(t['id'], t['cust'], t['tier'], t['start'], t['end'], 0, t['auto']) for t in terms]
 insert(part('Membership'), 'Membership', ['MembershipID','CustomerID','Tier','StartDate','EndDate','Price','AutoRenew'], mrows)
+# perks: the same three rules as trg_Membership_AI_Welcome, written for every term. The trigger may already have granted them
+# (when this loads on a finished database), so INSERT IGNORE, then one UPDATE sets a believable GrantedAt either way.
+GRANT = "TIMESTAMP(m.StartDate) + INTERVAL (540 + (m.MembershipID * 37) %% 600) MINUTE"
+part('MemberPerk').append("-- Perks are granted on the day the term starts. UQ_MemberPerk makes this safe to repeat.\n")
+for name, cond in (('Welcome pin', ''), ('Free parking day', " WHERE m.Tier IN ('Plus','Premier')"), ('VIP photo session', " WHERE m.Tier = 'Premier'")):
+    part('MemberPerk').append(f"INSERT IGNORE INTO MemberPerk (MembershipID, PerkName, GrantedAt) SELECT m.MembershipID, '{name}', {GRANT} FROM Membership m{cond};\n" % ())
+part('MemberPerk').append(f"UPDATE MemberPerk p JOIN Membership m ON m.MembershipID = p.MembershipID SET p.GrantedAt = {GRANT};\n" % ())
+# decided requests need a reviewing user (AppUser is kept across loads). Without one they are skipped, not faked.
+REVIEWER = "(SELECT UserID FROM AppUser WHERE Role IN ('Manager','Admin') ORDER BY (Role = 'Manager') DESC, UserID LIMIT 1)"
+part('MembershipCancellationRequest').append("-- Decided requests are written by the Manager login (or Admin). If AppUser has neither, they are skipped.\n")
+for t, at, reason, status, dec, note in sorted(reqs, key=lambda r: r[1]):
+    if status == 'Pending':
+        part('MembershipCancellationRequest').append("INSERT INTO MembershipCancellationRequest (MembershipID, RequestedAt, Reason, Status) VALUES (%d, %s, %s, 'Pending');\n" % (t['id'], v(at), v(reason)))
+    else:
+        part('MembershipCancellationRequest').append(
+            "INSERT INTO MembershipCancellationRequest (MembershipID, RequestedAt, Reason, Status, DecidedAt, DecidedByUserID, DecisionNote)\n"
+            "  SELECT %d, %s, %s, %s, %s, u.UserID, %s FROM (SELECT %s AS UserID) u WHERE u.UserID IS NOT NULL;\n" % (t['id'], v(at), v(reason), v(status), v(dec), v(note), REVIEWER))
 
 # weather
 wev = []
@@ -320,8 +405,8 @@ for d in days:
     while len(seen) < n:
         seen.add(pick_customer(d))
     for cid in sorted(seen):
-        m = members.get(cid); use = None
-        if m and m['start'] <= d <= m['end'] and (m['tier'] != 'Basic' or not wk) and R.random() < 0.8: use = m
+        m = term_on(cid, d); use = None
+        if m and (m['tier'] != 'Basic' or not wk) and R.random() < 0.8: use = m
         exp = True if (use and use['tier'] == 'Premier') else R.random() < 0.22
         mk(cid, use['id'] if use else None, d, exp, dtm(max(d - timedelta(days=R.randint(0,12)), signup[cid]), R.randint(6,19), R.randint(0,59)))
 for cid in R.sample([c for c in range(7, CUST_END+1) if c not in inactive], MAX_OCC):
@@ -333,7 +418,7 @@ for i, t in enumerate(tickets, 1): t['id'] = i
 assert max(Counter(t['date'] for t in tickets).values()) <= MAX_OCC
 insert(part('Ticket'), 'Ticket', ['TicketID','CustomerID','MembershipID','VisitDate','HasExpress','TicketPrice','PurchaseDate'],
        [(t['id'],t['cust'],t['mem'],t['date'],t['express'],0,t['bought']) for t in tickets])
-by_mem = {m['id']: m for m in members.values()}
+by_mem = {t_['id']: t_ for t_ in terms}
 for t in tickets:   # self-check the membership rules
     if t['mem']:
         m = by_mem[t['mem']]; assert m['start'] <= t['date'] <= m['end']
@@ -426,10 +511,11 @@ UNION ALL SELECT 'Shift', COUNT(*) FROM Shift;
 HEAD = "USE theme_park;\nSET NAMES utf8mb4;\nSET autocommit = 0;\n"
 for name, body in parts.items():
     (HIST/f'{name}.sql').write_text(f"-- history/{name}.sql: {DESC[name]}. Generated by tools/gen_test_data.py (made-up data).\n" + HEAD + "".join(body) + "COMMIT;\n")
-LATE = {'12_dependents'}      # need columns or tables from files after 02 (docker init loads 02 before 16)
+LATE = {'12_dependents', '22_member_perks', '24_cancellations'}      # need columns or tables from files after 02 (docker init loads 02 before 16)
 (HIST/'99_row_counts.sql').write_text("USE theme_park;\n" + COUNTS.replace("UNION ALL SELECT 'Shift', COUNT(*) FROM Shift;",
     "UNION ALL SELECT 'Shift', COUNT(*) FROM Shift UNION ALL SELECT 'Dependent', COUNT(*) FROM Customer WHERE ParentCustomerID IS NOT NULL\n"
-    "UNION ALL SELECT 'DependentConsent', COUNT(*) FROM DependentConsent;"))
+    "UNION ALL SELECT 'DependentConsent', COUNT(*) FROM DependentConsent UNION ALL SELECT 'MemberPerk', COUNT(*) FROM MemberPerk\n"
+    "UNION ALL SELECT 'CancellationRequest', COUNT(*) FROM MembershipCancellationRequest;"))
 # 02_test_data.sql is the same data in one file, for the docker init order (00 schema, 01, 02 ...).
 (OUT/'02_test_data.sql').write_text(
     "-- 02_test_data.sql: the whole dataset in one file (the same rows as history/10 to 80, without the files that need later schema: dependents). Load after 01_park_and_reference.sql.\n"
