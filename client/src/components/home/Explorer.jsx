@@ -117,7 +117,12 @@ export default function Explorer({ rides = [], venues = [] }) {
             )}
             
               <Link
-                to={`/rides?land=${tab.key}#explore-rides`}
+                
+                  to={tab.key === 'dining'
+                    ? '/rides#dining-shops'
+                    : `/rides?land=${tab.key}#explore-rides`
+                  }
+
                 className="pub-feature-link"
               >
                 See all in {tab.title}
@@ -137,7 +142,12 @@ export default function Explorer({ rides = [], venues = [] }) {
           
           {more > 0 && (
             <Link
-              to={`/rides?land=${tab.key}#explore-rides`}
+              
+              to={tab.key === 'dining'
+                ? '/rides#dining-shops'
+                : `/rides?land=${tab.key}#explore-rides`
+              }
+
               className="pub-chip pub-chip-more"
             >
               +{more} more
