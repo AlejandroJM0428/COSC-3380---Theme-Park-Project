@@ -100,14 +100,14 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
 
-          <Route element={<RequireAuth roles={MANAGEMENT} />}>
+          <Route element={<RequireAuth roles={MANAGEMENT} denyTo="/staff" />}>
             <Route path="reports/:key" element={<ReportPage />} />
           </Route>
 
           {FORM_PAGES.map((p) => {
             const Page = PAGE_COMPONENTS[p.path]
             return (
-              <Route key={p.path} element={<RequireAuth roles={p.roles} />}>
+              <Route key={p.path} element={<RequireAuth roles={p.roles} denyTo="/staff" />}>
                 <Route path={p.path} element={Page ? <Page /> : <Placeholder title={p.label} />} />
               </Route>
             )

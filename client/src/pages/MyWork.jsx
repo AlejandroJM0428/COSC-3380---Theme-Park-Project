@@ -10,6 +10,7 @@ const money = (v) => (v === null || v === undefined ? '—' : `$${Number(v).toFi
 export default function MyWork() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  const [tab, setTab] = useState('jobs')
 
   useEffect(() => {
     let alive = true
@@ -36,6 +37,10 @@ export default function MyWork() {
     Notes: s.ShiftNotes ?? '—',
   }))
 
+  // Repair jobs and shifts are two separate histories, shown one at a time. Workers with no repair jobs (restaurant) only have shifts.
+  const hasJobs = Boolean(data.jobs)
+  const shown = hasJobs ? tab : 'shifts'
+
   return (
     <div>
       <h1>My work</h1>
@@ -43,9 +48,20 @@ export default function MyWork() {
         {data.employee.Name} · {data.employee.JobTitle} · Hired on: {data.employee.HireDate} · Hourly pay: {money(data.employee.HourlyPay)}
       </p>
 
-      {data.jobs && (
+      {hasJobs && (
+        <div className="mywork-tabs" role="tablist" aria-label="My work history">
+          <button type="button" role="tab" aria-selected={shown === 'jobs'} className={shown === 'jobs' ? 'active' : ''} onClick={() => setTab('jobs')}>
+            Repair job history
+          </button>
+          <button type="button" role="tab" aria-selected={shown === 'shifts'} className={shown === 'shifts' ? 'active' : ''} onClick={() => setTab('shifts')}>
+            Shift history
+          </button>
+        </div>
+      )}
+
+      {shown === 'jobs' ? (
         <>
-          <h2>My repair jobs</h2>
+          <h2>Repair job history</h2>
           <DataTable
             rows={data.jobs.map((j) => ({
               'Job #': j.MaintenanceID,
@@ -58,10 +74,12 @@ export default function MyWork() {
             }))}
           />
         </>
+      ) : (
+        <>
+          <h2>Shift history</h2>
+          <DataTable rows={shifts} />
+        </>
       )}
-
-      <h2>My recent shifts</h2>
-      <DataTable rows={shifts} />
     </div>
   )
 }
