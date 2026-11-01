@@ -70,7 +70,7 @@ export const CUSTOMERS = {
 export const MEMBERSHIPS = {
   title: 'Memberships',
   intro:
-    'Annual memberships. Pick the guest, the tier and the start date. The database sets the price from the tier list, and the membership ends one year later. If those dates overlap a membership this guest already has, MySQL rejects the save. A membership with tickets on it cannot be deleted.',
+    'Annual memberships. Pick the guest (they must already have an account), the tier and the start date. The database sets the price from the tier list, and the membership ends one year later. If those dates overlap a membership this guest already has, MySQL rejects the save. A membership with tickets on it cannot be deleted.',
   resource: 'memberships',
   idKey: 'MembershipID',
   noun: 'membership',
@@ -98,7 +98,7 @@ export const MEMBERSHIPS = {
     { key: 'IsCurrent', label: 'Status', format: (v) => (Number(v) ? 'Current' : 'Not current') },
   ],
   fields: [
-    { key: 'customerId', label: 'Guest', type: 'lookup', kind: 'customer', required: true },
+    { key: 'customerId', label: 'Guest (must have an account)', type: 'lookup', kind: 'customer', required: true, needsLogin: true },
     {
       key: 'tier',
       label: 'Tier',

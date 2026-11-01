@@ -9,6 +9,7 @@ import { friendlyDbError, needDate, needId, oneOf, recordId } from '../validate.
 //   EndDate is worked out here: one year from the start date, minus a day (the database CHECK requires this).
 //   Price is set by trg_Membership_BI on insert. An edit copies AnnualPrice and calls
 //   sp_AssertNoMembershipOverlap, which is what the removed update trigger used to do.
+// A new membership is only sold to a customer who has an account (an AppUser row). Edits to older ones are not blocked.
 // Delete is a real delete, because Membership has no IsActive column. The database refuses it when
 // tickets already use the membership (foreign key), and we turn that into a plain sentence.
 
@@ -94,6 +95,11 @@ route(
   '/api/memberships',
   requireRole(...CAN_WRITE)(async (ctx) => {
     const m = parseMembership(ctx.body);
+    // A membership needs a member account: the customer must have signed up for a login first.
+    const [logins] = await pool.query('SELECT 1 FROM AppUser WHERE CustomerID = ? LIMIT 1', [m.customerId]);
+    if (logins.length === 0) {
+      throw new HttpError(400, 'This guest has no account yet. They need to create an account before a membership can be sold');
+    }
     try {
       const [result] = await pool.query(
         `INSERT INTO Membership (CustomerID, Tier, StartDate, EndDate, Price, AutoRenew)

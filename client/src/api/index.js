@@ -216,9 +216,9 @@ export function getMyWork() {
 }
 
 // Customer lookup for the ticket forms. name and dob (YYYY-MM-DD) are each optional, but one is needed.
-export function searchCustomers(name, dob) {
+export function searchCustomers(name, dob, hasLogin = false) {
   needLive()
-  const qs = new URLSearchParams(Object.entries({ name, dob }).filter(([, v]) => v)).toString()
+  const qs = new URLSearchParams(Object.entries({ name, dob, hasLogin: hasLogin ? '1' : '' }).filter(([, v]) => v)).toString()
   return http(`/customers/search?${qs}`)
 }
 

@@ -168,6 +168,7 @@ export default function RecordManager({ entity }) {
             value={value}
             required={field.required}
             forCustomer={field.forCustomerKey ? form[field.forCustomerKey] : undefined}
+            needsLogin={field.needsLogin}
             onChange={(v) => set(field.key, v)}
           />
         </div>
