@@ -154,18 +154,18 @@ export const TRIGGER_CATALOG = [
   },
   {
     name: 'trg_RideLog_BU', table: 'RideLog', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
-    rule: 'Ride log entries are records and are never edited.',
-    errors: ['Ride log entries are records and cannot be edited'],
+    rule: 'An edited boarding gets the same checks as a new one (maintenance, weather, height, Express) when its ride, ticket, time or Express use changes. A changed wait time needs no check.',
+    errors: ['Ride is no longer in service', 'Ride was under maintenance', 'Weather has closed outdoor rides', 'Guest is below the ride height requirement', 'Ticket does not include Express', 'Ride is not Express eligible'],
   },
   {
     name: 'trg_GamePlay_BU', table: 'GamePlay', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
-    rule: 'Game plays are records and are never edited.',
-    errors: ['Game plays are records and cannot be edited'],
+    rule: 'An edited play needs a valid ticket and a game that is in service. The amount paid stays as it was unless the game changes, then it is copied from the new game.',
+    errors: ['Game was under maintenance', 'Game is no longer in service'],
   },
   {
     name: 'trg_Purchase_BU', table: 'Purchase', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
-    rule: 'Purchases are records and are never edited.',
-    errors: ['Purchases are records and cannot be edited'],
+    rule: 'An edited purchase needs a valid ticket and an item still sold at an open venue. The unit price stays as it was unless the item changes, then it is copied from the new item.',
+    errors: ['Item does not exist', 'Item is no longer sold', 'Venue was under maintenance'],
   },
   {
     name: 'trg_TicketRefund_BU', table: 'TicketRefund', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',

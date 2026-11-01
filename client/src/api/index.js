@@ -232,6 +232,11 @@ export function createNotification(data) {
   return http('/notifications', { method: 'POST', body: data })
 }
 
+export function updateNotification(id, data) {
+  needLive()
+  return http(`/notifications/${id}`, { method: 'PUT', body: data })
+}
+
 // "Delete" = dismiss (IsActive = 0 on the server).
 export function dismissNotification(id) {
   needLive()

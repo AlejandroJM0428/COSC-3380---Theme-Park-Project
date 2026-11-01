@@ -134,19 +134,17 @@ export const MEMBERSHIPS = {
   describe: (row) => `membership #${row.MembershipID} (${row.CustomerName}, ${row.Tier})`,
 }
 
-// ---- Food & shop purchases: add only (permanent records) --------------------------------------------------
+// ---- Food & shop purchases: add / edit / delete --------------------------------------------------
 export const PURCHASES = {
   title: 'Food & Shop Purchases',
   intro:
-    'Revenue records for food, drinks and merchandise. Add what a guest bought on their ticket. The database fills in the price. The database does not allow edits: to fix a mistake, delete the entry and add it again.',
+    'Revenue records for food, drinks and merchandise. Add what a guest bought on their ticket, or correct an entry. The database fills in the price: it keeps the price the guest paid unless the item changes.',
   resource: 'purchases',
   idKey: 'PurchaseID',
   noun: 'purchase',
-  lockedNote:
-    'These rows are sales records and feed the revenue reports. They are permanent records, so the totals in the reports cannot be changed quietly after the fact. To fix a mistake, delete the entry and add it again.',
+  editRoles: ['Admin', 'RetailManager'], // the booth adds sales; the retail desk corrects or removes them
   deleteRoles: ['Admin', 'RetailManager'],
-  deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
-  canEditRow: () => false,
+  deleteNote: 'This removes the entry for good, and the revenue reports drop it. Add it again if it was a mistake.',
   columns: [
     { key: 'PurchaseID', label: 'Purchase #' },
     { key: 'PurchasedAt', label: 'When', format: shortDate },
@@ -174,7 +172,7 @@ export const PURCHASES = {
   blank: () => ({ ticketId: '', itemId: '', quantity: '1', purchasedAt: '' }),
   fromRecord: (rec) => ({
     ticketId: String(rec.TicketID),
-    itemId: '',
+    itemId: String(rec.ItemID),
     quantity: String(rec.Quantity),
     purchasedAt: toInput(rec.PurchasedAt),
   }),
@@ -187,19 +185,17 @@ export const PURCHASES = {
   describe: (row) => `purchase #${row.PurchaseID}`,
 }
 
-// ---- Game plays: add only (permanent records) -------------------------------------------------------------
+// ---- Game plays: add / edit / delete -------------------------------------------------------------
 export const GAME_PLAYS = {
   title: 'Game Plays',
   intro:
-    'Revenue records for midway games. Add a play on a guest\'s ticket. The database fills in the price and refuses games that are retired or under maintenance. The database does not allow edits: to fix a mistake, delete the play and add it again.',
+    'Revenue records for midway games. Add a play on a guest\'s ticket, or correct one. The database fills in the price and refuses games that are retired or under maintenance. It keeps the amount the guest paid unless the game changes.',
   resource: 'game-plays',
   idKey: 'GamePlayID',
   noun: 'game play',
-  lockedNote:
-    'These rows are sales records and feed the revenue reports. They are permanent records, so the totals in the reports cannot be changed quietly after the fact. To fix a mistake, delete the play and add it again.',
+  editRoles: ['Admin', 'RetailManager'], // the booth adds plays; the retail desk corrects or removes them
   deleteRoles: ['Admin', 'RetailManager'],
-  deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
-  canEditRow: () => false,
+  deleteNote: 'This removes the entry for good, and the revenue reports drop it. Add it again if it was a mistake.',
   columns: [
     { key: 'GamePlayID', label: 'Play #' },
     { key: 'PlayedAt', label: 'When', format: shortDate },
@@ -220,7 +216,7 @@ export const GAME_PLAYS = {
     { key: 'playedAt', label: 'Time (leave empty for now)', type: 'datetime' },
   ],
   blank: () => ({ ticketId: '', gameId: '', playedAt: '' }),
-  fromRecord: (rec) => ({ ticketId: String(rec.TicketID), gameId: '', playedAt: toInput(rec.PlayedAt) }),
+  fromRecord: (rec) => ({ ticketId: String(rec.TicketID), gameId: String(rec.GameID), playedAt: toInput(rec.PlayedAt) }),
   toPayload: (form) => ({
     ticketId: Number(form.ticketId),
     gameId: Number(form.gameId),
@@ -229,19 +225,16 @@ export const GAME_PLAYS = {
   describe: (row) => `game play #${row.GamePlayID}`,
 }
 
-// ---- Ride log: add only (permanent records) ---------------------------------------------------------------
+// ---- Ride log: add / edit / delete ---------------------------------------------------------------
 export const RIDE_LOG = {
   title: 'Ride Log',
   intro:
-    'Ride activity. A boarding records a guest getting on a ride. A wait reading records the posted wait time. The database refuses boardings on rides under maintenance, closed by weather, or above the guest\'s height. The database does not allow edits: to fix a mistake, delete the entry and add it again.',
+    'Ride activity. A boarding records a guest getting on a ride. A wait reading records the posted wait time. The database refuses boardings on rides under maintenance, closed by weather, or above the guest\'s height, and checks a corrected boarding the same way.',
   resource: 'ride-log',
   idKey: 'RideLogID',
   noun: 'ride log entry',
-  lockedNote:
-    'These rows are the permanent record of guest traffic and wait times, and the ride reports read them. They are permanent records, so the numbers in the reports cannot be changed quietly after the fact. To fix a mistake, delete the entry and add it again.',
   deleteRoles: ['Admin', 'Manager'],
-  deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
-  canEditRow: () => false,
+  deleteNote: 'This removes the entry for good, and the ride reports drop it. Add it again if it was a mistake.',
   filters: [
     {
       key: 'type',
