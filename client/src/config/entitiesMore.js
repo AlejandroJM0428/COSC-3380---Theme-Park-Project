@@ -511,21 +511,28 @@ export const FACILITIES = {
       : null,
 }
 
-// ---- App Users (Admin): add / edit / deactivate -----------------------------------------------------------
-// Staff logins only. Customer accounts come from member sign-up. The password is sent to the server,
-// hashed there, and never comes back. On edit, leave the password empty to keep the current one.
+// ---- App Users (Admin): everyone in one list, add / edit / deactivate staff ------------------------------
+// Shows staff logins, member accounts and guests (customer records with no login). Starts grouped by role.
+// Only staff rows can be edited or deactivated here; members and guests are managed on the Customers page.
+// The password is sent to the server, hashed there, and never comes back. On edit, leave it empty to keep the current one.
+const STAFF_ROLE_LIST = ['Admin', 'Manager', 'Cashier', 'RetailManager', 'HRManager', 'MaintenanceManager', 'MaintenanceWorker', 'RestaurantWorker']
+const isStaffRow = (row) => row.UserID != null && row.Role !== 'Customer'
+
 export const USERS = {
   title: 'App Users',
   intro:
-    'Staff logins for this site. Every login belongs to an employee and is named after them (first name plus the last four digits of their ID). Add an account, change its role, set a new password, or deactivate it. A deactivated account cannot log in. You cannot deactivate yourself or change your own role.',
+    'Everyone in one place, grouped by role: staff logins, member accounts and guests (customer records with no login). Filter by role or search by name or username. Staff logins belong to an employee and are named after them (first name plus the last four digits of their ID); you can add one, change its role, set a new password, or deactivate it. Members and guests are view only here (members and guests show the newest 300; search to find others). You cannot deactivate yourself or change your own role.',
   resource: 'users',
   idKey: 'UserID',
-  // Optional "Group by: Role" view: the accounts under a heading per role, in this order.
+  rowKey: 'RowKey', // guests have no UserID, so rows are keyed by RowKey
+  // Starts as "Group by: Role": the people under a heading per role, in this order.
   groupBy: {
     key: 'Role',
     label: 'Group by',
     optionLabel: 'Role',
-    order: ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker'],
+    defaultOn: true,
+    order: ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker', 'Customer', 'Guest'],
+    labels: { Customer: 'Member accounts', Guest: 'Guests (no login)' },
   },
   hideIds: true, // the page never shows user numbers
   noun: 'user',
@@ -533,23 +540,36 @@ export const USERS = {
   deleteLabel: 'Deactivate',
   deletePast: 'Deactivated',
   deleteNote: 'The account is kept and can be turned back on by editing it.',
-  canDeleteRow: (row) => Number(row.IsActive) === 1,
+  canEditRow: isStaffRow,
+  canDeleteRow: (row) => isStaffRow(row) && Number(row.IsActive) === 1,
   filters: [
+    {
+      key: 'role',
+      label: 'Role',
+      options: [
+        ['', 'All roles'],
+        ...STAFF_ROLE_LIST.map((r) => [r, r.replace(/([a-z])([A-Z])/g, '$1 $2')]),
+        ['Customer', 'Member accounts'],
+        ['Guest', 'Guests (no login)'],
+      ],
+    },
     {
       key: 'status',
       label: 'Show',
       options: [
-        ['', 'All accounts'],
-        ['active', 'Active accounts'],
-        ['inactive', 'Inactive accounts'],
+        ['', 'All'],
+        ['active', 'Active'],
+        ['inactive', 'Inactive'],
       ],
     },
+    { key: 'q', label: 'Search', type: 'search', placeholder: 'Name or username' },
   ],
   columns: [
-    { key: 'Username', label: 'Username' },
-    { key: 'Role', label: 'Role' },
-    { key: 'EmployeeName', label: 'Employee', format: (v) => v || '—' },
+    { key: 'PersonName', label: 'Name', format: (v) => v || '—' },
+    { key: 'Username', label: 'Username', format: (v) => v || '—' },
+    { key: 'Role', label: 'Role', format: (v) => (v === 'Customer' ? 'Member' : v === 'Guest' ? 'Guest' : v) },
     { key: 'EmployeeID', label: 'Employee ID', format: (v) => v || '—' },
+    { key: 'CustomerID', label: 'Customer #', format: (v) => v || '—' },
     { key: 'IsActive', label: 'Status', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
   ],
   fields: [

@@ -22,7 +22,7 @@ export default function RecordManager({ entity }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [toast, setToast] = useState(null)
-  const [grouped, setGrouped] = useState(false) // entity.groupBy: show the rows under a heading per group
+  const [grouped, setGrouped] = useState(Boolean(entity.groupBy?.defaultOn)) // entity.groupBy: show the rows under a heading per group (groupBy.defaultOn starts it on)
 
   useEffect(() => {
     let alive = true
@@ -226,11 +226,11 @@ export default function RecordManager({ entity }) {
     const others = [...by.keys()].filter((k) => !order.includes(k)).sort()
     return [...known, ...others].map((k) => ({ key: k, rows: by.get(k) }))
   }
-  const groupName = (key) => String(key || 'Other').replace(/([a-z])([A-Z])/g, '$1 $2')
+  const groupName = (key) => entity.groupBy.labels?.[key] ?? String(key || 'Other').replace(/([a-z])([A-Z])/g, '$1 $2')
 
   function renderRow(row) {
     return (
-      <tr key={row[entity.idKey]}>
+      <tr key={row[entity.rowKey ?? entity.idKey]}>
         {entity.columns.map((c) => (
           <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
         ))}
@@ -273,13 +273,23 @@ export default function RecordManager({ entity }) {
         {(entity.filters ?? []).map((f) => (
           <label key={f.key} className="rm-filter">
             {f.label}
-            <select value={filters[f.key]} onChange={(e) => setFilters((cur) => ({ ...cur, [f.key]: e.target.value }))}>
-              {f.options.map(([v, label]) => (
-                <option key={v} value={v}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            {f.type === 'search' ? (
+              <input
+                type="search"
+                value={filters[f.key]}
+                placeholder={f.placeholder}
+                maxLength={50}
+                onChange={(e) => setFilters((cur) => ({ ...cur, [f.key]: e.target.value }))}
+              />
+            ) : (
+              <select value={filters[f.key]} onChange={(e) => setFilters((cur) => ({ ...cur, [f.key]: e.target.value }))}>
+                {f.options.map(([v, label]) => (
+                  <option key={v} value={v}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            )}
           </label>
         ))}
         {entity.groupBy && (
