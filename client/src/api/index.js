@@ -13,11 +13,6 @@ export function login(username, password, audience) {
     : http('/auth/login', { method: 'POST', body: { username, password, audience } })
 }
 
-// Active staff accounts for the staff sign in selects: [{ username, role, name, jobTitle }].
-export function listStaffAccounts() {
-  return USE_MOCK ? mock.listStaffAccounts() : http('/auth/staff').then((r) => r.accounts)
-}
-
 // Who does the server think is signed in? Used once on page load, because the browser only remembers
 // the user per tab but the session cookie is shared by every tab. Mock mode has no server session.
 export function getSessionUser() {

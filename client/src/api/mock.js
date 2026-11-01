@@ -18,15 +18,6 @@ export async function login(username, password, audience) {
   return user
 }
 
-export async function listStaffAccounts() {
-  await delay(120)
-  return [
-    { username: 'admin', role: 'Admin', name: null, jobTitle: null },
-    { username: 'manager', role: 'Manager', name: null, jobTitle: null },
-    { username: 'cashier', role: 'Cashier', name: null, jobTitle: null },
-  ]
-}
-
 export async function register({ username }) {
   await delay()
   const key = String(username).trim().toLowerCase()

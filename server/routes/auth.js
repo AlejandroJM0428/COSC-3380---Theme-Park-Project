@@ -34,30 +34,6 @@ route('POST', '/api/auth/login', async (ctx) => {
   return { username: user.Username, role: user.Role };
 });
 
-// The staff sign-in lists the active staff accounts so a person picks their portal and their name instead of
-// typing a username. Public on purpose (the password is still required). It sends no ids, no hashes and no
-// customers, only what the two selects show.
-const STAFF_ORDER = ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker'];
-
-route('GET', '/api/auth/staff', async () => {
-  const [rows] = await pool.query(
-    `SELECT u.Username, u.Role, e.FirstName, e.LastName, e.JobTitle
-       FROM AppUser u
-       LEFT JOIN Employee e ON e.EmployeeID = u.EmployeeID
-      WHERE u.IsActive = 1 AND u.Role <> 'Customer' AND u.CustomerID IS NULL
-      ORDER BY e.LastName IS NULL, e.LastName, e.FirstName, u.Username
-      LIMIT 500`,
-  );
-  const accounts = rows.map((r) => ({
-    username: r.Username,
-    role: r.Role,
-    name: r.FirstName ? `${r.FirstName} ${r.LastName}` : null,
-    jobTitle: r.JobTitle ?? null,
-  }));
-  accounts.sort((a, b) => STAFF_ORDER.indexOf(a.role) - STAFF_ORDER.indexOf(b.role));
-  return { accounts };
-});
-
 // Member self sign-up. Always creates a Customer row + a 'Customer' AppUser, never a staff role.
 // Role and CustomerID come from the server, not the request body.
 const USERNAME_RE = /^[A-Za-z0-9_.-]{3,50}$/;

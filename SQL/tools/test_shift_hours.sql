@@ -1,6 +1,7 @@
 -- test_shift_hours.sql: boundary test for the 40-hour rule (SQL/17_shift_hours_cap.sql).
 --   mysql theme_park < SQL/tools/test_shift_hours.sql
--- Uses the first active employee and a week in January 2030 that holds no data, inside a transaction that is rolled back.
+-- Uses the first active employee who has no open shift (an open shift overlaps everything after it) and a week in January 2030
+-- that holds no data, inside a transaction that is rolled back.
 -- Prints one row per case and a last row that says ALL PASS or FAIL. Changes nothing. Needs files 11 and 17 (the shift triggers).
 USE theme_park;
 DROP PROCEDURE IF EXISTS sp_Test_ShiftHours;
@@ -12,7 +13,10 @@ BEGIN
     DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' GET DIAGNOSTICS CONDITION 1 v_msg = MESSAGE_TEXT;
     DROP TEMPORARY TABLE IF EXISTS t_result;
     CREATE TEMPORARY TABLE t_result (n INT AUTO_INCREMENT PRIMARY KEY, test VARCHAR(90), expected VARCHAR(10), got VARCHAR(10)) ENGINE = MEMORY;
-    SELECT EmployeeID INTO v_emp FROM Employee WHERE IsActive = 1 ORDER BY EmployeeID LIMIT 1;
+    SELECT e.EmployeeID INTO v_emp FROM Employee e
+     WHERE e.IsActive = 1 AND e.HireDate <= '2029-12-31'
+       AND NOT EXISTS (SELECT 1 FROM Shift s WHERE s.EmployeeID = e.EmployeeID AND (s.ClockOut IS NULL OR s.ClockOut >= '2029-12-01'))
+     ORDER BY e.EmployeeID LIMIT 1;
     START TRANSACTION;
 
     -- Monday to Friday, 8 hours each: the fifth one ends the week at exactly 40:00:00

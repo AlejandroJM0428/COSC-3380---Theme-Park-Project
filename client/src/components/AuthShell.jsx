@@ -4,10 +4,9 @@ import '../login.css'
 
 // The frame for the member sign in, member sign up and staff sign in pages.
 // variant="member" uses the public site look; variant="staff" uses the staff portal look.
-// `role` tints the staff page (awning and button) once a portal is chosen.
-export default function AuthShell({ variant = 'member', role, title, children }) {
+export default function AuthShell({ variant = 'member', title, children }) {
   return (
-    <div className={`auth auth-${variant}`} data-role={role || undefined}>
+    <div className={`auth auth-${variant}`}>
       {variant === 'staff' && (
         <div className="awning-wrap" aria-hidden="true">
           <div className="awning" />
