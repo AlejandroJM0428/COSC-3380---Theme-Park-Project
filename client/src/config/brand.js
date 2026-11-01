@@ -19,6 +19,16 @@ export const BRAND = {
   },
 }
 
+// Schematic park map (not to scale). Positions are for the SVG on /rides, keyed by Zone.ZoneName.
+// A zone that is not listed here still appears in the list under the map.
+export const ZONE_MAP = {
+  'Thunder Canyon': { x: 40, y: 40, w: 300, h: 190, fill: '#f0c19c' },
+  'Adventure Bay': { x: 560, y: 40, w: 300, h: 190, fill: '#a5d3ec' },
+  'Fantasy Forest': { x: 40, y: 270, w: 260, h: 180, fill: '#abd8a9' },
+  'Kids Corner': { x: 600, y: 270, w: 260, h: 180, fill: '#f7dc8c' },
+  'Main Street': { x: 330, y: 290, w: 240, h: 160, fill: '#d3c4ec' },
+}
+
 // The lands guests browse by. `zones` are Zone.ZoneName values from the database.
 export const LANDS = [
   { key: 'thrill', title: 'Thrill Rides', blurb: 'Coasters, drops and big speed', img: BRAND.images.thrill, zones: ['Thunder Canyon'] },

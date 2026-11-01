@@ -34,7 +34,7 @@ async function loadSite() {
     pool.query('SELECT DayPassPrice, ExpressAddOnPrice, OpeningTime, ClosingTime FROM Park WHERE ParkID = 1'),
     pool.query('SELECT Tier, AnnualPrice FROM MembershipTier WHERE IsForSale = 1 ORDER BY AnnualPrice'),
     pool.query(
-      `SELECT a.RideID, a.RideName, a.ZoneName, a.CurrentState, r.RideType, r.MinHeightCm
+      `SELECT a.RideID, a.RideName, a.ZoneName, a.CurrentState, r.RideType, r.MinHeightCm, r.IsExpressEligible
          FROM v_RideAvailability a
          JOIN Ride r ON r.RideID = a.RideID
         WHERE a.CurrentState <> 'Closed - Retired'
@@ -67,6 +67,8 @@ async function loadSite() {
       zoneName: r.ZoneName,
       rideType: r.RideType,
       minHeightCm: r.MinHeightCm > 0 ? r.MinHeightCm : null,
+      // Express-eligible rides are the park's headline rides (the "Premier rides" on /rides).
+      expressEligible: Boolean(r.IsExpressEligible),
       // Any "Closed - ..." reason (maintenance, weather) is shown as plain Closed.
       state: r.CurrentState === 'Open' ? 'Open' : 'Closed',
     })),
