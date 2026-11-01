@@ -116,14 +116,14 @@ o1.append("UPDATE MembershipTier SET AnnualPrice = CASE Tier " + " ".join(f"WHEN
 (OUT/'01_park_and_reference.sql').write_text("".join(o1))
 
 (OUT/'00_clear_data.sql').write_text("""-- 00_clear_data.sql: empties all data tables so 01 and the history files (02, or history/10 to 80) can be reloaded.
--- Keeps AppUser (logins) and MembershipTier (price list). Run only before re-loading 01 and the history.
+-- Keeps AppUser (logins), AdminAudit, MembershipTier (price list) and promo notices. Needs the full schema (files 14 and 16 add three of the tables it empties). Run only before re-loading 01 and the history.
 -- AppUser.EmployeeID is not cleared: re-run server/scripts/seed-users.js afterwards so every login points at a real employee.
 USE theme_park;
 SET FOREIGN_KEY_CHECKS = 0;
 """ + "".join(f"TRUNCATE TABLE {t};\n" for t in
-  ['RideLog','GamePlay','Purchase','TicketRefund','Ticket','Membership','MaintenanceCrew','Maintenance','Shift',
+  ['RideLog','GamePlay','Purchase','TicketRefund','Ticket','MembershipCancellationRequest','MemberPerk','Membership','DependentConsent','MaintenanceCrew','Maintenance','Shift',
    'RideCertification','EmployeeZone','Employee','Item','Venue','Game','Ride','WeatherLog','Zone','Customer','Park']) +
-"SET FOREIGN_KEY_CHECKS = 1;\n")
+"SET FOREIGN_KEY_CHECKS = 1;\n-- Notices written by the triggers while the history loads (sold out, weather, maintenance) are rebuilt by the load. Promos are kept.\nDELETE FROM Notification WHERE Kind <> 'Promo';\n")
 
 # ---------------- 02 test data ----------------
 HIST = OUT / 'history'
@@ -831,6 +831,40 @@ rl, gp, pu = [], [], []
 def pick_time(a, b):
     return a + timedelta(minutes=R.randint(0, max(1, int((b-a).total_seconds()//60))))
 
+def pick_time_p(a, b):
+    return a + timedelta(minutes=RP.randint(0, max(1, int((b-a).total_seconds()//60))))
+
+# purchases and game plays (stage 9): own generator RP. Food follows the meal times, drinks and ice cream the heat, shops the end of the visit,
+# alcohol only goes to guests aged 21 or over on the visit date, and nothing is sold at a venue (or played on a game) that is under maintenance.
+RP = random.Random(3380 + 9)
+HOT_MONTHS = {5, 6, 7, 8, 9}
+GAME_POP = {1: 6, 2: 9, 3: 6, 4: 5, 5: 6, 6: 10}                 # Skee Ball and Basketball Shot are the favourites; the inactive Duck Pond has no row
+def item_weight(it, hour, hot, adult, kid):
+    cat = it[3]
+    if it[5] and not adult: return 0.0                          # no alcohol for guests under 21
+    if cat in ('Entree', 'Side'): w = 3.0 if (11 <= hour < 14 or 17 <= hour < 20) else 0.4
+    elif cat == 'Drink': w = 2.2 if hot else 1.0
+    elif cat in ('Snack', 'Dessert'): w = 1.8 if hot else 1.2
+    else:
+        w = 1.8 if hour >= 17 else 0.8                          # souvenirs on the way out
+        if kid and cat in ('Toy', 'Candy'): w *= 1.6
+    return w * (0.7 if it[5] else 1.0)
+def spend(t, arr, end):
+    d = t['date']; age = (d - dob_of[t['cust']]).days // 365
+    adult, kid, hot = age >= 21, age < 13, d.month in HOT_MONTHS
+    for _ in range(RP.choices([0, 1, 2, 3], [30, 30, 25, 15] if kid else [40, 30, 20, 10])[0]):
+        at = pick_time_p(arr, end)
+        open_g = [g for g in active_games if not under_maint('Game', g[0], at)]
+        if open_g: gp.append((RP.choices(open_g, [GAME_POP[g[0]] * (1.3 if kid else 1.0) for g in open_g])[0][0], t['id'], at, 0))
+    for _ in range(RP.choices([1, 2, 3, 4], [40, 32, 20, 8] if kid else [18, 30, 30, 22])[0]):
+        at = pick_time_p(arr, end)
+        shut = {v[0] for v in VENUES if under_maint('Venue', v[0], at)}
+        cand = [(it, item_weight(it, at.hour, hot, adult, kid)) for it in ITEMS if it[1] not in shut]
+        cand = [c for c in cand if c[1] > 0]
+        if cand:
+            it = RP.choices([c[0] for c in cand], [c[1] for c in cand])[0]
+            pu.append((t['id'], it[0], RP.choices([1, 2, 3], [8, 3, 1] if kid else [6, 3, 1])[0], 0, at))
+
 # ride log (stage 8): 4 to 6 boardings per ticket, popular rides drawn more often, and the order of the rides changes from month to month.
 # Own generator RL, so the rides never disturb the games, purchases and shifts that share R.
 RL = random.Random(3380 + 8)
@@ -872,13 +906,7 @@ for t in tickets:
     arr = dtm(d, 9, 30) + timedelta(minutes=R.randint(0, 210))
     end = min(arr + timedelta(hours=R.randint(4,8)), dtm(d, 21, 30))
     rl.extend(board(t, arr, h))
-    for _ in range(R.choices([0,1,2,3], [40,30,20,10])[0]):
-        at = pick_time(arr, end); g = R.choice(active_games)
-        if not under_maint('Game', g[0], at): gp.append((g[0], t['id'], at, 0))
-    for _ in range(R.randint(1, 4)):
-        at = pick_time(arr, end); it = R.choice(ITEMS)
-        if not under_maint('Venue', it[1], at):
-            pu.append((t['id'], it[0], R.choices([1,2,3],[6,3,1])[0], 0, at))
+    spend(t, arr, end)
 base = {'Coaster':35,'Water Ride':28,'Simulator':22,'Dark Ride':18,'Train':8,'Carousel':6,'Walkthrough':10}
 att_ref = sorted(per_day[d] for d in HIST_DAYS)[len(HIST_DAYS) // 2]      # a typical day's tickets; busy days queue longer, quiet days shorter
 for d in HIST_DAYS:
