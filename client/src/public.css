@@ -1158,3 +1158,129 @@
     transition: none;
   }
 }
+
+
+/* THUNDER VALLEY - Enhanced Membership Cards */
+
+.pub-tier-cards {
+  gap: 24px;
+  align-items: stretch;
+  margin-top: 30px;
+  margin-bottom: 42px;
+}
+
+.pub-tier-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  padding: 32px;
+  background: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(20, 33, 61, 0.08);
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.pub-tier-card:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 18px 35px rgba(20, 33, 61, 0.16);
+}
+
+/* Basic - Blue */
+.pub-tier-basic {
+  border: 3px solid #3B82F6;
+  background: linear-gradient(180deg, #EFF6FF, #FFFFFF 65%);
+}
+
+/* Plus - Purple */
+.pub-tier-plus {
+  border: 3px solid #8B5CF6;
+  background: linear-gradient(180deg, #F3E8FF, #FFFFFF 65%);
+}
+
+/* Premier - Gold */
+.pub-tier-premier {
+  border: 3px solid #E5B94B;
+  background: linear-gradient(180deg, #FFF5D9, #FFFFFF 65%);
+}
+
+/* Most Popular Badge */
+.pub-tier-popular {
+  display: inline-block;
+  background: #8B5CF6;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  padding: 7px 13px;
+  border-radius: 50px;
+  margin-bottom: 10px;
+}
+
+/* Membership Titles */
+.pub-tier-card h2 {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #14213D;
+}
+
+/* Membership Prices */
+.pub-tier-card .pub-tier-price strong {
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #14213D;
+}
+
+.pub-tier-plus .pub-tier-price strong {
+  color: #7C3AED;
+}
+
+.pub-tier-premier .pub-tier-price strong {
+  color: #B7791F;
+}
+
+/* Benefits */
+.pub-tier-card ul {
+  line-height: 1.9;
+  color: #475569;
+}
+
+/* Buttons */
+.pub-tier-card .pub-buy {
+  margin-top: auto;
+  transition: transform 0.2s ease,
+              filter 0.2s ease;
+}
+
+.pub-tier-card .pub-buy:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+/* Membership Comparison Table */
+.pub-table-wrap {
+  border-radius: 18px;
+  overflow-x: auto;
+  border: 1px solid #DCE5F0;
+  box-shadow: 0 6px 20px rgba(20, 33, 61, 0.06);
+}
+
+.pub-table thead th {
+  background: #EAF4FF;
+  color: #14213D;
+}
+
+.pub-table tbody tr:hover {
+  background: #F3F8FF;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-tier-card,
+  .pub-tier-card .pub-buy {
+    transition: none;
+  }
+
+  .pub-tier-card:hover,
+  .pub-tier-card .pub-buy:hover {
+    transform: none;
+  }
+}
