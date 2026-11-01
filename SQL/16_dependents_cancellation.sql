@@ -6,7 +6,14 @@
 --   trg_Customer_BU_Dependent        BEFORE UPDATE on Customer. Checks it again only when the parent or birth date changes.
 --   DependentConsent                 one row per dependent: which parent agreed, and when.
 --   MembershipCancellationRequest    a member's request to cancel; a manager approves or rejects it.
--- The dependent discount (stage 2) is added to this same file later.
+--   fn_DependentDiscountPct          THE ONE PLACE for the discount percentages (change them there, nowhere else).
+--   fn_DependentDiscount             the discount in dollars for one ticket.
+--   trg_Ticket_BI, trg_Ticket_BU     REDEFINED here: same as before, plus the dependent discount on the price.
+-- Dependent pricing: under 3 on the visit date = free day pass; otherwise 35% off when the parent has a membership
+-- active on the visit date, else 20% off. It applies to the day pass only (the Express add-on is full price) and only
+-- to a ticket with no membership of its own. The database sets the price, so the browser cannot change it.
+-- trg_Ticket_BU is also defined in 11_restore_triggers.sql and trg_Ticket_BI in the schema file. If either of those
+-- is run again on a live database, run this file again afterwards to put the discount back.
 -- A dependent is an ordinary Customer row with no login, so ride height checks and headcount work with no change.
 -- Collected for a dependent: first name, date of birth, height. Nothing else.
 -- Safe to run more than once. Does not delete or change existing rows.
@@ -79,7 +86,7 @@ DELIMITER $$
 -- [RULE] sp_AssertDependent: when p_parent is not NULL the customer is a dependent, and
 --   the parent is not the customer, exists and is active, and is not a dependent;
 --   a customer who already has dependents cannot become one;
---   the dependent is under 18 (birth date after today minus 18 years);
+--   the birth date is not in the future, and the dependent is under 18 (birth date after today minus 18 years);
 --   the parent has fewer than 6 other active dependents (an anonymised, inactive dependent frees a place).
 -- p_self is the customer being saved (0 for a new row). The Park row is locked first (the same way
 -- sp_AssertTicketRules does) so two adds at the same moment are handled one after the other and cannot both pass the
@@ -105,6 +112,9 @@ BEGIN
         END IF;
         IF p_self > 0 AND EXISTS (SELECT 1 FROM Customer WHERE ParentCustomerID = p_self) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A customer who has dependents cannot become a dependent.';
+        END IF;
+        IF p_dob > CURDATE() THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The birth date cannot be in the future.';
         END IF;
         IF p_dob <= DATE_SUB(CURDATE(), INTERVAL 18 YEAR) THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A dependent must be under 18.';
@@ -132,6 +142,95 @@ BEGIN
     IF NOT (OLD.ParentCustomerID <=> NEW.ParentCustomerID AND OLD.DOB <=> NEW.DOB) THEN
         CALL sp_AssertDependent(NEW.CustomerID, NEW.ParentCustomerID, NEW.DOB);
     END IF;
+END$$
+
+DELIMITER ;
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- Dependent discount
+-- ---------------------------------------------------------------------------------------------------------------
+DROP TRIGGER IF EXISTS trg_Ticket_BI;
+DROP TRIGGER IF EXISTS trg_Ticket_BU;
+DROP FUNCTION IF EXISTS fn_DependentDiscount;
+DROP FUNCTION IF EXISTS fn_DependentDiscountPct;
+
+DELIMITER $$
+
+-- [RULE] fn_DependentDiscountPct: percent off the day pass for this customer on this visit date.
+-- 0 for anyone who is not a dependent. For a dependent: 100 when under 3 on the visit date, otherwise 35 when the
+-- parent has a membership active on the visit date, otherwise 20.
+-- CHANGE THE PERCENTAGES HERE: the three DECLARE lines are the only place they are written.
+CREATE FUNCTION fn_DependentDiscountPct(p_customer INT UNSIGNED, p_visit DATE)
+RETURNS DECIMAL(5,2)
+READS SQL DATA
+BEGIN
+    DECLARE c_under3  DECIMAL(5,2) DEFAULT 100.00;
+    DECLARE c_member  DECIMAL(5,2) DEFAULT 35.00;
+    DECLARE c_regular DECIMAL(5,2) DEFAULT 20.00;
+    DECLARE v_parent INT UNSIGNED;
+    DECLARE v_dob    DATE;
+    SELECT ParentCustomerID, DOB INTO v_parent, v_dob FROM Customer WHERE CustomerID = p_customer;
+    IF v_parent IS NULL THEN
+        RETURN 0;
+    END IF;
+    IF TIMESTAMPDIFF(YEAR, v_dob, p_visit) < 3 THEN
+        RETURN c_under3;
+    END IF;
+    IF EXISTS (SELECT 1 FROM Membership WHERE CustomerID = v_parent AND p_visit BETWEEN StartDate AND EndDate) THEN
+        RETURN c_member;
+    END IF;
+    RETURN c_regular;
+END$$
+
+-- [RULE] fn_DependentDiscount: the discount in dollars: the percent above applied to the day pass price, rounded to
+-- cents. 0 when the ticket has a membership of its own (that ticket is already free) or the customer is not a dependent.
+CREATE FUNCTION fn_DependentDiscount(p_customer INT UNSIGNED, p_membership INT UNSIGNED, p_visit DATE)
+RETURNS DECIMAL(6,2)
+READS SQL DATA
+BEGIN
+    DECLARE v_day DECIMAL(6,2);
+    IF p_membership IS NOT NULL THEN
+        RETURN 0;
+    END IF;
+    SELECT DayPassPrice INTO v_day FROM Park WHERE ParkID = 1;
+    RETURN IFNULL(ROUND(v_day * fn_DependentDiscountPct(p_customer, p_visit) / 100, 2), 0);
+END$$
+
+-- [RULE] Ticket insert: capacity, membership checks, Express benefit, price (this was trg_Ticket_BI; the only change
+-- is the discount taken off the price). trg_Ticket_BI_Guard still runs first.
+CREATE TRIGGER trg_Ticket_BI BEFORE INSERT ON Ticket
+FOR EACH ROW
+BEGIN
+    DECLARE v_exp BOOL;
+    CALL sp_AssertTicketRules(NEW.CustomerID, NEW.MembershipID, NEW.VisitDate, 0, v_exp);
+    IF v_exp THEN
+        SET NEW.HasExpress = 1;
+    END IF;
+    SET NEW.TicketPrice = GREATEST(0, fn_TicketPrice(NEW.MembershipID, NEW.HasExpress)
+                                      - fn_DependentDiscount(NEW.CustomerID, NEW.MembershipID, NEW.VisitDate));
+END$$
+
+-- [RULE] Ticket edit: a ticket with activity is frozen; otherwise the same checks and price as a new ticket (this was
+-- trg_Ticket_BU from 11_restore_triggers.sql; the only change is the discount taken off the price).
+CREATE TRIGGER trg_Ticket_BU BEFORE UPDATE ON Ticket
+FOR EACH ROW
+BEGIN
+    DECLARE v_exp BOOL;
+    IF NOT (OLD.CustomerID <=> NEW.CustomerID AND OLD.MembershipID <=> NEW.MembershipID
+            AND OLD.VisitDate <=> NEW.VisitDate AND OLD.HasExpress <=> NEW.HasExpress) THEN
+        IF EXISTS (SELECT 1 FROM RideLog  WHERE TicketID = OLD.TicketID)
+        OR EXISTS (SELECT 1 FROM GamePlay WHERE TicketID = OLD.TicketID)
+        OR EXISTS (SELECT 1 FROM Purchase WHERE TicketID = OLD.TicketID)
+        OR EXISTS (SELECT 1 FROM TicketRefund WHERE TicketID = OLD.TicketID) THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ticket already has activity and cannot be changed';
+        END IF;
+        CALL sp_AssertTicketRules(NEW.CustomerID, NEW.MembershipID, NEW.VisitDate, OLD.TicketID, v_exp);
+        IF v_exp THEN
+            SET NEW.HasExpress = 1;
+        END IF;
+    END IF;
+    SET NEW.TicketPrice = GREATEST(0, fn_TicketPrice(NEW.MembershipID, NEW.HasExpress)
+                                      - fn_DependentDiscount(NEW.CustomerID, NEW.MembershipID, NEW.VisitDate));
 END$$
 
 DELIMITER ;
