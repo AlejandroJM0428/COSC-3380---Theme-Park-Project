@@ -28,24 +28,24 @@
 .pub-link { color: var(--brand-primary); font-weight: 700; }
 
 /* Hero: headline on the left, price check on the right */
-.pub-hero { position: relative; display: flex; align-items: center; min-height: 560px; padding: 56px 0; color: #fff; }
+.pub-hero { position: relative; display: flex; align-items: center; min-height: 560px; padding: 56px 0; color: var(--white); }
 .pub-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, rgba(8, 20, 40, .82), rgba(8, 20, 40, .25) 70%); }
 .pub-hero-inner { position: relative; z-index: 1; max-width: 1240px; width: 100%; margin: 0 auto; padding: 0 20px; box-sizing: border-box; display: grid; grid-template-columns: 1fr 380px; gap: 48px; align-items: center; }
 .pub-hero h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); margin: 0 0 12px; max-width: 14ch; line-height: 1.02; }
 .pub-hero-copy p { font-size: 1.15rem; max-width: 32rem; margin: 0 0 26px; opacity: .95; }
-.pub .pub-hero-link { color: #fff; font-weight: 800; text-decoration: none; border-bottom: 2px solid var(--brand-accent); padding-bottom: 2px; }
+.pub .pub-hero-link { color: var(--white); font-weight: 800; text-decoration: none; border-bottom: 2px solid var(--brand-accent); padding-bottom: 2px; }
 
 .pub-pc { background: var(--brand-surface); color: var(--brand-ink); border-radius: 18px; box-shadow: 0 22px 54px rgba(5, 15, 35, .35); padding: 24px; display: grid; gap: 16px; }
 .pub-pc-title { margin: 0; font-family: var(--brand-font-display); font-size: 1.3rem; letter-spacing: -.02em; }
 .pub-pc-field { display: grid; gap: 6px; }
 .pub-pc-field > span { font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-muted); }
-.pub-pc-field input { padding: 11px 12px; border: 1px solid var(--brand-line); border-radius: 10px; background: #fff; color: var(--brand-ink); }
+.pub-pc-field input { padding: 11px 12px; border: 1px solid var(--brand-line); border-radius: 10px; background: var(--white); color: var(--brand-ink); }
 .pub-pc-stepper { display: inline-flex; align-items: center; justify-self: start; border: 1px solid var(--brand-line); border-radius: 999px; overflow: hidden; }
 .pub .pub-pc-stepper button { border-radius: 0; width: 44px; height: 44px; border: 0; background: var(--brand-surface-alt); font-size: 1.3rem; font-weight: 700; cursor: pointer; color: var(--brand-ink); }
 .pub-pc-stepper button:disabled { opacity: .35; cursor: default; }
 .pub-pc-stepper output { min-width: 48px; text-align: center; font-weight: 800; font-size: 1.1rem; }
 .pub-pc-express { display: flex; flex-direction: row; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--brand-line); border-radius: 12px; cursor: pointer; transition: border-color .15s, background .15s; }
-.pub-pc-express.on { border-color: var(--brand-primary); background: #eef3fb; }
+.pub-pc-express.on { border-color: var(--brand-primary); background: var(--wash); }
 .pub-pc-express input { width: 22px; height: 22px; accent-color: var(--brand-primary); flex: none; }
 .pub-pc-express strong, .pub-pc-express small { display: block; }
 .pub-pc-express small { color: var(--brand-muted); font-size: .8rem; }
@@ -66,7 +66,7 @@
 .pub-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
 .pub-h2 { font-family: var(--brand-font-display); font-size: clamp(1.5rem, 3vw, 2.1rem); letter-spacing: -.03em; margin: 0 0 22px; }
 .pub-eyebrow { margin: 0 0 6px; font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
-.pub-alert { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border: 1px solid #edb8ab; border-radius: 10px; background: #fff0ed; color: #8e3126; font-size: .9rem; margin-top: 28px; }
+.pub-alert { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border: 1px solid var(--land-loop); border-radius: 10px; background: var(--land-loop); color: var(--land-loop-dark); font-size: .9rem; margin-top: 28px; }
 .pub-alert button { margin-left: auto; background: transparent; border: 1px solid currentColor; color: inherit; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; }
 
 /* Explorer: pick a land, pick a ride, see its details */
@@ -77,16 +77,16 @@
 .pub-explore { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; align-items: stretch; }
 .pub-feature { position: relative; min-height: 360px; border-radius: 18px; display: flex; align-items: flex-end; overflow: hidden; animation: pub-fade .35s ease; }
 .pub-feature::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(8, 20, 40, .86), rgba(8, 20, 40, 0) 70%); }
-.pub-feature-body { position: relative; z-index: 1; padding: 26px; color: #fff; display: grid; gap: 8px; }
+.pub-feature-body { position: relative; z-index: 1; padding: 26px; color: var(--white); display: grid; gap: 8px; }
 .pub-feature-body h3 { margin: 0; font-family: var(--brand-font-display); font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -.03em; }
 .pub-feature-meta { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .92rem; }
 .pub-feature-meta > span { padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, .18); }
-.pub-feature-meta .pub-badge { background: #fff; }
-.pub .pub-feature-link { color: #fff; font-weight: 800; text-decoration: none; justify-self: start; border-bottom: 2px solid var(--brand-accent); padding-bottom: 2px; }
+.pub-feature-meta .pub-badge { background: var(--white); }
+.pub .pub-feature-link { color: var(--white); font-weight: 800; text-decoration: none; justify-self: start; border-bottom: 2px solid var(--brand-accent); padding-bottom: 2px; }
 .pub-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start; }
 .pub-chip { text-align: left; display: grid; gap: 2px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--brand-line); background: var(--brand-surface); color: var(--brand-ink); cursor: pointer; text-decoration: none; transition: border-color .15s, box-shadow .15s; }
 .pub-chip:hover { border-color: var(--brand-primary); }
-.pub-chip[aria-pressed='true'] { border-color: var(--brand-primary); box-shadow: inset 0 0 0 1px var(--brand-primary); background: #eef3fb; }
+.pub-chip[aria-pressed='true'] { border-color: var(--brand-primary); box-shadow: inset 0 0 0 1px var(--brand-primary); background: var(--wash); }
 .pub-chip small { color: var(--brand-muted); }
 .pub .pub-chip-more { display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--brand-primary); }
 @keyframes pub-fade { from { opacity: .4; } to { opacity: 1; } }
@@ -117,7 +117,7 @@
 .pub-plan p { margin: 0; color: var(--brand-muted); line-height: 1.5; }
 
 /* Footer */
-.pub-footer { background: #0e1b2c; color: #fff; padding: 48px 0 22px; }
+.pub-footer { background: var(--navy); color: var(--white); padding: 48px 0 22px; }
 .pub-footer-inner { max-width: 1240px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 32px 56px; }
 .pub-footer-brand p { margin: 6px 0 0; font-size: .85rem; opacity: .7; }
 .pub-footer-cols { display: flex; flex-wrap: wrap; gap: 28px 64px; }
@@ -142,7 +142,7 @@
 .pub .pub-tabs a.active { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--brand-primary-contrast); }
 
 .pub-list-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
-.pub-search input { font: inherit; min-width: min(320px, 80vw); padding: 11px 14px; border: 1px solid var(--brand-line); border-radius: 10px; background: #fff; color: var(--brand-ink); }
+.pub-search input { font: inherit; min-width: min(320px, 80vw); padding: 11px 14px; border: 1px solid var(--brand-line); border-radius: 10px; background: var(--white); color: var(--brand-ink); }
 
 .pub-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .pub-row { display: flex; align-items: center; gap: 16px; background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: var(--brand-radius); padding: 10px 16px 10px 10px; }
@@ -152,8 +152,8 @@
 .pub-row-main p { margin: 0; color: var(--brand-muted); font-size: .88rem; }
 .pub-row-closed .pub-row-img { filter: grayscale(.8); opacity: .75; }
 .pub-badge { flex: none; font-size: .78rem; font-weight: 800; padding: 5px 12px; border-radius: 999px; }
-.pub-badge.open { background: #e3f5e8; color: #1b6a35; }
-.pub-badge.closed { background: #eceff2; color: #4c5b68; }
+.pub-badge.open { background: var(--land-montrose); color: var(--land-montrose-dark); }
+.pub-badge.closed { background: var(--wash); color: var(--ink-soft); }
 
 .pub-tier-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 36px; }
 .pub-tier-card { background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: var(--brand-radius); padding: 28px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
@@ -219,8 +219,8 @@
 .pub-games b { color: var(--brand-primary); font-size: .92rem; }
 .pub-mapwrap { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; align-items: start; }
 .pub-map { width: 100%; height: auto; display: block; }
-.pub-map-bg { fill: #e3ebf2; }
-.pub-map-paths path { fill: none; stroke: #fff; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+.pub-map-bg { fill: var(--rule); }
+.pub-map-paths path { fill: none; stroke: var(--white); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
 .pub-map-entrance { font: 800 13px var(--brand-font-display, system-ui); letter-spacing: .14em; fill: var(--brand-muted); }
 .pub-zone { cursor: pointer; transition: opacity .2s; }
 .pub-zone rect { stroke: transparent; stroke-width: 5; transition: stroke .15s, transform .15s; }
@@ -229,8 +229,8 @@
 .pub-zone.dim { opacity: .55; }
 .pub .pub-zone:focus-visible { outline: none; }
 .pub-zone:focus-visible rect { stroke: var(--brand-primary); stroke-dasharray: 10 6; }
-.pub-zone-name { font: 800 22px var(--brand-font-display, system-ui); fill: #14202b; pointer-events: none; }
-.pub-zone-count { font: 600 15px system-ui, sans-serif; fill: #3b4a57; pointer-events: none; }
+.pub-zone-name { font: 800 22px var(--brand-font-display, system-ui); fill: var(--navy); pointer-events: none; }
+.pub-zone-count { font: 600 15px system-ui, sans-serif; fill: var(--navy); pointer-events: none; }
 .pub-zonepanel { background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: 18px; padding: 22px; display: grid; gap: 14px; }
 .pub-zonepanel h3 { margin: 0; font-family: var(--brand-font-display); font-size: 1.4rem; letter-spacing: -.02em; }
 .pub-zonepanel .pub-note { margin: 0; }
@@ -251,12 +251,12 @@
 }
 
 
-/* THUNDER VALLEY - Vibrant Homepage Hero */
+/* Vibrant Homepage Hero */
 
 .pub-hero {
   min-height: 620px;
   padding: 65px 0;
-  background-color: #1848a8;
+  background-color: var(--blue-deep);
 }
 
 .pub-hero::before {
@@ -272,34 +272,34 @@
   font-size: clamp(3rem, 6vw, 5rem);
   font-weight: 900;
   line-height: 1.05;
-  color: #ffffff;
-  text-shadow: 3px 4px 0 #e63946;
+  color: var(--white);
+  text-shadow: 3px 4px 0 var(--scarlet);
 }
 
 .pub-hero-copy p {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--white);
   line-height: 1.6;
 }
 
 .pub .pub-hero-link {
   display: inline-block;
-  background: #00C8F8;
-  color: #14213D;
+  background: var(--blue);
+  color: var(--navy);
   padding: 15px 28px;
   border: none;
   border-radius: 50px;
   font-size: 1rem;
   font-weight: 900;
   text-decoration: none;
-  box-shadow: 0 6px 0 #009AC4;
+  box-shadow: 0 6px 0 var(--blue-deep);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .pub .pub-hero-link:hover {
   transform: translateY(-3px);
-  box-shadow: 0 9px 0 #009AC4;
+  box-shadow: 0 9px 0 var(--blue-deep);
 }
 
 @media (max-width: 560px) {
@@ -316,12 +316,12 @@
 
 
 
-/* THUNDER VALLEY - Electric Blue Rides Explorer */
+/* Electric Blue Rides Explorer */
 
 #explore .pub-h2 {
   font-size: clamp(2rem, 4vw, 2.8rem);
   font-weight: 900;
-  color: #14213D;
+  color: var(--navy);
   margin-bottom: 26px;
 }
 
@@ -332,26 +332,26 @@
 }
 
 #explore .pub-pill {
-  background: #FFFFFF;
-  color: #14213D;
-  border: 2px solid #3B82F6;
+  background: var(--white);
+  color: var(--navy);
+  border: 2px solid var(--blue);
   border-radius: 50px;
   padding: 13px 22px;
   font-weight: 900;
-  box-shadow: 0 4px 0 #2459B8;
+  box-shadow: 0 4px 0 var(--blue-deep);
   transition: transform 0.2s, background 0.2s;
 }
 
 #explore .pub-pill:hover {
-  background: #EAF5FF;
+  background: var(--wash);
   transform: translateY(-3px);
 }
 
 #explore .pub-pill[aria-pressed="true"] {
-  background: #3B82F6;
-  color: #FFFFFF;
-  border-color: #3B82F6;
-  box-shadow: 0 4px 0 #2459B8;
+  background: var(--blue);
+  color: var(--white);
+  border-color: var(--blue);
+  box-shadow: 0 4px 0 var(--blue-deep);
 }
 
 /* Large featured attraction image */
@@ -359,7 +359,7 @@
   border-radius: 24px;
   min-height: 400px;
   box-shadow: 0 12px 30px rgba(20, 33, 61, 0.16);
-  border: 4px solid #00C8F8;
+  border: 4px solid var(--blue);
 }
 
 #explore .pub-feature-body h3 {
@@ -369,8 +369,8 @@
 
 #explore .pub-feature-link {
   display: inline-block;
-  background: #00C8F8;
-  color: #14213D;
+  background: var(--blue);
+  color: var(--navy);
   padding: 12px 20px;
   border-radius: 50px;
   border: none;
@@ -381,8 +381,8 @@
 
 /* Ride selection cards */
 #explore .pub-chip {
-  background: #FFFFFF;
-  border: 2px solid #DCE5F0;
+  background: var(--white);
+  border: 2px solid var(--rule);
   border-radius: 16px;
   padding: 18px;
   box-shadow: 0 5px 12px rgba(20, 33, 61, 0.06);
@@ -391,22 +391,22 @@
 
 #explore .pub-chip:hover {
   transform: translateY(-4px);
-  border-color: #3B82F6;
+  border-color: var(--blue);
 }
 
 #explore .pub-chip[aria-pressed="true"] {
-  background: #EAF5FF;
-  border-color: #3B82F6;
-  box-shadow: inset 0 0 0 1px #3B82F6;
+  background: var(--wash);
+  border-color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue);
 }
 
 #explore .pub-chip strong {
   font-weight: 900;
-  color: #14213D;
+  color: var(--navy);
 }
 
 #explore .pub-chip-more {
-  color: #2448B8;
+  color: var(--blue-deep);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -419,57 +419,57 @@
 
 
 
-/* THUNDER VALLEY - Electric Blue Membership Panel */
+/* Electric Blue Membership Panel */
 
 .pub-duo > .pub-panel:first-child {
-  background: #FFFFFF;
-  border: 3px solid #3B82F6;
+  background: var(--white);
+  border: 3px solid var(--blue);
   border-radius: 24px;
   padding: 30px;
   box-shadow: 0 10px 25px rgba(20, 33, 61, 0.10);
 }
 
 .pub-duo > .pub-panel:first-child .pub-eyebrow {
-  color: #3B82F6;
+  color: var(--blue);
   font-weight: 900;
   letter-spacing: 2px;
 }
 
 .pub-duo > .pub-panel:first-child .pub-panel-title {
-  color: #14213D;
+  color: var(--navy);
   font-size: 1.9rem;
   font-weight: 900;
 }
 
 .pub-duo > .pub-panel:first-child .pub-segment {
-  background: #EAF5FF;
+  background: var(--wash);
   border-radius: 50px;
   padding: 6px;
 }
 
 .pub-duo > .pub-panel:first-child .pub-segment button {
-  color: #14213D;
+  color: var(--navy);
   font-weight: 800;
   transition: background 0.2s, color 0.2s;
 }
 
 .pub-duo > .pub-panel:first-child .pub-segment button[aria-pressed="true"] {
-  background: #3B82F6;
-  color: #FFFFFF;
+  background: var(--blue);
+  color: var(--white);
 }
 
 .pub-duo > .pub-panel:first-child .pub-panel-price strong {
-  color: #3B82F6;
+  color: var(--blue);
   font-size: 2.8rem;
   font-weight: 900;
 }
 
 .pub-duo > .pub-panel:first-child .pub-checks li::before {
-  color: #20B97B;
+  color: var(--land-montrose-dark);
 }
 
 .pub-duo > .pub-panel:first-child .pub-link {
-  color: #2459B8;
+  color: var(--blue-deep);
   font-weight: 900;
 }
 
@@ -482,60 +482,60 @@
 
 
 
-/* THUNDER VALLEY - Electric Blue Plan Your Day Panel */
+/* Electric Blue Plan Your Day Panel */
 
 .pub-duo > .pub-panel:last-child {
-  background: #FFFFFF;
-  border: 3px solid #00C8F8;
+  background: var(--white);
+  border: 3px solid var(--blue);
   border-radius: 24px;
   padding: 30px;
   box-shadow: 0 10px 25px rgba(20, 33, 61, 0.10);
 }
 
 .pub-duo > .pub-panel:last-child .pub-eyebrow {
-  color: #3B82F6;
+  color: var(--blue);
   font-weight: 900;
   letter-spacing: 2px;
 }
 
 .pub-duo > .pub-panel:last-child .pub-panel-title {
-  color: #14213D;
+  color: var(--navy);
   font-size: 1.9rem;
   font-weight: 900;
 }
 
 .pub-duo > .pub-panel:last-child .pub-segment {
-  background: #EAF5FF;
+  background: var(--wash);
   border-radius: 50px;
   padding: 6px;
 }
 
 .pub-duo > .pub-panel:last-child .pub-segment button {
-  color: #14213D;
+  color: var(--navy);
   font-weight: 800;
   transition: background 0.2s, color 0.2s;
 }
 
 .pub-duo > .pub-panel:last-child .pub-segment button[aria-pressed="true"] {
-  background: #3B82F6;
-  color: #FFFFFF;
+  background: var(--blue);
+  color: var(--white);
 }
 
 .pub-duo > .pub-panel:last-child .pub-panel-answer {
-  color: #14213D;
+  color: var(--navy);
   font-size: 1.15rem;
   font-weight: 600;
   line-height: 1.6;
 }
 
 .pub-duo > .pub-panel:last-child .pub-link {
-  color: #2459B8;
+  color: var(--blue-deep);
   font-weight: 900;
   text-decoration: none;
 }
 
 .pub-duo > .pub-panel:last-child .pub-link:hover {
-  color: #E63946;
+  color: var(--scarlet);
   text-decoration: underline;
 }
 
@@ -547,172 +547,172 @@
 
 
 
-/* THUNDER VALLEY - Bright Blue Navigation */
+/* Bright Blue Navigation */
 
 .pub-header {
-  background: #3B82F6;
-  border-bottom: 3px solid #00C8F8;
+  background: var(--navy);
+  border-bottom: 3px solid var(--blue);
   box-shadow: 0 4px 15px rgba(20, 33, 61, 0.18);
 }
 
 .pub-wordmark,
 .pub-nav a,
 .pub-signin {
-  color: #FFFFFF;
+  color: var(--white);
 }
 
 .pub-nav a:hover,
 .pub-nav a.active {
-  color: #14213D;
-  border-bottom-color: #00C8F8;
+  color: var(--blue);
+  border-bottom-color: var(--blue);
 }
 
 .pub .pub-buy {
-  background: #E63946;
-  color: #FFFFFF;
-  box-shadow: 0 4px 0 #B71C2B;
+  background: var(--scarlet);
+  color: var(--white);
+  box-shadow: 0 4px 0 var(--scarlet-dark);
 }
 
 .pub a.pub-buy {
-  color: #FFFFFF;
+  color: var(--white);
 }
 
 @media (max-width: 900px) {
   .pub-nav {
-    background: #3B82F6;
+    background: var(--navy);
   }
 
   .pub-menu-button {
-    color: #FFFFFF;
-    border-color: #FFFFFF;
+    color: var(--white);
+    border-color: var(--white);
   }
 }
 
 
-/* THUNDER VALLEY - Electric Blue Hero Button */
+/* Electric Blue Hero Button */
 
 .pub .pub-hero-link {
-  background: #00C8F8;
-  color: #14213D;
+  background: var(--blue);
+  color: var(--navy);
   border: none;
-  box-shadow: 0 6px 0 #009AC4;
+  box-shadow: 0 6px 0 var(--blue-deep);
 }
 
 .pub .pub-hero-link:hover {
-  background: #48DDFF;
-  box-shadow: 0 9px 0 #009AC4;
+  background: var(--blue);
+  box-shadow: 0 9px 0 var(--blue-deep);
 }
 
 
-/* THUNDER VALLEY - Electric Blue Rides Section */
+/* Electric Blue Rides Section */
 
 #explore .pub-pill {
-  border-color: #3B82F6;
-  box-shadow: 0 4px 0 #2459B8;
+  border-color: var(--blue);
+  box-shadow: 0 4px 0 var(--blue-deep);
 }
 
 #explore .pub-pill:hover {
-  background: #EAF5FF;
+  background: var(--wash);
 }
 
 #explore .pub-pill[aria-pressed="true"] {
-  background: #3B82F6;
-  color: #FFFFFF;
-  border-color: #3B82F6;
-  box-shadow: 0 4px 0 #2459B8;
+  background: var(--blue);
+  color: var(--white);
+  border-color: var(--blue);
+  box-shadow: 0 4px 0 var(--blue-deep);
 }
 
 #explore .pub-feature {
-  border-color: #00C8F8;
+  border-color: var(--blue);
 }
 
 #explore .pub-feature-link {
-  background: #00C8F8;
-  color: #14213D;
+  background: var(--blue);
+  color: var(--navy);
 }
 
 #explore .pub-chip:hover,
 #explore .pub-chip[aria-pressed="true"] {
-  border-color: #3B82F6;
+  border-color: var(--blue);
 }
 
 #explore .pub-chip[aria-pressed="true"] {
-  background: #EAF5FF;
-  box-shadow: inset 0 0 0 1px #3B82F6;
+  background: var(--wash);
+  box-shadow: inset 0 0 0 1px var(--blue);
 }
 
 
-/* THUNDER VALLEY - Electric Blue Memberships */
+/* Electric Blue Memberships */
 
 .pub-duo > .pub-panel:first-child {
-  border-color: #3B82F6;
+  border-color: var(--blue);
 }
 
 .pub-duo > .pub-panel:first-child .pub-eyebrow {
-  color: #3B82F6;
+  color: var(--blue);
 }
 
 .pub-duo > .pub-panel:first-child .pub-segment {
-  background: #EAF5FF;
+  background: var(--wash);
 }
 
 .pub-duo > .pub-panel:first-child .pub-segment button[aria-pressed="true"] {
-  background: #3B82F6;
-  color: #FFFFFF;
+  background: var(--blue);
+  color: var(--white);
 }
 
 .pub-duo > .pub-panel:first-child .pub-panel-price strong {
-  color: #3B82F6;
+  color: var(--blue);
 }
 
 .pub-duo > .pub-panel:first-child .pub-link {
-  color: #2459B8;
+  color: var(--blue-deep);
 }
 
 
-/* THUNDER VALLEY - Electric Blue Plan Your Day */
+/* Electric Blue Plan Your Day */
 
 .pub-duo > .pub-panel:last-child {
-  border-color: #00C8F8;
+  border-color: var(--blue);
 }
 
 .pub-duo > .pub-panel:last-child .pub-eyebrow {
-  color: #3B82F6;
+  color: var(--blue);
 }
 
 .pub-duo > .pub-panel:last-child .pub-segment {
-  background: #EAF5FF;
+  background: var(--wash);
 }
 
 .pub-duo > .pub-panel:last-child .pub-segment button[aria-pressed="true"] {
-  background: #3B82F6;
-  color: #FFFFFF;
+  background: var(--blue);
+  color: var(--white);
 }
 
 .pub-duo > .pub-panel:last-child .pub-link {
-  color: #2459B8;
+  color: var(--blue-deep);
 }
 
 .pub-duo > .pub-panel:last-child .pub-link:hover {
-  color: #E63946;
+  color: var(--scarlet);
 }
 
 
 
 
-/* THUNDER VALLEY - Colorful Homepage Background */
+/* Colorful Homepage Background */
 
 .pub {
   background: linear-gradient(
     135deg,
-    #E3F0FF 0%,
-    #F0F7FF 40%,
-    #DDF7FF 75%,
-    #E3F0FF 100%
+    var(--wash) 0%,
+    var(--wash) 40%,
+    var(--wash) 75%,
+    var(--wash) 100%
   );
 }
 
-/* THUNDER VALLEY - Interactive Ride Cards */
+/* Interactive Ride Cards */
 
 #explore .pub-chip {
   transition: transform 0.25s ease,
@@ -748,7 +748,7 @@
 }
 
 
-/* THUNDER VALLEY - Interactive Homepage Panels */
+/* Interactive Homepage Panels */
 
 .pub-duo > .pub-panel {
   transition: transform 0.3s ease,
@@ -776,7 +776,7 @@
 }
 
 
-/* THUNDER VALLEY - Cinematic Homepage Hero */
+/* Cinematic Homepage Hero */
 
 .pub-hero {
   min-height: 720px;
@@ -805,7 +805,7 @@
   line-height: 1.02;
   max-width: 12ch;
   letter-spacing: -0.05em;
-  text-shadow: 3px 4px 0 #E63946;
+  text-shadow: 3px 4px 0 var(--scarlet);
 }
 
 .pub-hero-copy p {
@@ -819,7 +819,7 @@
   padding: 18px 34px;
   font-size: 1.1rem;
   border-radius: 50px;
-  box-shadow: 0 7px 0 #009AC4;
+  box-shadow: 0 7px 0 var(--blue-deep);
 }
 
 .pub-pc {
@@ -869,7 +869,7 @@
   overflow: hidden;
   border-radius: 16px;
   background: white;
-  border: 1px solid #dce5f0;
+  border: 1px solid var(--rule);
   box-shadow: 0 5px 18px rgba(0, 0, 0, 0.07);
   transition: transform 0.25s ease,
               box-shadow 0.25s ease;
@@ -882,7 +882,7 @@
 
 .pub-game-image {
   height: 185px;
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  background: linear-gradient(135deg, var(--wash), var(--land-bayou));
   overflow: hidden;
 }
 
@@ -901,12 +901,12 @@
   font-size: 18px;
   font-weight: 800;
   margin: 0 0 7px;
-  color: #132344;
+  color: var(--navy);
 }
 
 .pub-game-location {
   font-size: 13px;
-  color: #64748b;
+  color: var(--ink-soft);
   margin: 0 0 12px;
 }
 
@@ -914,8 +914,8 @@
   display: inline-block;
   padding: 7px 12px;
   border-radius: 20px;
-  background: #e8f2ff;
-  color: #2454ba;
+  background: var(--wash);
+  color: var(--blue-deep);
   font-size: 13px;
   font-weight: 700;
 }
@@ -932,11 +932,11 @@
   }
 }
 .pub-games-enhanced .pub-game-price {
-  color: #2454ba;
+  color: var(--blue-deep);
 }
 
 
-/* THUNDER VALLEY - Enhanced Premier Ride Cards */
+/* Enhanced Premier Ride Cards */
 
 .pub-premier > li {
   min-width: 0;
@@ -950,8 +950,8 @@
 
 .pub-premier > li:hover {
   transform: translateY(-6px);
-  border-color: #3B82F6;
-  background: #FFFFFF;
+  border-color: var(--blue);
+  background: var(--white);
   box-shadow: 0 12px 28px rgba(59, 130, 246, 0.16);
 }
 
@@ -970,21 +970,21 @@
 }
 
 .pub-premier h3 {
-  color: #14213D;
+  color: var(--navy);
   font-size: 1.15rem;
   font-weight: 900;
   margin-top: 12px;
 }
 
 .pub-premier .pub-badge.open {
-  background: #E3F9E9;
-  color: #16733A;
-  border: 1px solid #B4E8C4;
+  background: var(--land-montrose);
+  color: var(--land-montrose-dark);
+  border: 1px solid var(--land-montrose);
 }
 
 .pub-premier .pub-badge.closed {
-  background: #F1F3F5;
-  color: #64748B;
+  background: var(--wash);
+  color: var(--ink-soft);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -999,7 +999,7 @@
 }
 
 
-/* THUNDER VALLEY - Ride Category Filters */
+/* Ride Category Filters */
 
 .pub-ride-filters {
   display: flex;
@@ -1010,32 +1010,32 @@
 
 .pub-ride-filter {
   padding: 12px 22px;
-  border: 2px solid #3B82F6;
+  border: 2px solid var(--blue);
   border-radius: 50px;
-  background: #FFFFFF;
-  color: #14213D;
+  background: var(--white);
+  color: var(--navy);
   font-weight: 800;
   font-size: 14px;
   cursor: pointer;
-  box-shadow: 0 4px 0 #2459B8;
+  box-shadow: 0 4px 0 var(--blue-deep);
   transition: transform 0.2s ease,
               background 0.2s ease,
               box-shadow 0.2s ease;
 }
 
 .pub-ride-filter:hover {
-  background: #EAF5FF;
+  background: var(--wash);
   transform: translateY(-3px);
 }
 
 .pub-ride-filter.active {
-  background: #3B82F6;
-  color: #FFFFFF;
-  border-color: #3B82F6;
+  background: var(--blue);
+  color: var(--white);
+  border-color: var(--blue);
 }
 
 .pub-ride-filter:focus-visible {
-  outline: 3px solid #00C8F8;
+  outline: 3px solid var(--blue);
   outline-offset: 3px;
 }
 
@@ -1061,7 +1061,7 @@
 }
 
 
-/* THUNDER VALLEY - Interactive Park Map */
+/* Interactive Park Map */
 
 .pub-mapwrap {
   gap: 24px;
@@ -1070,12 +1070,12 @@
 
 /* Map background */
 .pub-map-bg {
-  fill: #DDEAF7;
+  fill: var(--rule);
 }
 
 /* Walking paths */
 .pub-map-paths path {
-  stroke: #FFFFFF;
+  stroke: var(--white);
   stroke-width: 12;
 }
 
@@ -1095,14 +1095,14 @@
 
 /* Hover effect */
 .pub-zone:hover rect {
-  stroke: #3B82F6;
+  stroke: var(--blue);
   stroke-width: 6;
   filter: brightness(1.06);
 }
 
 /* Selected zone */
 .pub-zone.on rect {
-  stroke: #2459B8;
+  stroke: var(--blue-deep);
   stroke-width: 7;
   filter: drop-shadow(0 4px 6px rgba(36, 89, 184, 0.25));
 }
@@ -1115,31 +1115,31 @@
 /* Zone labels */
 .pub-zone-name {
   font-weight: 900;
-  fill: #14213D;
+  fill: var(--navy);
 }
 
 .pub-zone-count {
-  fill: #334155;
+  fill: var(--navy);
   font-weight: 700;
 }
 
 /* Entrance label */
 .pub-map-entrance {
-  fill: #2459B8;
+  fill: var(--blue-deep);
   font-weight: 900;
 }
 
 /* Information panel */
 .pub-zonepanel {
-  border: 2px solid #DCE8F8;
+  border: 2px solid var(--rule);
   border-radius: 20px;
   padding: 26px;
-  background: #FFFFFF;
+  background: var(--white);
   box-shadow: 0 8px 24px rgba(20, 33, 61, 0.08);
 }
 
 .pub-zonepanel h3 {
-  color: #14213D;
+  color: var(--navy);
   font-weight: 900;
 }
 
@@ -1148,7 +1148,7 @@
 }
 
 .pub-zonelist li:hover {
-  background: #F0F7FF;
+  background: var(--wash);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1160,7 +1160,7 @@
 }
 
 
-/* THUNDER VALLEY - Enhanced Membership Cards */
+/* Enhanced Membership Cards */
 
 .pub-tier-cards {
   gap: 24px;
@@ -1174,7 +1174,7 @@
   overflow: hidden;
   border-radius: 22px;
   padding: 32px;
-  background: #FFFFFF;
+  background: var(--white);
   box-shadow: 0 8px 24px rgba(20, 33, 61, 0.08);
   transition: transform 0.25s ease,
               box-shadow 0.25s ease;
@@ -1187,27 +1187,27 @@
 
 /* Basic - Blue */
 .pub-tier-basic {
-  border: 3px solid #3B82F6;
-  background: linear-gradient(180deg, #EFF6FF, #FFFFFF 65%);
+  border: 3px solid var(--blue);
+  background: linear-gradient(180deg, var(--wash), var(--white) 65%);
 }
 
 /* Plus - Purple */
 .pub-tier-plus {
-  border: 3px solid #8B5CF6;
-  background: linear-gradient(180deg, #F3E8FF, #FFFFFF 65%);
+  border: 3px solid var(--land-main-street-dark);
+  background: linear-gradient(180deg, var(--land-main-street), var(--white) 65%);
 }
 
 /* Premier - Gold */
 .pub-tier-premier {
-  border: 3px solid #E5B94B;
-  background: linear-gradient(180deg, #FFF5D9, #FFFFFF 65%);
+  border: 3px solid var(--land-hermann);
+  background: linear-gradient(180deg, var(--land-hermann), var(--white) 65%);
 }
 
 /* Most Popular Badge */
 .pub-tier-popular {
   display: inline-block;
-  background: #8B5CF6;
-  color: #FFFFFF;
+  background: var(--land-main-street-dark);
+  color: var(--white);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 1px;
@@ -1220,28 +1220,28 @@
 .pub-tier-card h2 {
   font-size: 1.7rem;
   font-weight: 900;
-  color: #14213D;
+  color: var(--navy);
 }
 
 /* Membership Prices */
 .pub-tier-card .pub-tier-price strong {
   font-size: 2.8rem;
   font-weight: 900;
-  color: #14213D;
+  color: var(--navy);
 }
 
 .pub-tier-plus .pub-tier-price strong {
-  color: #7C3AED;
+  color: var(--land-main-street-dark);
 }
 
 .pub-tier-premier .pub-tier-price strong {
-  color: #B7791F;
+  color: var(--land-hermann-dark);
 }
 
 /* Benefits */
 .pub-tier-card ul {
   line-height: 1.9;
-  color: #475569;
+  color: var(--ink-soft);
 }
 
 /* Buttons */
@@ -1260,17 +1260,17 @@
 .pub-table-wrap {
   border-radius: 18px;
   overflow-x: auto;
-  border: 1px solid #DCE5F0;
+  border: 1px solid var(--rule);
   box-shadow: 0 6px 20px rgba(20, 33, 61, 0.06);
 }
 
 .pub-table thead th {
-  background: #EAF4FF;
-  color: #14213D;
+  background: var(--wash);
+  color: var(--navy);
 }
 
 .pub-table tbody tr:hover {
-  background: #F3F8FF;
+  background: var(--wash);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1285,7 +1285,7 @@
   }
 }
 
-/* THUNDER VALLEY - Plan Your Visit Page */
+/* Plan Your Visit Page */
 
 .pub-plan-page .pub-plan-heading {
   margin-bottom: 34px;
@@ -1293,7 +1293,7 @@
 
 .pub-plan-eyebrow {
   display: inline-block;
-  color: #3B82F6;
+  color: var(--blue);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 2px;
@@ -1303,7 +1303,7 @@
 .pub-plan-page .pub-h1 {
   font-size: clamp(2.5rem, 5vw, 3.5rem);
   font-weight: 900;
-  color: #14213D;
+  color: var(--navy);
 }
 
 .pub-plan-page .pub-lede {
@@ -1314,8 +1314,8 @@
 
 .pub-plan-page .pub-plan article {
   border-radius: 20px;
-  border: 2px solid #DCE8F8;
-  background: #FFFFFF;
+  border: 2px solid var(--rule);
+  background: var(--white);
   padding: 28px;
   box-shadow: 0 6px 20px rgba(20, 33, 61, 0.07);
   transition: transform 0.25s ease,
@@ -1328,14 +1328,14 @@
 }
 
 .pub-plan-page .pub-plan article h3 {
-  color: #14213D;
+  color: var(--navy);
   font-size: 1.25rem;
   font-weight: 900;
   margin-bottom: 12px;
 }
 
 .pub-plan-page .pub-plan article p {
-  color: #64748B;
+  color: var(--ink-soft);
   line-height: 1.7;
 }
 
@@ -1356,38 +1356,38 @@
   width: 58px;
   height: 58px;
   border-radius: 16px;
-  background: #EAF4FF;
+  background: var(--wash);
   font-size: 28px;
   margin-bottom: 18px;
 }
 
 .pub-plan-page .pub-info-blue {
-  border-color: #3B82F6 !important;
+  border-color: var(--blue) !important;
   background: linear-gradient(
-    180deg, #EFF6FF, #FFFFFF 75%
+    180deg, var(--wash), var(--white) 75%
   ) !important;
 }
 
 .pub-plan-page .pub-info-purple {
-  border-color: #8B5CF6 !important;
+  border-color: var(--land-main-street-dark) !important;
   background: linear-gradient(
-    180deg, #F3E8FF, #FFFFFF 75%
+    180deg, var(--land-main-street), var(--white) 75%
   ) !important;
 }
 
 .pub-plan-page .pub-info-gold {
-  border-color: #E5B94B !important;
+  border-color: var(--land-hermann) !important;
   background: linear-gradient(
-    180deg, #FFF5D9, #FFFFFF 75%
+    180deg, var(--land-hermann), var(--white) 75%
   ) !important;
 }
 
 .pub-info-purple .pub-info-icon {
-  background: #EDE9FE;
+  background: var(--land-main-street);
 }
 
 .pub-info-gold .pub-info-icon {
-  background: #FEF3C7;
+  background: var(--land-hermann);
 }
 
 /* Ticket Call to Action */
@@ -1401,9 +1401,9 @@
   padding: 36px;
   border-radius: 24px;
   background: linear-gradient(
-    120deg, #2459B8, #3B82F6, #00A9D6
+    120deg, var(--blue-deep), var(--blue), var(--blue-deep)
   );
-  color: #FFFFFF;
+  color: var(--white);
   box-shadow: 0 12px 30px rgba(36, 89, 184, 0.2);
 }
 
@@ -1416,7 +1416,7 @@
 .pub-plan-cta p {
   margin: 0;
   line-height: 1.6;
-  color: #FFFFFF;
+  color: var(--white);
 }
 
 .pub-plan-cta .pub-buy {
@@ -1485,7 +1485,7 @@
 
 .membership-benefits li::before {
   content: "✓";
-  color: #16a34a;
+  color: var(--land-montrose-dark);
   font-weight: 800;
   flex-shrink: 0;
 }
@@ -1510,16 +1510,16 @@
   height: 52px;
   margin-bottom: 14px;
   border-radius: 14px;
-  background: #eaf3ff;
+  background: var(--wash);
   font-size: 28px;
 }
 
 .pub-plan-featured-card:nth-child(2) .pub-plan-featured-icon {
-  background: #e8f8ed;
+  background: var(--land-montrose);
 }
 
 .pub-plan-featured-card:nth-child(3) .pub-plan-featured-icon {
-  background: #fff0e8;
+  background: var(--land-loop);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1532,10 +1532,10 @@
   }
 }
 
-/* THUNDER VALLEY TICKETS PAGE */
+/* Tickets page */
 
 .tv-ticket-page {
-  background: linear-gradient(180deg, #eef5ff, #ffffff);
+  background: linear-gradient(180deg, var(--wash), var(--white));
   min-height: 100vh;
   padding-bottom: 70px;
 }
@@ -1561,7 +1561,7 @@
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 2px;
-  color: #ffd166;
+  color: var(--land-hermann);
 }
 
 .tv-ticket-hero h1 {
@@ -1580,7 +1580,7 @@
 .tv-ticket-hero-btn,
 .tv-ticket-signin {
   display: inline-block;
-  background: #dc4549;
+  background: var(--scarlet);
   color: white;
   padding: 15px 28px;
   border-radius: 30px;
@@ -1591,7 +1591,7 @@
 
 .tv-ticket-hero-btn:hover,
 .tv-ticket-signin:hover {
-  background: #b82f37;
+  background: var(--scarlet-dark);
   transform: translateY(-3px);
 }
 
@@ -1612,7 +1612,7 @@
 }
 
 .tv-ticket-heading p {
-  color: #64748b;
+  color: var(--ink-soft);
 }
 
 .tv-ticket-grid {
@@ -1645,7 +1645,7 @@
 }
 
 .tv-ticket-card p {
-  color: #64748b;
+  color: var(--ink-soft);
   line-height: 1.6;
 }
 
@@ -1654,7 +1654,7 @@
   padding: 45px 25px;
   text-align: center;
   border-radius: 20px;
-  background: #173d88;
+  background: var(--blue-deep);
   color: white;
 }
 
@@ -1730,13 +1730,13 @@
   font-size: 32px;
   font-weight: 850;
   margin-bottom: 25px;
-  color: #152b55;
+  color: var(--navy);
 }
 
 .tv-login-page input {
   width: 100%;
   padding: 14px;
-  border: 1px solid #d1dbea;
+  border: 1px solid var(--rule);
   border-radius: 10px;
   font-size: 16px;
   transition: border-color .2s, box-shadow .2s;
@@ -1744,13 +1744,13 @@
 
 .tv-login-page input:focus {
   outline: none;
-  border-color: #527dec;
+  border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(82, 125, 236, .15);
 }
 
 .tv-login-page button[type="submit"] {
   width: 100%;
-  background: #d6484b;
+  background: var(--scarlet);
   color: white;
   border: none;
   padding: 15px;
@@ -1762,12 +1762,12 @@
 }
 
 .tv-login-page button[type="submit"]:hover {
-  background: #b93037;
+  background: var(--scarlet-dark);
   transform: translateY(-2px);
 }
 
 .tv-login-page a {
-  color: #24468f;
+  color: var(--blue-deep);
   font-weight: 600;
 }
 
@@ -1810,7 +1810,7 @@
   background: white;
   padding: 38px;
   border-radius: 22px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--rule);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
 }
 
@@ -1822,12 +1822,12 @@
 .tv-member-login .auth-head h1 {
   font-size: 32px;
   font-weight: 850;
-  color: #162c57;
+  color: var(--navy);
   margin: 16px 0 8px;
 }
 
 .tv-member-login .tv-login-subtitle {
-  color: #64748b;
+  color: var(--ink-soft);
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
@@ -1836,7 +1836,7 @@
 .tv-member-login .auth-body label {
   display: block;
   font-weight: 700;
-  color: #26354d;
+  color: var(--navy);
   margin-bottom: 18px;
 }
 
@@ -1846,21 +1846,21 @@
   box-sizing: border-box;
   margin-top: 8px;
   padding: 14px 15px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--rule);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--wash);
   font-size: 16px;
 }
 
 .tv-member-login .auth-body input:focus {
   outline: none;
-  border-color: #527dec;
+  border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(82, 125, 236, 0.15);
 }
 
 .tv-member-login .auth-submit {
   width: 100%;
-  background: #d6484b;
+  background: var(--scarlet);
   color: white;
   border: none;
   border-radius: 30px;
@@ -1872,7 +1872,7 @@
 }
 
 .tv-member-login .auth-submit:hover:not(:disabled) {
-  background: #b93037;
+  background: var(--scarlet-dark);
   transform: translateY(-2px);
 }
 
@@ -1883,7 +1883,7 @@
 }
 
 .tv-member-login .auth-links a {
-  color: #24468f;
+  color: var(--blue-deep);
   font-weight: 700;
 }
 
@@ -1918,15 +1918,15 @@
 
 
 /* Park map: Beltway 8 ring road, lake and the 610 Interchange hub */
-.pub-map-ring { fill: none; stroke: #fff; stroke-width: 16; }
+.pub-map-ring { fill: none; stroke: var(--white); stroke-width: 16; }
 .pub-map-ringline { fill: none; stroke: var(--brand-muted); stroke-width: 2; stroke-dasharray: 12 10; opacity: .5; }
-.pub-map-lake { fill: #bfe3f5; stroke: #fff; stroke-width: 5; }
-.pub-map-hub { fill: #fff; stroke: var(--brand-primary); stroke-width: 5; }
+.pub-map-lake { fill: var(--wash); stroke: var(--white); stroke-width: 5; }
+.pub-map-hub { fill: var(--white); stroke: var(--brand-primary); stroke-width: 5; }
 .pub-map-hubtext { font: 800 18px var(--brand-font-display, system-ui); fill: var(--brand-primary); }
 .pub-map-label { font: 800 12px var(--brand-font-display, system-ui); letter-spacing: .14em; fill: var(--brand-muted); }
-.pub-map-label-lake { fill: #4a8fb3; }
+.pub-map-label-lake { fill: var(--land-bayou-dark); }
 .pub-map-label-ring { font-size: 11px; }
-.pub-map-ringtag { fill: #fff; }
+.pub-map-ringtag { fill: var(--white); }
 .pub-map-legendline { stroke: var(--brand-muted); stroke-width: 3; stroke-dasharray: 8 6; }
 .pub-map-legendtext { font: 600 13px system-ui, sans-serif; fill: var(--brand-muted); }
 
@@ -1938,34 +1938,34 @@
 }
 
 
-/* Header on blue: white text everywhere, and an "Est." line you can actually read.
+/* Header on navy: white text everywhere, and an "Est." line you can actually read.
    `.pub a { color: inherit }` outranks single-class rules, so these are scoped under .pub. */
 .pub .pub-wordmark,
 .pub .pub-signin,
 .pub .pub-nav a {
-  color: #FFFFFF;
+  color: var(--white);
 }
 
 .pub .pub-nav a:hover,
 .pub .pub-nav a.active {
-  color: #14213D;
+  color: var(--blue);
 }
 
 .pub-header .wordmark small {
-  color: #081A33;
+  color: var(--on-navy-soft);
   font-weight: 700;
   opacity: 1;
 }
 
 .pub-header :focus-visible {
-  outline-color: #FFFFFF;
+  outline-color: var(--white);
 }
 
 /* The global `button:hover` rule in index.css turns buttons light, which hides the white menu icon (and on a
    phone the hover sticks after a tap). Keep the header's menu button dark-on-blue when hovered. */
 .pub-header .pub-menu-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, .2);
-  color: #FFFFFF;
+  color: var(--white);
 }
 
 
@@ -2014,7 +2014,7 @@
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 999px;
   background: rgba(12, 35, 64, 0.55);
-  color: #FFFFFF;
+  color: var(--white);
   font-size: 0.95rem;
   font-weight: 700;
 }
@@ -2024,28 +2024,28 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #4B92DB;
+  background: var(--blue);
 }
 
 .pub-hero-facts li.off .pub-fact-dot {
   background: transparent;
-  border: 2px solid #FFFFFF;
+  border: 2px solid var(--white);
   box-sizing: border-box;
 }
 
 /* "Explore the park": a quiet outline button, so there is no third accent color next to the blue and red */
 .pub .pub-hero .pub-hero-link {
   background: transparent;
-  color: #FFFFFF;
-  border: 2px solid #FFFFFF;
+  color: var(--white);
+  border: 2px solid var(--white);
   box-shadow: none;
   padding: 14px 30px;
   transform: none;
 }
 
 .pub .pub-hero .pub-hero-link:hover {
-  background: #FFFFFF;
-  color: #0C2340;
+  background: var(--white);
+  color: var(--navy);
   box-shadow: none;
   transform: none;
 }
@@ -2081,7 +2081,7 @@
   z-index: 1;
   height: 14px;
   pointer-events: none;
-  background: repeating-linear-gradient(90deg, #3B82F6 0 28px, #A9C9FA 28px 56px);
+  background: repeating-linear-gradient(90deg, var(--blue) 0 28px, var(--land-bayou) 28px 56px);
   -webkit-mask: radial-gradient(circle at 14px 0, #000 13.5px, transparent 14px) 0 0 / 28px 14px repeat-x;
   mask: radial-gradient(circle at 14px 0, #000 13.5px, transparent 14px) 0 0 / 28px 14px repeat-x;
 }
@@ -2292,4 +2292,27 @@
 
 @media (max-width: 560px) {
   .pub-pc-main, .pub-pc-stub { padding: 18px; }
+}
+
+
+/* Rides grouped by land: each card gets its land's color on the top edge and on the location line (dark twin, so the text stays readable) */
+.pub-premier > li[data-land] { border-top: 5px solid var(--land-color, var(--blue)); }
+.pub-premier > li[data-land] > p:first-of-type { color: var(--land-color-dark, var(--ink-soft)); font-weight: 700; }
+[data-land='loop'] { --land-color: var(--land-loop); --land-color-dark: var(--land-loop-dark); }
+[data-land='bayou'] { --land-color: var(--land-bayou); --land-color-dark: var(--land-bayou-dark); }
+[data-land='montrose'] { --land-color: var(--land-montrose); --land-color-dark: var(--land-montrose-dark); }
+[data-land='hermann'] { --land-color: var(--land-hermann); --land-color-dark: var(--land-hermann-dark); }
+[data-land='main-street'] { --land-color: var(--land-main-street); --land-color-dark: var(--land-main-street-dark); }
+
+/* Phone: the mark and name must fit beside Buy Tickets and the menu button */
+@media (max-width: 560px) {
+  .pub-wordmark .helmet { width: 30px; height: 30px; }
+  .pub-wordmark .wordmark { gap: 8px; }
+  .pub-wordmark .wordmark strong { font-size: 1.05rem; }
+  .pub-header-inner { gap: 8px; padding: 0 12px; }
+}
+
+@media (max-width: 360px) {
+  .pub-wordmark .wordmark small { display: none; }
+  .pub .pub-buy { padding: 8px 12px; font-size: 0.9rem; }
 }

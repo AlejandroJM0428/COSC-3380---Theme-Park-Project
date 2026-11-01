@@ -3,13 +3,14 @@
    so nothing else needs to move. Scarlet is for "Buy Tickets" only. */
 :root {
   /* signature colors */
-  --blue: #4b92db;        /* Columbia blue: accents, borders, chart lines. White text on it is only 3.3:1, so use --blue-deep for text and buttons */
+  --blue: #5b9fe0;        /* Luv Ya Blue: a soft powder blue for accents, borders, fills. White text on it is only about 2.8:1, so use --blue-deep for text and buttons */
   --blue-deep: #0b3d91;   /* dark twin of the blue: buttons, links, text on white */
   --navy: #0c2340;        /* headers, sidebar, dark text */
   --navy-2: #1c3a63;      /* hover and borders on navy */
   --paper: #f4f7fb;       /* page background */
   --scarlet: #c8102e;     /* "Buy Tickets" only */
   --white: #ffffff;
+  --scarlet-dark: #9e0d25; /* hover for the scarlet button */
 
   /* text and lines on white or paper */
   --ink-soft: #50617a;    /* secondary text: 6.3:1 on white */

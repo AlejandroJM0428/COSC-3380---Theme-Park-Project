@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { formatDate } from '../utils/portalFormat.js'
+import { BRAND } from '../config/brand.js'
 
 export default function Tickets() {
   const [params] = useSearchParams()
@@ -53,7 +54,7 @@ useEffect(() => {
     <main className="tv-ticket-page">
       <section className="tv-ticket-hero">
         <div className="tv-ticket-hero-content">
-          <span className="tv-ticket-eyebrow">THUNDER VALLEY TICKETS</span>
+          <span className="tv-ticket-eyebrow">{BRAND.name} Tickets</span>
           <h1>YOUR ADVENTURE STARTS HERE!</h1>
           <p>
             Big thrills. Amazing memories. Endless fun.

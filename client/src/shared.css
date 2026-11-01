@@ -23,6 +23,7 @@
   border-radius: var(--r-sm);
   outline: 2px solid #fff;
   outline-offset: -5px;
+  border-bottom: 3px solid var(--scarlet);
   box-shadow: var(--shadow-1);
   font-family: var(--font-display, system-ui, sans-serif);
   font-weight: 800;

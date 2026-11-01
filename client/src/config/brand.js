@@ -40,11 +40,20 @@ export const BRAND = {
 // Schematic park map (not to scale). Positions are for the SVG on /rides, keyed by Zone.ZoneName.
 // A zone that is not listed here still appears in the list under the map.
 export const ZONE_MAP = {
-  'The Loop': { x: 40, y: 40, w: 300, h: 190, fill: '#f0c19c' },
-  'Buffalo Bayou': { x: 560, y: 40, w: 300, h: 190, fill: '#a5d3ec' },
-  'Montrose': { x: 40, y: 270, w: 260, h: 180, fill: '#abd8a9' },
-  'Hermann Park': { x: 600, y: 270, w: 260, h: 180, fill: '#f7dc8c' },
-  'Main Street': { x: 330, y: 290, w: 240, h: 160, fill: '#d3c4ec' },
+  'The Loop': { x: 40, y: 40, w: 300, h: 190, fill: 'var(--land-loop)' },
+  'Buffalo Bayou': { x: 560, y: 40, w: 300, h: 190, fill: 'var(--land-bayou)' },
+  'Montrose': { x: 40, y: 270, w: 260, h: 180, fill: 'var(--land-montrose)' },
+  'Hermann Park': { x: 600, y: 270, w: 260, h: 180, fill: 'var(--land-hermann)' },
+  'Main Street': { x: 330, y: 290, w: 240, h: 160, fill: 'var(--land-main-street)' },
+}
+
+// The CSS key for each land's color (the --land-<key> and --land-<key>-dark tokens in tokens.css).
+export const LAND_KEY = {
+  'The Loop': 'loop',
+  'Buffalo Bayou': 'bayou',
+  'Montrose': 'montrose',
+  'Hermann Park': 'hermann',
+  'Main Street': 'main-street',
 }
 
 // The park's one entertainment venue: a theater. Midway games are separate (they come from the Game table).

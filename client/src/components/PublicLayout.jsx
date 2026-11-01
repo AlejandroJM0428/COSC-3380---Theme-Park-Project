@@ -25,15 +25,12 @@ export default function PublicLayout() {
 
   return (
     <div className="pub" id="top">
-      <div className="awning-wrap is-blue" aria-hidden="true">
-        <div className="awning" />
-      </div>
       <NotificationBar variant="strip" />
 
       <header className="pub-header">
         <div className="pub-header-inner">
           <Link to="/" className="pub-wordmark" aria-label={`${BRAND.name} home`} onClick={close}>
-            <Wordmark tagline={false} est />
+            <Wordmark tagline={false} est light />
           </Link>
 
           <nav id="pub-nav" className={`pub-nav ${menuOpen ? 'open' : ''}`} aria-label="Main navigation">

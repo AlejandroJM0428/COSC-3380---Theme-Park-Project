@@ -4,7 +4,7 @@ import BrandImage from '../components/BrandImage.jsx'
 import LoadError from '../components/LoadError.jsx'
 import ParkMap from '../components/ParkMap.jsx'
 import usePublicSite from '../hooks/usePublicSite.js'
-import { BRAND, ENTERTAINMENT, LANDS, ZONE_MAP } from '../config/brand.js'
+import { BRAND, ENTERTAINMENT, LANDS, LAND_KEY, ZONE_MAP } from '../config/brand.js'
 import { money, rideImage } from '../utils/portalFormat.js'
 
 const MAX_PREMIER = 4
@@ -162,7 +162,9 @@ useEffect(() => {
   
 const filteredRides = useMemo(() => {
   if (rideCategory === 'all') {
-    return rides
+    // group by land, in the map's order, keeping the order within each land
+    const order = Object.keys(ZONE_MAP)
+    return [...rides].sort((a, b) => order.indexOf(a.zoneName) - order.indexOf(b.zoneName))
   }
 
   if (rideCategory === 'premier') {
@@ -248,7 +250,7 @@ const filteredRides = useMemo(() => {
         {!showRides ? null : filteredRides.length > 0 ? (
           <ul className="pub-premier">
             {filteredRides.map((r) => (
-              <li key={r.rideId}>
+              <li key={r.rideId} data-land={LAND_KEY[r.zoneName]}>
                 <BrandImage
                   src={RIDE_IMAGES[r.rideName] ?? rideImage(r.zoneName)}
                   className={`pub-premier-img ${

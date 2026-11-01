@@ -69,7 +69,7 @@ export default function ParkMap({ counts = {}, selected = [], onSelect }) {
             onClick={() => onSelect?.(name)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(name) } }}
           >
-            <rect x={z.x} y={z.y} width={z.w} height={z.h} rx="22" fill={z.fill} />
+            <rect x={z.x} y={z.y} width={z.w} height={z.h} rx="22" style={{ fill: z.fill }} />
             <text x={z.x + z.w / 2} y={z.y + z.h / 2 - 6} textAnchor="middle" className="pub-zone-name">{name}</text>
             <text x={z.x + z.w / 2} y={z.y + z.h / 2 + 22} textAnchor="middle" className="pub-zone-count">{parts[0] ?? ''}</text>
           </g>
