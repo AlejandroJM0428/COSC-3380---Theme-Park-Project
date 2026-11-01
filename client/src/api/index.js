@@ -65,6 +65,13 @@ export function buyVisitorTicket(data) {
   return http('/visitor/tickets', { method: 'POST', body: data })
 }
 
+// Buys a membership that starts today. Send { tier, autoRenew } only: the server sets dates and price.
+// Resolves to { membership, perks, firedTriggers }.
+export function buyVisitorMembership(data) {
+  needLive()
+  return http('/visitor/membership', { method: 'POST', body: data })
+}
+
 export function refundVisitorTicket(ticketId) {
   needLive()
   return http(`/visitor/tickets/${ticketId}/refund`, { method: 'POST', body: {} })

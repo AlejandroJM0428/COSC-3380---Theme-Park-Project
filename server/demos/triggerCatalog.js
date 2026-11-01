@@ -1,5 +1,5 @@
 // The triggers for the COSC 3380 demo: six INSERT triggers and trg_Ride_AU_Notify from the schema,
-// plus the rules restored by SQL/11_restore_triggers.sql.
+// plus the rules restored by SQL/11_restore_triggers.sql and the purchase guards in SQL/14_purchase_guards.sql.
 // The Triggers page matches this list to information_schema.TRIGGERS by name.
 
 export const TRIGGER_CATALOG = [
@@ -21,6 +21,18 @@ export const TRIGGER_CATALOG = [
       'Membership is not active on the visit date',
       'Customer is inactive or does not exist',
     ],
+  },
+  {
+    name: 'trg_Ticket_BI_Guard', table: 'Ticket', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
+    rule: 'Stops accidental double-bookings: the same customer and visit date within a minute, or 5 tickets in 10 minutes.',
+    errors: [
+      'You just booked a ticket for that date. Check My Tickets before booking another.',
+      'Too many tickets too quickly. Please wait a few minutes and try again.',
+    ],
+  },
+  {
+    name: 'trg_Membership_AI_Welcome', table: 'Membership', timing: 'AFTER', event: 'INSERT', kind: 'Automatic',
+    rule: 'A new membership unlocks its welcome perks (pin, parking day, VIP photo session, depending on the tier).',
   },
   {
     name: 'trg_Membership_BI', table: 'Membership', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
@@ -158,3 +170,17 @@ export const TRIGGER_CATALOG = [
     errors: ['Refunds are records and cannot be edited'],
   },
 ];
+
+// The catalog entry (without the long error list) for a trigger name, or null.
+export function describeTrigger(name) {
+  const t = TRIGGER_CATALOG.find((x) => x.name === name);
+  return t ? { name: t.name, table: t.table, timing: t.timing, event: t.event, rule: t.rule } : null;
+}
+
+// Which trigger sent this message? Used so the browser can show "trigger fired" cards.
+// Exact match on the catalog's error list; the first entry wins when two triggers share a message.
+export function triggerForMessage(message) {
+  const text = String(message ?? '');
+  const t = TRIGGER_CATALOG.find((x) => x.errors?.includes(text));
+  return t ? describeTrigger(t.name) : null;
+}

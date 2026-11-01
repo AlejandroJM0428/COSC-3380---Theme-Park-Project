@@ -31,7 +31,11 @@ export async function http(path, { method = 'GET', body } = {}) {
     }
     // Database triggers send messages like "Park is at capacity for that date".
     // The backend should return them as { "message": "..." } so they show up here.
-    throw new Error(data?.message ?? `Request failed (${res.status})`)
+    // When the message came from a known trigger, the server adds { trigger: { name, table, timing, event, rule } };
+    // it is kept on the error so a page can show a "trigger fired" card.
+    const error = new Error(data?.message ?? `Request failed (${res.status})`)
+    if (data?.trigger) error.trigger = data.trigger
+    throw error
   }
   return data
 }
