@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import LoadError from '../components/LoadError.jsx'
+import { useAuth } from '../auth/context.js'
 import usePublicSite from '../hooks/usePublicSite.js'
 import { money } from '../utils/portalFormat.js'
 
@@ -10,6 +11,8 @@ const NO = <span aria-label="Not included" className="pub-no">–</span>
 export default function Memberships() {
   const { site, loading, error, retry } = usePublicSite()
   const tiers = site?.tiers ?? []
+  const { user } = useAuth()
+  const signedIn = user?.role === 'Customer'
 
   return (
     <main className="pub-page pub-page-wide">
@@ -27,7 +30,9 @@ export default function Memberships() {
                 <h2>{t.tier}</h2>
                 <p className="pub-tier-price"><strong>{money(t.annualPrice)}</strong><small>/yr</small></p>
                 <ul>{t.benefits.map((b) => <li key={b}>{b}</li>)}</ul>
-                <Link to="/member/register" className="pub-buy">Join as {t.tier}</Link>
+                {signedIn
+                  ? <Link to="/member?tab=membership" className="pub-buy">My membership</Link>
+                  : <Link to="/member/register" className="pub-buy">Join as {t.tier}</Link>}
               </article>
             ))}
           </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth/context.js'
 import { localDate, money } from '../../utils/portalFormat.js'
 
 const MAX_QTY = 6
@@ -9,6 +10,8 @@ const MAX_QTY = 6
 // The account step happens at checkout (/tickets), not here.
 export default function PriceCheck({ prices }) {
   const navigate = useNavigate()
+  const { user, ready } = useAuth()
+  const needsAccount = ready && user?.role !== 'Customer'
   const [date, setDate] = useState(() => localDate(1))
   const [express, setExpress] = useState(false)
   const [qty, setQty] = useState(2)
@@ -54,7 +57,7 @@ export default function PriceCheck({ prices }) {
       </div>
 
       <button type="submit" className="pub-pc-submit">Continue <span aria-hidden="true">→</span></button>
-      <p className="pub-pc-note">A free account is needed to complete your order.</p>
+      {needsAccount && <p className="pub-pc-note">A free account is needed to complete your order.</p>}
     </form>
   )
 }

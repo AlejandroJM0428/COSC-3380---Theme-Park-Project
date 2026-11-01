@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import ErrorBanner from '../components/ErrorBanner.jsx'
@@ -8,13 +8,18 @@ const EMPTY = { username: '', password: '', confirm: '', firstName: '', lastName
 
 // Member (customer) self sign-up. Reuses the login page styling.
 export default function Register() {
-  const { register } = useAuth()
+  const { user, ready, register } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+
+  // Already signed in as a customer: nothing to register.
+  useEffect(() => {
+    if (ready && user?.role === 'Customer' && !busy) navigate('/member', { replace: true })
+  }, [ready, user, busy, navigate])
 
   async function handleSubmit(event) {
     event.preventDefault()

@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../auth/context.js'
 import Wordmark from '../Wordmark.jsx'
 import { BRAND } from '../../config/brand.js'
 
 // Public site footer.
 export default function Footer() {
+  const { user, ready } = useAuth()
+  const signedIn = user?.role === 'Customer'
   return (
     <footer className="pub-footer">
       <div className="pub-footer-inner">
@@ -22,8 +25,12 @@ export default function Footer() {
           <div>
             <h2>Memberships</h2>
             <Link to="/memberships">Compare tiers</Link>
-            <Link to="/member/register">Join</Link>
-            <Link to="/member/login">Member sign in</Link>
+            {signedIn ? <Link to="/member">My account</Link> : ready && (
+              <>
+                <Link to="/member/register">Join</Link>
+                <Link to="/member/login">Member sign in</Link>
+              </>
+            )}
           </div>
           <div>
             <h2>Park team</h2>

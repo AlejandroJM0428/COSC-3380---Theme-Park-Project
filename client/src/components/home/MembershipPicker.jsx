@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../auth/context.js'
 import { money } from '../../utils/portalFormat.js'
 
 // Compare membership tiers one at a time instead of listing them all. Prices are display only.
 export default function MembershipPicker({ tiers = [] }) {
   const [chosen, setChosen] = useState(null)
+  const { user, ready } = useAuth()
+  const signedIn = user?.role === 'Customer'
   if (tiers.length === 0) return null
 
   const tier = tiers.find((t) => t.tier === chosen) ?? tiers[Math.min(1, tiers.length - 1)]
@@ -25,7 +28,9 @@ export default function MembershipPicker({ tiers = [] }) {
         {(tier.benefits ?? []).map((b) => <li key={b}>{b}</li>)}
       </ul>
       <div className="pub-panel-actions">
-        <Link to="/member/register" className="pub-buy">Create a free account</Link>
+        {signedIn
+          ? <Link to="/member?tab=membership" className="pub-buy">My membership</Link>
+          : ready && <Link to="/member/register" className="pub-buy">Create a free account</Link>}
         <Link to="/memberships" className="pub-link">Compare all →</Link>
       </div>
     </article>

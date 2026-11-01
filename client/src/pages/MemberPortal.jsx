@@ -26,8 +26,11 @@ export default function MemberPortal() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [visitDate, setVisitDate] = useState(() => localDate(6))
-  const [hasExpress, setHasExpress] = useState(false)
+  const [visitDate, setVisitDate] = useState(() => {
+    const wanted = params.get('date')
+    return /^\d{4}-\d{2}-\d{2}$/.test(wanted ?? '') && wanted >= localDate(0) ? wanted : localDate(6)
+  })
+  const [hasExpress, setHasExpress] = useState(() => params.get('express') === '1')
   const [purchasing, setPurchasing] = useState(false)
   const [refundBusy, setRefundBusy] = useState(null)
 

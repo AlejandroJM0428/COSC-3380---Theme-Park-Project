@@ -12,6 +12,12 @@ export function login(username, password) {
     : http('/auth/login', { method: 'POST', body: { username, password } })
 }
 
+// Who does the server think is signed in? Used once on page load, because the browser only remembers
+// the user per tab but the session cookie is shared by every tab. Mock mode has no server session.
+export function getSessionUser() {
+  return USE_MOCK ? Promise.resolve(null) : http('/auth/me')
+}
+
 // Member self sign-up. Logs the new member in (server sets the session cookie).
 export function register(data) {
   return USE_MOCK ? mock.register(data) : http('/auth/register', { method: 'POST', body: data })

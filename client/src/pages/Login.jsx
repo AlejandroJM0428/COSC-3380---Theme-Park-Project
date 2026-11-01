@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { USE_MOCK } from '../api/index.js'
 import { useAuth } from '../auth/context.js'
@@ -8,13 +8,18 @@ import { PARK_NAME } from '../config/nav.js'
 // audience="staff" -> transaction portal login; audience="member" -> customer login
 export default function Login({ audience = 'staff' }) {
   const isMember = audience === 'member'
-  const { login, logout } = useAuth()
+  const { user, ready, login, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // A customer who is already signed in has no reason to see the member sign in page.
+  useEffect(() => {
+    if (isMember && ready && user?.role === 'Customer' && !busy) navigate(location.state?.from?.pathname ?? '/member', { replace: true })
+  }, [isMember, ready, user, busy, navigate, location])
 
   async function handleSubmit(event) {
     event.preventDefault()
