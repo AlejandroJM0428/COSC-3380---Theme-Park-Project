@@ -1,5 +1,6 @@
 // The triggers for the COSC 3380 demo: six INSERT triggers and trg_Ride_AU_Notify from the schema,
-// plus the rules restored by SQL/11_restore_triggers.sql and the purchase guards in SQL/14_purchase_guards.sql.
+// plus the rules restored by SQL/11_restore_triggers.sql, the purchase guards in SQL/14_purchase_guards.sql and the
+// dependent rules in SQL/16_dependents_cancellation.sql.
 // The Triggers page matches this list to information_schema.TRIGGERS by name.
 
 export const TRIGGER_CATALOG = [
@@ -13,7 +14,7 @@ export const TRIGGER_CATALOG = [
   },
   {
     name: 'trg_Ticket_BI', table: 'Ticket', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
-    rule: 'Checks capacity and membership, applies Express, and sets the ticket price.',
+    rule: 'Checks capacity and membership, applies Express, and sets the ticket price (less the dependent discount for a child).',
     errors: [
       'Park is at capacity for that date',
       'This membership tier is valid on weekdays only',
@@ -168,6 +169,32 @@ export const TRIGGER_CATALOG = [
     name: 'trg_TicketRefund_BU', table: 'TicketRefund', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
     rule: 'Refunds are records and are never edited.',
     errors: ['Refunds are records and cannot be edited'],
+  },
+  {
+    name: 'trg_Customer_BI_Dependent', table: 'Customer', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
+    rule: 'A new dependent needs an active parent who is not a dependent, must be under 18, and a parent can have at most 6 active dependents.',
+    errors: [
+      'A customer cannot be their own parent.',
+      'The parent must be an active customer.',
+      'A dependent cannot have dependents of their own.',
+      'A customer who has dependents cannot become a dependent.',
+      'The birth date cannot be in the future.',
+      'A dependent must be under 18.',
+      'A parent can have at most 6 dependents.',
+    ],
+  },
+  {
+    name: 'trg_Customer_BU_Dependent', table: 'Customer', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
+    rule: 'Changing a dependent\'s parent or birth date runs the same dependent rules again. Renaming or anonymising a dependent does not.',
+    errors: [
+      'A customer cannot be their own parent.',
+      'The parent must be an active customer.',
+      'A dependent cannot have dependents of their own.',
+      'A customer who has dependents cannot become a dependent.',
+      'The birth date cannot be in the future.',
+      'A dependent must be under 18.',
+      'A parent can have at most 6 dependents.',
+    ],
   },
 ];
 
