@@ -1,5 +1,5 @@
 // The triggers for the COSC 3380 demo: six INSERT triggers and trg_Ride_AU_Notify from the schema,
-// plus the rules restored by SQL/11_restore_triggers.sql, the purchase guards in SQL/14_purchase_guards.sql and the
+// plus the rules restored by SQL/11_restore_triggers.sql, the notice triggers in SQL/13_notification_triggers.sql, the purchase guards in SQL/14_purchase_guards.sql and the
 // dependent rules in SQL/16_dependents_cancellation.sql.
 // The Triggers page matches this list to information_schema.TRIGGERS by name.
 
@@ -195,6 +195,18 @@ export const TRIGGER_CATALOG = [
       'A dependent must be under 18.',
       'A parent can have at most 6 dependents.',
     ],
+  },
+  {
+    name: 'trg_Ride_AU_Reopen', table: 'Ride', timing: 'AFTER', event: 'UPDATE', kind: 'Notification',
+    rule: 'When a ride leaves Maintenance, switches off its "unavailable" notice.',
+  },
+  {
+    name: 'trg_WeatherLog_AU_Clear', table: 'WeatherLog', timing: 'AFTER', event: 'UPDATE', kind: 'Notification',
+    rule: 'When a weather event gets an end time, switches off its closure notice.',
+  },
+  {
+    name: 'trg_Ticket_AI_SellingFast', table: 'Ticket', timing: 'AFTER', event: 'INSERT', kind: 'Notification',
+    rule: 'When a visit date reaches 90% of capacity (and is not sold out), posts a "Selling fast" notice for that date.',
   },
 ];
 

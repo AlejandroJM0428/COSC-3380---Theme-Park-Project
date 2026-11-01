@@ -17,7 +17,7 @@ Credentials are not in the repo. Passwords come from the reseed (plan step 2.5) 
 
 ## Before you start (5 minutes, the day before and again 30 minutes before)
 
-1. Open `/admin`, then Database tools, then Triggers. The line must say 25 triggers and match. Any "Missing from database" means SQL/11 was not loaded on `geto`.
+1. Open `/admin`, then Database tools, then Triggers. The line must say 32 triggers and match. Any "Missing from database" means SQL/11 or SQL/16 was not loaded on `geto` (SQL/16 can be applied with `apply-16-on-server.sh`).
 2. Check the data the script names. In the SQL console run:
    `SELECT Tier, AnyDayAccess, IsForSale FROM MembershipTier`
    Note one tier with AnyDayAccess = 0 (weekday only). The script calls it the weekday tier.
@@ -30,7 +30,7 @@ Credentials are not in the repo. Passwords come from the reseed (plan step 2.5) 
 
 - Say what the park is: Thunder Valley Adventure Park, one park, zones, rides, games, venues, guests, staff.
 - Open Database tools, then Browse Table. Show two linked tables, for example Ticket and Customer.
-- Say the numbers: 22 core tables plus Notification and AdminAudit, 25 triggers, stored procedures `sp_Assert*` for the shared rules, views for every report, one login table (AppUser) that carries the role.
+- Say the numbers: 22 core tables plus Notification, AdminAudit, MemberPerk, DependentConsent and MembershipCancellationRequest (27 in all), 32 triggers, stored procedures `sp_Assert*` for the shared rules, views for every report, one login table (AppUser) that carries the role.
 - Say why: rules live in the database, so no page can skip them.
 
 ## 2. Roles (3 min)
@@ -43,7 +43,7 @@ Each role has its own menu and landing page, and the server refuses anything out
 
 ## 3. Triggers in action (6 min, about one minute each)
 
-Open `/admin`, Database tools, Triggers once at the start. Say: these 25 run on every save from every page. Then show six.
+Open `/admin`, Database tools, Triggers once at the start. Say: these 32 run on every save from every page. Then show six.
 
 1. **Ride gate (trg_RideLog_BI).** As `manager`, Ride Log: pick Kit Demo's ticket from the list (search the name, no ID needed) and record a boarding on Thunder Run (ride 3, minimum height 122 cm). Expect: "Guest is below the ride height requirement".
 2. **Maintenance closes a ride (trg_Maint_AI, then trg_Ride_AU_Notify).** As `maintmgr`, Maintenance: open an Emergency Repair on Canyon Cyclone (ride 4). Show the new maintenance alert in the notification bar. Then try a boarding on ride 4 as `manager`. Expect: "Ride was under maintenance".
@@ -81,7 +81,7 @@ Open Database tools, then Required Queries, and run one query. Or open one repor
 
 ## If something goes wrong
 
-- A trigger beat does not refuse: go to Triggers and check the "In database" mark for it. Missing means SQL/11 was not loaded.
+- A trigger beat does not refuse: go to Triggers and check the "In database" mark for it. Missing means SQL/11 or SQL/16 was not loaded.
 - The Data importance panel shows dashes: use the SQL console query in section 4.
 - A login fails: use another account from the table and keep going.
 - Out of time: skip beat 4, then beat 6.
