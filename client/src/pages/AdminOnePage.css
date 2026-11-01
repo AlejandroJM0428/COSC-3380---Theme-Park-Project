@@ -361,3 +361,31 @@
     max-width: 28ch;
   }
 }
+
+/* Staff portal tabs and menu items are links (not buttons): style them like the admin ones. */
+.onepage a.onepage-tab {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.onepage a.onepage-tab[aria-current='page'] {
+  color: var(--role, var(--plum));
+}
+
+.onepage-menu a {
+  display: block;
+  padding: 7px 10px;
+  border-radius: 4px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.onepage-menu a:hover {
+  background: var(--line);
+}
+
+.onepage-menu a[aria-current='page'] {
+  background: var(--ink);
+  color: #fff;
+}

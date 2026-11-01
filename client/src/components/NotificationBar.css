@@ -4,12 +4,12 @@
 .notice-alert { border-color: #e7b3b0; border-left-color: #a4161a; background: #fdecea; }
 
 /* Public site banner: one notice at a time. Navy always (red is kept for "Buy Tickets"). */
-.notice-strip { background: #0c2340; color: #fff; font-size: .86rem; }
+.notice-strip { background: var(--navy); color: #fff; font-size: .86rem; }
 .notice-strip-inner { max-width: 1240px; margin: 0 auto; padding: 0 8px 0 20px; min-height: 44px; display: flex; align-items: center; gap: 12px; }
 .notice-strip p { margin: 0; flex: 1; line-height: 1.35; padding: 6px 0; }
 .notice-tag { flex: none; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; }
-.notice-tag-warning { background: #4b92db; color: #0c2340; }
-.notice-tag-alert { background: #fff; color: #0c2340; }
+.notice-tag-warning { background: #4b92db; color: var(--navy); }
+.notice-tag-alert { background: #fff; color: var(--navy); }
 .notice-more { flex: none; min-height: 44px; padding: 0 12px; background: transparent; border: 0; color: #9cc7f1; font-weight: 800; font-size: .82rem; cursor: pointer; border-radius: 6px; }
 /* The global `button:hover` rule in index.css would turn these white, so the hover rules below are more specific. */
 .notice-strip .notice-more:hover:not(:disabled), .notice-strip .notice-more:focus-visible { background: rgba(255, 255, 255, .14); color: #fff; }
@@ -21,8 +21,8 @@
 .ticker-happyhour { background: #0d2f5e; }
 /* LED grid: a faint dot pattern over the whole board */
 .ticker::after { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(0, 0, 0, .38) 1px, transparent 1.3px); background-size: 3px 3px; }
-.ticker-tag { position: relative; z-index: 2; flex: none; display: flex; align-items: center; padding: 0 16px; font-weight: 900; font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; background: #fff; color: #0c2340; box-shadow: 6px 0 14px rgba(0, 0, 0, .35); }
-.ticker-happyhour .ticker-tag { background: #4b92db; color: #0c2340; }
+.ticker-tag { position: relative; z-index: 2; flex: none; display: flex; align-items: center; padding: 0 16px; font-weight: 900; font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; background: #fff; color: var(--navy); box-shadow: 6px 0 14px rgba(0, 0, 0, .35); }
+.ticker-happyhour .ticker-tag { background: #4b92db; color: var(--navy); }
 .ticker-window { position: relative; flex: 1; min-width: 0; overflow: hidden; display: flex; align-items: center; -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
 .ticker-track { display: flex; width: max-content; animation: ticker-scroll var(--ticker-seconds, 40s) linear infinite; will-change: transform; }
 .ticker-group { display: flex; flex: none; }
