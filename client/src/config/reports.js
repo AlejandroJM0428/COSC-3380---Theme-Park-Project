@@ -1363,7 +1363,7 @@ const ALL_REPORTS = [
   },
 
   // ---- Rides and operations ----
-  // One merged report. Most Ridden Rides per Month and Rain-outs per Month are on the professor's list (D2, D3), so each keeps its own tab.
+  // One merged report. Most Ridden Rides per Month is on the professor's list (D2), so it keeps its own tab.
   {
     key: 'ride-performance',
     group: 'Ride reports',
@@ -1439,7 +1439,7 @@ const ALL_REPORTS = [
         notes: [
           'A quiet ride is one with less than half the average boardings. If it was available less than 95% of the time, downtime is the likely cause. If it was open almost always and its waits are short, low demand is the likely cause.',
           'Availability here counts every maintenance hour as closed, over the months in view, so it is an estimate. Repair hours are counted in the month the job started.',
-          'This is a rule of thumb, not proof. Rain-outs also lower boardings; see the Rain-outs tab.',
+          'This is a rule of thumb, not proof.',
         ],
         chartRows: (rows) => rideDiagnosis(rows).sort((a, b) => b.Boardings - a.Boardings),
         chart: { type: 'bar', x: 'RideName', y: 'Boardings', yLabel: 'Boardings', angle: true },
@@ -1566,50 +1566,6 @@ const ALL_REPORTS = [
           })
         },
         columns: ['ZoneName', 'Rides', 'Boardings', 'BoardingsPerRide', 'Note'],
-        rowClass: markOf,
-      },
-      // The TAs said not to build a weather report, but the professor's list includes "Rain-outs per month" (D2).
-      // So it stays as this one tab inside the ride report, not as a report of its own.
-      {
-        key: 'rain-outs',
-        title: 'Rain-outs per Month',
-        sectionDescription: 'Rain or storm events that closed outdoor rides, per month.',
-        endpoint: 'weather-impact',
-        view: 'v_WeatherImpact',
-        prepare: (rows) =>
-          toNumbers(rows, ['WeatherRefunds', 'RefundedAmount'])
-            .filter((r) => Number(r.ClosesOutdoorRides) === 1 && ['Rain', 'Storm'].includes(r.WeatherType))
-            .map((r) => ({ ...r, Month: monthOf(r.StartedAt) })),
-        filters: [{ key: 'WeatherType', label: 'Weather' }],
-        dateFilter: { key: 'StartedAt', label: 'Started' },
-        kpis: (rows) => {
-          const months = groupSum(rows, ['Month'], ['WeatherRefunds', 'RefundedAmount'])
-          const worst = extreme(months.map((m) => ({ Month: m.Month, RainOuts: m.Rows })), 'RainOuts')
-          return [
-            { label: 'Rain-outs', value: rows.length.toLocaleString('en-US') },
-            { label: 'Average per month', value: months.length ? (rows.length / months.length).toFixed(1) : '0', note: 'months with at least one' },
-            { label: 'Worst month', value: worst ? worst.row.Month : '—', note: worst ? `${worst.v} rain-outs` : '' },
-            { label: 'Weather refunds', value: total(rows, 'WeatherRefunds').toLocaleString('en-US'), note: money(total(rows, 'RefundedAmount')) },
-          ]
-        },
-        notes: [
-          'A rain-out is a rain or storm event that closed the outdoor rides. Months with none are not listed.',
-          'Weather refunds are tickets refunded because of the weather, so they show what rain-outs cost in ticket money.',
-          'Red months have far more rain-outs than a usual month.',
-        ],
-        chartRows: (rows) => groupSum(rows, ['Month'], []).map((m) => ({ Month: m.Month, RainOuts: m.Rows })).sort((a, b) => a.Month.localeCompare(b.Month)),
-        chart: { type: 'bar', x: 'Month', y: 'RainOuts' },
-        tableRows: (rows) => {
-          const months = groupSum(rows, ['Month'], ['WeatherRefunds', 'RefundedAmount']).map((m) => ({
-            Month: m.Month,
-            RainOuts: m.Rows,
-            WeatherRefunds: m.WeatherRefunds,
-            RefundedAmount: m.RefundedAmount,
-            All: 'all',
-          }))
-          return markCosts(months.sort((a, b) => a.Month.localeCompare(b.Month)), 'All', 'RainOuts').map((r) => (r.Note === 'Unusually costly' ? { ...r, Note: 'Unusually many rain-outs' } : r))
-        },
-        columns: ['Month', 'RainOuts', 'WeatherRefunds', 'RefundedAmount', 'Note'],
         rowClass: markOf,
       },
     ],
