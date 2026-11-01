@@ -1453,3 +1453,81 @@
 #dining-shops {
   scroll-margin-top: 90px;
 }
+
+
+/* Membership improvements */
+.membership-tier-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.membership-tier-heading span {
+  font-size: 28px;
+}
+
+.membership-benefits {
+  list-style: none;
+  padding-left: 0;
+}
+
+.membership-benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.membership-benefits li::before {
+  content: "✓";
+  color: #16a34a;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+
+/* Plan Your Visit featured cards */
+
+.pub-plan-featured-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.pub-plan-featured-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 28px rgba(15, 35, 65, 0.14);
+}
+
+.pub-plan-featured-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background: #eaf3ff;
+  font-size: 28px;
+}
+
+.pub-plan-featured-card:nth-child(2) .pub-plan-featured-icon {
+  background: #e8f8ed;
+}
+
+.pub-plan-featured-card:nth-child(3) .pub-plan-featured-icon {
+  background: #fff0e8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-plan-featured-card {
+    transition: none;
+  }
+
+  .pub-plan-featured-card:hover {
+    transform: none;
+  }
+}
