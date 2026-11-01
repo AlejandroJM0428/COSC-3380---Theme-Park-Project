@@ -82,6 +82,21 @@ export function refundVisitorTicket(ticketId) {
   needLive()
   return http(`/visitor/tickets/${ticketId}/refund`, { method: 'POST', body: {} })
 }
+export function renewVisitorMembership(data) {
+  needLive()
+  return http('/visitor/membership/renew', {
+    method: 'POST',
+    body: data
+  })
+}
+export function updateVisitorProfile(data) {
+  needLive()
+
+  return http('/visitor/profile', {
+    method: 'PUT',
+    body: data
+  })
+}
 
 // My Family (dependents under 18). Live database only. The server uses the CustomerID of the session and
 // checks every dependent id against that parent, so these never need a parent id.
