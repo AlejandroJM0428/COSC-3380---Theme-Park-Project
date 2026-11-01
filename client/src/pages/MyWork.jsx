@@ -3,11 +3,10 @@ import { getMyWork } from '../api/index.js'
 import DataTable from '../components/DataTable.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const day = (s) => (s ? String(s).slice(0, 16) : '—')
 const money = (v) => (v === null || v === undefined ? '—' : `$${Number(v).toFixed(2)}`)
 
-// Employee portal: read-only view of the logged-in worker's own shifts, jobs or restaurant sales.
+// Employee portal: read-only view of the logged-in worker's own hours, pay, shifts, ratings and jobs. No revenue.
 export default function MyWork() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
@@ -32,6 +31,7 @@ export default function MyWork() {
     Start: day(s.ClockIn),
     End: s.ClockOut ? day(s.ClockOut) : 'On shift',
     Hours: s.HoursWorked ?? '—',
+    Pay: s.Pay === null || s.Pay === undefined ? '—' : money(s.Pay),
     Rating: s.ShiftRating ?? '—',
     Notes: s.ShiftNotes ?? '—',
   }))
@@ -40,7 +40,7 @@ export default function MyWork() {
     <div>
       <h1>My work</h1>
       <p>
-        {data.employee.Name} · {data.employee.JobTitle} · Hired on: {data.employee.HireDate}
+        {data.employee.Name} · {data.employee.JobTitle} · Hired on: {data.employee.HireDate} · Hourly pay: {money(data.employee.HourlyPay)}
       </p>
 
       {data.jobs && (
@@ -55,22 +55,6 @@ export default function MyWork() {
               Started: day(j.StartDate),
               Closed: j.EndDate ? day(j.EndDate) : 'Open',
               Outcome: j.Outcome ?? '—',
-              'Repair cost': money(j.RepairCost),
-            }))}
-          />
-        </>
-      )}
-
-      {data.sales && (
-        <>
-          <h2>Restaurant sales (all restaurants)</h2>
-          <DataTable
-            rows={data.sales.map((s) => ({
-              Restaurant: s.VenueName,
-              Month: `${MONTHS[s.SaleMonth - 1]} ${s.SaleYear}`,
-              Orders: s.Orders,
-              Units: s.Units,
-              Revenue: money(s.Revenue),
             }))}
           />
         </>
