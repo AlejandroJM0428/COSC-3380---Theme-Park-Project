@@ -4,28 +4,32 @@ import BrandImage from '../components/BrandImage.jsx'
 import LoadError from '../components/LoadError.jsx'
 import ParkMap from '../components/ParkMap.jsx'
 import usePublicSite from '../hooks/usePublicSite.js'
-import { BRAND, LANDS, ZONE_MAP } from '../config/brand.js'
+import { BRAND, ENTERTAINMENT, LANDS, ZONE_MAP } from '../config/brand.js'
 import { money, rideImage } from '../utils/portalFormat.js'
 
 const MAX_PREMIER = 4
 const MAX_GAMES = 10
 
 
-// The tab row. 'all' is the default and shows everything; 'food' shows only games and dining & shops.
+// The tab row. 'all' is the default and shows everything. The ride tabs show rides only,
+// 'entertainment' shows the theater, and 'food' shows midway games plus dining & shops.
 const RIDE_CATEGORIES = [
   { key: 'all', label: 'All' },
   { key: 'premier', label: 'Premier Rides' },
   { key: 'thrill', label: 'Thrill Rides' },
   { key: 'family', label: 'Family Favorites' },
   { key: 'kids', label: 'Kids Rides' },
+  { key: 'entertainment', label: 'Entertainment' },
   { key: 'food', label: 'Food, Drinks & Games' },
 ]
 
-// Which tab a link opens: ?land=thrill|family|kids picks that land, #dining-shops opens the food tab, anything else is All.
+// Which tab a link opens: ?land=thrill|family|kids picks that land, ?land=dining or #dining-shops opens the food tab,
+// #entertainment opens the theater, anything else is All.
 function categoryFromUrl(params, hash) {
   const land = params.get('land')
   if (['thrill', 'family', 'kids'].includes(land)) return land
-  if (hash === '#dining-shops') return 'food'
+  if (land === 'dining' || hash === '#dining-shops') return 'food'
+  if (hash === '#entertainment') return 'entertainment'
   return 'all'
 }
 
@@ -100,7 +104,7 @@ export default function Rides() {
 useEffect(() => {
   const targetId = location.hash.slice(1)
 
-  if (targetId !== 'explore-rides' && targetId !== 'dining-shops') {
+  if (!['explore-rides', 'dining-shops', 'entertainment'].includes(targetId)) {
     return
   }
 
@@ -193,11 +197,14 @@ const filteredRides = useMemo(() => {
   const zoneRides = rides.filter(inZone)
   const zoneGames = games.filter(inZone)
   const zoneVenues = venues.filter(inZone)
+  const zoneShows = [ENTERTAINMENT].filter(inZone)
   const land = LANDS.find((l) => selected.length > 1 && l.zones.length === selected.length && l.zones.every((z) => selected.includes(z)))
   const title = selected.length === 0 ? 'Pick a zone' : land ? land.title : selected.join(', ')
 
-  // Rides show on every tab except Food, Drinks & Games; games and dining show on All and on that tab.
-  const showRides = rideCategory !== 'food'
+  // Rides show on All and the four ride tabs. The theater shows on All and Entertainment.
+  // Midway games and dining & shops show on All and Food, Drinks & Games.
+  const showRides = rideCategory !== 'food' && rideCategory !== 'entertainment'
+  const showEntertainment = rideCategory === 'all' || rideCategory === 'entertainment'
   const showFood = rideCategory === 'all' || rideCategory === 'food'
 
   function toggleZone(name) {
@@ -283,16 +290,42 @@ const filteredRides = useMemo(() => {
 
 
       
-      {showFood && games.length > 0 && (
-        <section aria-labelledby="pub-ent-title">
-          <h2 id="pub-ent-title" className="pub-h2 pub-h2-spaced">
+      {showEntertainment && (
+        <section id="entertainment" aria-labelledby="pub-show-title">
+          <h2 id="pub-show-title" className="pub-h2 pub-h2-spaced">
             Entertainment
           </h2>
-          
 
           <p className="pub-lede">
-            Step right up! Discover exciting midway games
-            and fun challenges for everyone.
+            Catch a live show at the park&apos;s theater.
+          </p>
+
+          <ul className="pub-games pub-games-enhanced">
+            <li className="pub-game-card">
+              <BrandImage src={ENTERTAINMENT.img} className="pub-game-image" label={ENTERTAINMENT.name} />
+
+              <div className="pub-game-content">
+                <h3>{ENTERTAINMENT.name}</h3>
+                <p className="pub-game-location">{ENTERTAINMENT.zoneName}</p>
+                <p className="pub-note">{ENTERTAINMENT.blurb}</p>
+                <div className="pub-game-bottom">
+                  <span className="pub-game-price">{ENTERTAINMENT.kind}</span>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </section>
+      )}
+
+      {showFood && games.length > 0 && (
+        <section aria-labelledby="pub-games-title">
+          <h2 id="pub-games-title" className="pub-h2 pub-h2-spaced">
+            Midway Games
+          </h2>
+
+          <p className="pub-lede">
+            Step right up! Test your aim, win prizes and
+            enjoy classic carnival games for everyone.
           </p>
 
           <ul className="pub-games pub-games-enhanced">
@@ -401,9 +434,10 @@ const filteredRides = useMemo(() => {
             ) : (
               <>
                 <ZoneList label="Rides" items={zoneRides.map((r) => ({ key: r.rideId, name: r.rideName, note: r.state, closed: r.state !== 'Open' }))} />
+                <ZoneList label="Entertainment" items={zoneShows.map((s) => ({ key: s.name, name: s.name, note: s.kind }))} />
                 <ZoneList label="Games" items={zoneGames.map((g) => ({ key: g.gameId, name: g.gameName, note: money(g.playPrice) }))} />
                 <ZoneList label="Dining & shops" items={zoneVenues.map((v) => ({ key: v.venueId, name: v.venueName, note: v.venueType }))} />
-                {zoneRides.length + zoneGames.length + zoneVenues.length === 0 && <p className="pub-note">Nothing listed here yet.</p>}
+                {zoneRides.length + zoneShows.length + zoneGames.length + zoneVenues.length === 0 && <p className="pub-note">Nothing listed here yet.</p>}
               </>
             )}
             <p className="pub-note"><Link to="/plan" className="pub-link">Hours, height rules and directions →</Link></p>

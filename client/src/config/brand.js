@@ -31,6 +31,17 @@ export const ZONE_MAP = {
   'Main Street': { x: 330, y: 290, w: 240, h: 160, fill: '#d3c4ec' },
 }
 
+// The park's one entertainment venue: a theater. Midway games are separate (they come from the Game table).
+// There is no database table for shows, so it lives here. Change the name, text or photo here and nothing else.
+// A missing photo falls back to a neutral gradient.
+export const ENTERTAINMENT = {
+  name: 'Zydeco Stage',
+  zoneName: 'Buffalo Bayou',
+  kind: 'Theater',
+  blurb: 'Live music and stage shows in the heart of the bayou.',
+  img: '/images/zydeco-stage.jpg',
+}
+
 // The lands guests browse by. `zones` are Zone.ZoneName values from the database.
 export const LANDS = [
   { key: 'thrill', title: 'Thrill Rides', blurb: 'Coasters, drops and big speed', img: BRAND.images.thrill, zones: ['The Loop'] },

@@ -44,8 +44,8 @@ useEffect(() => {
     },
     {
       icon: '🎡',
-      title: 'Entertainment',
-      description: 'Enjoy midway games, themed zones, and exciting park experiences.',
+      title: 'Games & Shows',
+      description: 'Try carnival midway games, catch a live show, and explore our themed zones.',
     },
   ]
 
