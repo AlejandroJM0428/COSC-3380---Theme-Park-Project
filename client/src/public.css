@@ -1531,3 +1531,172 @@
     transform: none;
   }
 }
+
+/* THUNDER VALLEY TICKETS PAGE */
+
+.tv-ticket-page {
+  background: linear-gradient(180deg, #eef5ff, #ffffff);
+  min-height: 100vh;
+  padding-bottom: 70px;
+}
+
+.tv-ticket-hero {
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 65px 20px;
+  color: white;
+  background:
+    linear-gradient(135deg, rgba(15, 36, 96, .88), rgba(31, 92, 199, .75)),
+    url('/images/roller-coaster.jpg') center/cover;
+}
+
+.tv-ticket-hero-content {
+  max-width: 780px;
+}
+
+.tv-ticket-eyebrow {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #ffd166;
+}
+
+.tv-ticket-hero h1 {
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1.1;
+  margin: 18px 0;
+  font-weight: 900;
+}
+
+.tv-ticket-hero p {
+  font-size: 18px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.tv-ticket-hero-btn,
+.tv-ticket-signin {
+  display: inline-block;
+  background: #dc4549;
+  color: white;
+  padding: 15px 28px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: 800;
+  transition: transform .2s, background .2s;
+}
+
+.tv-ticket-hero-btn:hover,
+.tv-ticket-signin:hover {
+  background: #b82f37;
+  transform: translateY(-3px);
+}
+
+.tv-ticket-container {
+  max-width: 1150px;
+  margin: auto;
+  padding: 50px 24px;
+}
+
+.tv-ticket-heading {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.tv-ticket-heading h2 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.tv-ticket-heading p {
+  color: #64748b;
+}
+
+.tv-ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.tv-ticket-card {
+  background: white;
+  padding: 35px 25px;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(20, 50, 100, .1);
+  transition: transform .2s;
+}
+
+.tv-ticket-card:hover {
+  transform: translateY(-6px);
+}
+
+.tv-ticket-icon {
+  font-size: 45px;
+  margin-bottom: 15px;
+}
+
+.tv-ticket-card h3 {
+  font-size: 21px;
+  margin-bottom: 12px;
+}
+
+.tv-ticket-card p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.tv-ticket-checkout {
+  margin-top: 45px;
+  padding: 45px 25px;
+  text-align: center;
+  border-radius: 20px;
+  background: #173d88;
+  color: white;
+}
+
+.tv-ticket-checkout h2 {
+  font-size: 32px;
+  margin: 15px 0;
+}
+
+.tv-ticket-checkout p {
+  margin: 12px auto 25px;
+  max-width: 550px;
+  line-height: 1.6;
+}
+
+.tv-ticket-actions {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tv-ticket-back {
+  color: white;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .tv-ticket-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tv-ticket-hero {
+    min-height: 300px;
+  }
+
+  .tv-ticket-container {
+    padding: 35px 16px;
+  }
+
+  .tv-ticket-checkout {
+    padding: 35px 18px;
+  }
+}

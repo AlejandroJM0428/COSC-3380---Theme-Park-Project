@@ -22,7 +22,7 @@ export default function PriceCheck({ prices }) {
   function submit(event) {
     event.preventDefault()
     const params = new URLSearchParams({ date, express: express ? '1' : '0', qty: String(qty) })
-    navigate(`/tickets?${params.toString()}`)
+    navigate(`/tickets?${params.toString()}#ticket-checkout`)
   }
 
   return (
