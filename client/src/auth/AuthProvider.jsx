@@ -51,8 +51,8 @@ export default function AuthProvider({ children }) {
     return () => window.removeEventListener(SESSION_EXPIRED, expired)
   }, [])
 
-  async function login(username, password) {
-    const loggedIn = await api.login(username, password) // { username, role }
+  async function login(username, password, audience) {
+    const loggedIn = await api.login(username, password, audience) // { username, role }
     setUser(loggedIn)
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(loggedIn))
     return loggedIn

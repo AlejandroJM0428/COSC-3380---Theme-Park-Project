@@ -6,10 +6,16 @@ import * as mock from './mock.js'
 // Mock mode is ON unless .env says VITE_USE_MOCK=false
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
 
-export function login(username, password) {
+// audience = 'staff' or 'member': which sign in page is asking. The server refuses the other kind of account.
+export function login(username, password, audience) {
   return USE_MOCK
-    ? mock.login(username, password)
-    : http('/auth/login', { method: 'POST', body: { username, password } })
+    ? mock.login(username, password, audience)
+    : http('/auth/login', { method: 'POST', body: { username, password, audience } })
+}
+
+// Active staff accounts for the staff sign in selects: [{ username, role, name, jobTitle }].
+export function listStaffAccounts() {
+  return USE_MOCK ? mock.listStaffAccounts() : http('/auth/staff').then((r) => r.accounts)
 }
 
 // Who does the server think is signed in? Used once on page load, because the browser only remembers

@@ -2,7 +2,8 @@ import './App.css'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import RequireAuth from './auth/RequireAuth.jsx'
 import Layout from './components/Layout.jsx'
-import Login from './pages/Login.jsx'
+import MemberLogin from './pages/MemberLogin.jsx'
+import StaffLogin from './pages/StaffLogin.jsx'
 import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import AdminOnePage from './pages/AdminOnePage.jsx'
@@ -61,14 +62,14 @@ export default function App() {
       </Route>
 
       {/* 2. Member (customer) login + account */}
-      <Route path="/member/login" element={<Login audience="member" />} />
+      <Route path="/member/login" element={<MemberLogin />} />
       <Route path="/member/register" element={<Register />} />
       <Route element={<RequireAuth roles={['Customer']} loginPath="/member/login" />}>
         <Route path="/member" element={<MemberPortal />} />
       </Route>
 
       {/* 3. Staff sign in (admins sign in here too and are sent to /admin) */}
-      <Route path="/staff/login" element={<Login audience="staff" />} />
+      <Route path="/staff/login" element={<StaffLogin />} />
       <Route path="/login" element={<Navigate to="/staff/login" replace />} />
       <Route path="/visitor" element={<Navigate to="/" replace />} />
 

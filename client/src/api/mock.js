@@ -9,11 +9,22 @@ const USERS = {
   
 }
 
-export async function login(username, password) {
+export async function login(username, password, audience) {
   await delay()
   const user = USERS[String(username).trim().toLowerCase()]
   if (!user || password !== 'password') throw new Error('Invalid username or password')
+  const isCustomer = user.role === 'Customer'
+  if ((audience === 'staff' && isCustomer) || (audience === 'member' && !isCustomer)) throw new Error('Invalid username or password')
   return user
+}
+
+export async function listStaffAccounts() {
+  await delay(120)
+  return [
+    { username: 'admin', role: 'Admin', name: null, jobTitle: null },
+    { username: 'manager', role: 'Manager', name: null, jobTitle: null },
+    { username: 'cashier', role: 'Cashier', name: null, jobTitle: null },
+  ]
 }
 
 export async function register({ username }) {
