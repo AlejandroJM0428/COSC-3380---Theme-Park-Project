@@ -1,55 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getPublicSite } from '../api/index.js'
 import BrandImage from '../components/BrandImage.jsx'
 import QuickBuy from '../components/QuickBuy.jsx'
-import { BRAND, LANDS } from '../config/brand.js'
-import { money, rideImage, statusTone } from '../utils/portalFormat.js'
+import PlanTiles from '../components/home/PlanTiles.jsx'
+import RideTeaser from '../components/home/RideTeaser.jsx'
+import ThingsToDo from '../components/home/ThingsToDo.jsx'
+import TicketsMembershipsPromo from '../components/home/TicketsMembershipsPromo.jsx'
+import { BRAND } from '../config/brand.js'
 
 // The public front door (/). No sign-in needed. It never shows wait times or anything personal.
 export default function HomePage() {
   const [site, setSite] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [rideSearch, setRideSearch] = useState('')
-  const [landFilter, setLandFilter] = useState(null)
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      setSite(await getPublicSite())
-    } catch (err) {
-      setError(err.message || 'Could not load the park information.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const [attempt, setAttempt] = useState(0)
 
-  useEffect(() => { refresh() }, [refresh])
-
-  const passPrice = site?.prices?.dayPass
-  const expressPrice = site?.prices?.expressAddOn
-  const rides = site?.rides ?? []
-  const visibleRides = useMemo(() => rides.filter((ride) => {
-    const q = rideSearch.trim().toLowerCase()
-    const matchesLand = !landFilter || landFilter.zones.includes(ride.zoneName)
-    return matchesLand && (!q || `${ride.rideName} ${ride.zoneName}`.toLowerCase().includes(q))
-  }), [rides, rideSearch, landFilter])
-
-  const landsEl = (
-    <section className="vp-lands" aria-label="Choose your adventure">
-      <h2>Choose Your Adventure</h2>
-      <div className="vp-land-grid">
-        {LANDS.map((land) => (
-          <button type="button" key={land.key} className={`vp-land ${landFilter?.key === land.key ? 'active' : ''}`} style={{ backgroundImage: `url(${land.img})` }}
-            onClick={() => { setLandFilter(landFilter?.key === land.key ? null : land); document.getElementById('rides')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
-            <span className="vp-land-label"><strong>{land.title}</strong><small>{land.blurb}</small></span>
-          </button>
-        ))}
-      </div>
-    </section>
-  )
+  useEffect(() => {
+    let alive = true
+    getPublicSite()
+      .then((data) => { if (alive) { setSite(data); setError('') } })
+      .catch((err) => { if (alive) setError(err.message || 'Could not load the park information.') })
+    return () => { alive = false }
+  }, [attempt])
 
   return (
     <main>
@@ -68,47 +41,20 @@ export default function HomePage() {
         <QuickBuy prices={site?.prices} />
       </div>
 
-      <div className="visitor-content">
-        {error && <div className="visitor-alert error" role="alert"><strong>Something needs attention</strong><span>{error}</span></div>}
-
-        {landsEl}
-
-        <section className="vp-promo" id="visit">
-          <div className="vp-promo-img" aria-hidden="true" />
-          <div className="vp-promo-copy">
-            <p className="vp-promo-eyebrow">Tickets &amp; Memberships</p>
-            <h2>{passPrice != null ? `Day passes from ${money(passPrice)}` : 'Day passes'}</h2>
-            <p>{expressPrice != null ? `Add Express queue access for ${money(expressPrice)} and skip the long queues.` : 'Add Express queue access and skip the long queues.'} Members get admission built in all year.</p>
-            <div className="vp-promo-actions">
-              <Link to="/tickets" className="vp-buy">Buy Tickets</Link>
-              <Link to="/member/register" className="vp-ghost vp-ghost-dark">Become a Member</Link>
-            </div>
+      {error && (
+        <div className="pub-section">
+          <div className="pub-alert" role="alert">
+            <strong>Something needs attention</strong>
+            <span>{error}</span>
+            <button type="button" onClick={() => setAttempt((n) => n + 1)}>Try again</button>
           </div>
-        </section>
+        </div>
+      )}
 
-
-        <section className="vp-rides" id="rides">
-          <h2>Rides &amp; Entertainment{landFilter ? <> · {landFilter.title} <button type="button" className="vp-clear" onClick={() => setLandFilter(null)}>Clear</button></> : null}</h2>
-          <div className="vp-list-bar">
-            <label className="vp-search"><span className="sr-only">Search rides or zones</span><input value={rideSearch} onChange={(event) => setRideSearch(event.target.value)} placeholder="Search rides or zones" /></label>
-            <strong>{visibleRides.length} things</strong>
-          </div>
-          <div className="vp-list">
-            {visibleRides.map((ride) => (
-              <article className={`vp-row ${ride.state === 'Open' ? '' : 'vp-row-closed'}`} key={ride.rideId}>
-                <div className="vp-row-img" style={{ backgroundImage: `url(${rideImage(ride.zoneName)})` }} aria-hidden="true" />
-                <div className="vp-row-main">
-                  <h3>{ride.rideName}</h3>
-                  <p>{ride.zoneName}</p>
-                  <span className={`ride-status ${statusTone(ride.state)}`}><i />{ride.state}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-          {!loading && visibleRides.length === 0 && <div className="empty-state ride-empty">No rides match those filters. Try a different search.</div>}
-          <p className="ride-disclaimer"><span aria-hidden="true">ⓘ</span> Status comes from the park’s live ride status.</p>
-        </section>
-      </div>
+      <ThingsToDo venues={site?.venues} />
+      <TicketsMembershipsPromo prices={site?.prices} tiers={site?.tiers} />
+      <RideTeaser rides={site?.rides} />
+      <PlanTiles hours={site?.hours} rides={site?.rides} />
     </main>
   )
 }

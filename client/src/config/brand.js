@@ -8,6 +8,8 @@ export const BRAND = {
   tagline: 'Adventure Park',
   // Placeholder homepage copy. Change it here.
   hero: { headline: 'More thrills. Less waiting.', sub: 'Day passes, Express queues and memberships for every kind of adventure.' },
+  // Placeholder "Plan your visit" copy. Hours and height rules come from the database.
+  plan: { directions: 'Address, parking and transit details will be added here.' },
   images: {
     hero: '/images/roller-coaster.jpg',
     thrill: '/images/thrill-rides.jpg',

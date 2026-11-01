@@ -3,8 +3,8 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import NotificationBar from './NotificationBar.jsx'
 import Wordmark from './Wordmark.jsx'
+import Footer from './home/Footer.jsx'
 import { BRAND } from '../config/brand.js'
-import '../pages/VisitorPortal.css' // transitional: the body sections still use these styles (removed in Part 6)
 import '../public.css'
 
 // Main navigation. Rides, Memberships and Plan point at homepage sections until their own
@@ -13,7 +13,7 @@ const NAV = [
   { to: '/tickets', label: 'Tickets' },
   { to: '/#rides', label: 'Rides & Entertainment', plain: true },
   { to: '/#visit', label: 'Memberships', plain: true },
-  { to: '/', label: 'Plan Your Visit', plain: true },
+  { to: '/#plan', label: 'Plan Your Visit', plain: true },
 ]
 
 // Layout for the public site: notices strip, one-row header, page, footer.
@@ -24,7 +24,7 @@ export default function PublicLayout() {
   const close = () => setMenuOpen(false)
 
   return (
-    <div className="pub visitor-portal">
+    <div className="pub" id="top">
       <NotificationBar variant="strip" />
 
       <header className="pub-header">
@@ -53,20 +53,7 @@ export default function PublicLayout() {
 
       <Outlet />
 
-      <footer className="pub-footer">
-        <div className="pub-footer-inner">
-          <Wordmark tagline={false} light />
-          <nav aria-label="Footer">
-            <Link to="/tickets">Tickets</Link>
-            <a href="/#rides">Rides</a>
-            <a href="/#visit">Memberships</a>
-            <Link to="/member/login">Member sign in</Link>
-            <Link to="/staff/login">Staff sign in</Link>
-            <a href="#top" onClick={(event) => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</a>
-          </nav>
-        </div>
-        <p>{BRAND.name} · Prototype</p>
-      </footer>
+      <Footer />
     </div>
   )
 }
