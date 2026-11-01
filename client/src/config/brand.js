@@ -8,6 +8,17 @@ export const BRAND = {
   established: 2025,                       // shown as "Est. 2025"; no database column for it
   tagline: 'Every Road Leads to Fun!',
 
+  // Park clock. Everything on the site that depends on "now" uses this time zone, not the visitor's.
+  timeZone: 'America/Chicago',
+
+  // Happy Hour: shown in the top ticker while the park is open. Times are park time, 24-hour HH:MM.
+  // The offer lines are placeholders: change them here and nothing else.
+  happyHour: {
+    start: '17:30',
+    end: '19:00',
+    lines: ['Happy Hour is on across the park', 'Ask any team member about today\'s Happy Hour deals'],
+  },
+
   // Placeholder homepage copy. Change it here.
   hero: { headline: 'More thrills. Less waiting.', sub: 'Day passes, Express queues and memberships for every kind of adventure.' },
   // Placeholder "Plan your visit" copy. Hours and height rules come from the database.
