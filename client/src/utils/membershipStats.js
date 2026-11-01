@@ -22,7 +22,7 @@ export const SAMPLE_TILES = [
 // Placeholder "level" bar.
 export const SAMPLE_LEVEL = { name: 'Adventurer', next: 'Thrill Seeker', pct: 62, sample: true }
 
-export function buildStats({ membership, tickets = [], dayPassPrice = 79 }) {
+export function buildStats({ membership, tickets = [], dayPassPrice = 59 }) {
   if (!membership) return null
   const today = new Date()
   today.setHours(12, 0, 0, 0)

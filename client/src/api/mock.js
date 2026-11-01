@@ -131,12 +131,12 @@ export async function getReport(endpoint) {
 export async function getPublicSite() {
   await delay()
   return {
-    prices: { dayPass: 79, expressAddOn: 25 },
+    prices: { dayPass: 59, expressAddOn: 25 },
     hours: { open: '09:00', close: '22:00' },
     tiers: [
-      { tier: 'Basic', annualPrice: 99, anyDayAccess: false, includesExpress: false, benefits: ['Weekday admission', 'Standard queues included'] },
-      { tier: 'Plus', annualPrice: 149, anyDayAccess: true, includesExpress: false, benefits: ['Any-day admission', 'Standard queues included'] },
-      { tier: 'Premier', annualPrice: 249, anyDayAccess: true, includesExpress: true, benefits: ['Any-day admission', 'Express queues included'] },
+      { tier: 'Basic', annualPrice: 69, anyDayAccess: false, includesExpress: false, benefits: ['Weekday admission', 'Standard queues included'] },
+      { tier: 'Plus', annualPrice: 89, anyDayAccess: true, includesExpress: false, benefits: ['Any-day admission', 'Standard queues included'] },
+      { tier: 'Premier', annualPrice: 179, anyDayAccess: true, includesExpress: true, benefits: ['Any-day admission', 'Express queues included'] },
     ],
     rides: [
       { rideId: 3, rideName: 'Thunder Run', zoneName: 'Thunder Canyon', rideType: 'Coaster', minHeightCm: 122, expressEligible: true, state: 'Open' },

@@ -81,7 +81,7 @@ export default function MemberPortal() {
 
   const membership = dashboard?.membership
   const isPremier = membership?.tier === 'Premier'
-  const passPrice = dashboard?.prices?.dayPass ?? 79
+  const passPrice = dashboard?.prices?.dayPass ?? 59
   const expressPrice = dashboard?.prices?.expressAddOn ?? 25
   const totalPrice = (membership ? 0 : passPrice) + (hasExpress && !isPremier ? expressPrice : 0)
   const rides = dashboard?.rides ?? []
