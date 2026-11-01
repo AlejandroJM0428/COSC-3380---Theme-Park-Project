@@ -1700,3 +1700,218 @@
     padding: 35px 18px;
   }
 }
+
+
+/* THUNDER VALLEY MEMBER LOGIN REDESIGN */
+
+/* Apply this class to the login page's outer wrapper */
+.tv-login-page {
+  min-height: 100vh;
+  padding: 70px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(rgba(12, 30, 75, 0.72), rgba(20, 50, 105, 0.78)),
+    url('/images/roller-coaster.jpg') center/cover no-repeat;
+}
+
+.tv-login-page .auth-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 38px;
+  background: white;
+  border-radius: 22px;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.25);
+}
+
+.tv-login-page h1 {
+  font-size: 32px;
+  font-weight: 850;
+  margin-bottom: 25px;
+  color: #152b55;
+}
+
+.tv-login-page input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #d1dbea;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.tv-login-page input:focus {
+  outline: none;
+  border-color: #527dec;
+  box-shadow: 0 0 0 3px rgba(82, 125, 236, .15);
+}
+
+.tv-login-page button[type="submit"] {
+  width: 100%;
+  background: #d6484b;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .2s, transform .2s;
+}
+
+.tv-login-page button[type="submit"]:hover {
+  background: #b93037;
+  transform: translateY(-2px);
+}
+
+.tv-login-page a {
+  color: #24468f;
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .tv-login-page {
+    padding: 24px 16px;
+  }
+
+  .tv-login-page .auth-card {
+    padding: 26px 20px;
+  }
+}
+
+/* THUNDER VALLEY MEMBER SIGN IN */
+
+.auth.tv-member-login {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  background:
+    linear-gradient(
+      rgba(13, 34, 83, 0.72),
+      rgba(24, 58, 120, 0.78)
+    ),
+    url('/images/roller-coaster.jpg') center/cover no-repeat;
+}
+
+.tv-member-login .auth-main {
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.tv-member-login .auth-card {
+  width: 100%;
+  box-sizing: border-box;
+  background: white;
+  padding: 38px;
+  border-radius: 22px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.tv-member-login .auth-head {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.tv-member-login .auth-head h1 {
+  font-size: 32px;
+  font-weight: 850;
+  color: #162c57;
+  margin: 16px 0 8px;
+}
+
+.tv-member-login .tv-login-subtitle {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tv-member-login .auth-body label {
+  display: block;
+  font-weight: 700;
+  color: #26354d;
+  margin-bottom: 18px;
+}
+
+.tv-member-login .auth-body input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+  padding: 14px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 16px;
+}
+
+.tv-member-login .auth-body input:focus {
+  outline: none;
+  border-color: #527dec;
+  box-shadow: 0 0 0 3px rgba(82, 125, 236, 0.15);
+}
+
+.tv-member-login .auth-submit {
+  width: 100%;
+  background: #d6484b;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .2s, transform .2s;
+}
+
+.tv-member-login .auth-submit:hover:not(:disabled) {
+  background: #b93037;
+  transform: translateY(-2px);
+}
+
+.tv-member-login .auth-links {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 14px;
+}
+
+.tv-member-login .auth-links a {
+  color: #24468f;
+  font-weight: 700;
+}
+
+.tv-member-login .auth-back {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.tv-member-login .auth-back a {
+  color: white;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tv-member-login .auth-back a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .auth.tv-member-login {
+    padding: 24px 16px;
+  }
+
+  .tv-member-login .auth-card {
+    padding: 28px 22px;
+  }
+
+  .tv-member-login .auth-head h1 {
+    font-size: 27px;
+  }
+}
