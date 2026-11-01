@@ -4,11 +4,11 @@ import BrandImage from '../components/BrandImage.jsx'
 import LoadError from '../components/LoadError.jsx'
 import usePublicSite from '../hooks/usePublicSite.js'
 import { BRAND, LANDS } from '../config/brand.js'
-import { rideImage } from '../utils/portalFormat.js'
+import { money, rideImage } from '../utils/portalFormat.js'
 
-const TABS = [{ key: 'all', title: 'All' }, ...LANDS.map((l) => ({ key: l.key, title: l.title })), { key: 'dining', title: 'Dining & Shops' }]
+const TABS = [{ key: 'all', title: 'All' }, ...LANDS.map((l) => ({ key: l.key, title: l.title })), { key: 'dining', title: 'Dining & Shops' }, { key: 'entertainment', title: 'Entertainment' }]
 
-// Public rides page (/rides?land=thrill|family|kids|dining). Open/Closed only: no wait times, no member data.
+// Public rides page (/rides?land=thrill|family|kids|dining|entertainment). Open/Closed only: no wait times, no member data.
 // An unknown or missing `land` shows everything.
 export default function Rides() {
   const { site, loading, error, retry } = usePublicSite()
@@ -18,7 +18,8 @@ export default function Rides() {
   const requested = params.get('land')
   const land = LANDS.find((l) => l.key === requested)
   const dining = requested === 'dining'
-  const activeKey = land ? land.key : dining ? 'dining' : 'all'
+  const fun = requested === 'entertainment'
+  const activeKey = land ? land.key : dining ? 'dining' : fun ? 'entertainment' : 'all'
   const q = search.trim().toLowerCase()
 
   const rides = useMemo(() => (site?.rides ?? []).filter((r) => (
@@ -29,7 +30,13 @@ export default function Rides() {
     !q || `${v.venueName} ${v.zoneName} ${v.venueType}`.toLowerCase().includes(q)
   )), [site, q])
 
-  const count = dining ? venues.length : rides.length
+  const games = useMemo(() => (site?.games ?? []).filter((g) => (
+    !q || `${g.gameName} ${g.zoneName}`.toLowerCase().includes(q)
+  )), [site, q])
+
+  const count = dining ? venues.length : fun ? games.length : rides.length
+  const noun = dining ? ['place', 'places'] : fun ? ['game', 'games'] : ['ride', 'rides']
+  const searchLabel = dining ? 'Search dining and shops' : fun ? 'Search games' : 'Search rides or zones'
 
   return (
     <main className="pub-page pub-page-wide">
@@ -44,15 +51,28 @@ export default function Rides() {
 
       <div className="pub-list-bar">
         <label className="pub-search">
-          <span className="sr-only">{dining ? 'Search dining and shops' : 'Search rides or zones'}</span>
-          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={dining ? 'Search dining and shops' : 'Search rides or zones'} />
+          <span className="sr-only">{searchLabel}</span>
+          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={searchLabel} />
         </label>
-        <strong aria-live="polite">{loading ? 'Loading…' : `${count} ${dining ? (count === 1 ? 'place' : 'places') : (count === 1 ? 'ride' : 'rides')}`}</strong>
+        <strong aria-live="polite">{loading ? 'Loading…' : `${count} ${count === 1 ? noun[0] : noun[1]}`}</strong>
       </div>
 
       {error && <LoadError message={error} onRetry={retry} />}
 
-      {dining ? (
+      {fun ? (
+        <ul className="pub-rows">
+          {games.map((g) => (
+            <li key={g.gameId} className="pub-row">
+              <BrandImage src={rideImage(g.zoneName)} className="pub-row-img" />
+              <div className="pub-row-main">
+                <h2>{g.gameName}</h2>
+                <p>{g.zoneName} · Midway game</p>
+              </div>
+              <span className="pub-badge open">{money(g.playPrice)} per play</span>
+            </li>
+          ))}
+        </ul>
+      ) : dining ? (
         <ul className="pub-rows">
           {venues.map((v) => (
             <li key={v.venueId} className="pub-row">

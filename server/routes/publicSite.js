@@ -3,7 +3,7 @@ import { pool } from '../db.js';
 
 // Public site data for the homepage and the public pages. No login needed, so it only ever
 // contains things any visitor may see: prices, hours, membership tiers for sale, rides (name,
-// zone, type, height rule, Open/Closed) and venues.
+// zone, type, height rule, Open/Closed), venues and games (name, zone, price per play).
 //
 // It NEVER contains wait times: no RideLog query, no wait columns. Wait times are members only
 // and live in /api/visitor/dashboard. Notices come from the existing public /api/notifications.
@@ -30,7 +30,7 @@ function tierJson(r) {
 }
 
 async function loadSite() {
-  const [[parkRows], [tierRows], [rideRows], [venueRows]] = await Promise.all([
+  const [[parkRows], [tierRows], [rideRows], [venueRows], [gameRows]] = await Promise.all([
     pool.query('SELECT DayPassPrice, ExpressAddOnPrice, OpeningTime, ClosingTime FROM Park WHERE ParkID = 1'),
     pool.query('SELECT Tier, AnnualPrice FROM MembershipTier WHERE IsForSale = 1 ORDER BY AnnualPrice'),
     pool.query(
@@ -46,6 +46,13 @@ async function loadSite() {
          JOIN Zone z ON z.ZoneID = v.ZoneID
         WHERE v.IsActive = 1
         ORDER BY v.VenueType, v.VenueName`,
+    ),
+    pool.query(
+      `SELECT g.GameID, g.GameName, g.PlayPrice, z.ZoneName
+         FROM Game g
+         JOIN Zone z ON z.ZoneID = g.ZoneID
+        WHERE g.IsActive = 1
+        ORDER BY z.ZoneName, g.GameName`,
     ),
   ]);
 
@@ -69,6 +76,12 @@ async function loadSite() {
       venueType: v.VenueType,
       serviceType: v.ServiceType ?? null,
       zoneName: v.ZoneName,
+    })),
+    games: gameRows.map((g) => ({
+      gameId: g.GameID,
+      gameName: g.GameName,
+      playPrice: Number(g.PlayPrice),
+      zoneName: g.ZoneName,
     })),
   };
 }

@@ -153,6 +153,11 @@ export async function getPublicSite() {
       { venueId: 1, venueName: 'Main Street Diner', venueType: 'Restaurant', serviceType: 'Table Service', zoneName: 'Main Street' },
       { venueId: 2, venueName: 'Canyon Grill', venueType: 'Restaurant', serviceType: 'Quick Service', zoneName: 'Thunder Canyon' },
     ],
+    games: [
+      { gameId: 1, gameName: 'Skee-Ball', playPrice: 2, zoneName: 'Main Street' },
+      { gameId: 2, gameName: 'Ring Toss', playPrice: 3, zoneName: 'Fantasy Forest' },
+      { gameId: 3, gameName: 'High Striker', playPrice: 4, zoneName: 'Thunder Canyon' },
+    ],
   }
 }
 

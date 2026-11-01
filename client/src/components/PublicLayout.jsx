@@ -9,7 +9,6 @@ import '../public.css'
 
 // Main navigation.
 const NAV = [
-  { to: '/tickets', label: 'Tickets' },
   { to: '/rides', label: 'Rides & Entertainment' },
   { to: '/memberships', label: 'Memberships' },
   { to: '/plan', label: 'Plan Your Visit' },
