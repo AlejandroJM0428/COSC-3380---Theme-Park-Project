@@ -1,0 +1,42 @@
+/* Sign in and sign up pages (AuthShell). One frame, two looks:
+   .auth-member = the public site look (brand tokens in theme.css)
+   .auth-staff  = the staff portal look (palette in index.css), tinted by the chosen portal */
+.auth { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+.auth-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 32px 16px 48px; }
+.auth-card { width: 100%; max-width: 420px; border-radius: var(--auth-radius, 12px); overflow: hidden; }
+.auth-head { padding: 24px 28px 18px; }
+.auth-head h1 { margin: 10px 0 0; font-size: 1.6rem; }
+.auth-body { padding: 4px 28px 28px; }
+.auth-body form { display: flex; flex-direction: column; gap: 14px; }
+.auth-body input, .auth-body select { width: 100%; min-height: 42px; }
+.auth-submit { width: 100%; min-height: 44px; font-size: 1rem; margin-top: 4px; }
+.auth-note, .auth-links, .auth-wait { margin: 0; font-size: 0.9rem; }
+.auth-wait { padding: 12px 0 8px; }
+.auth-links a, .auth-back a { text-decoration: underline; text-underline-offset: 3px; }
+.auth-back { margin: 0; font-size: 0.9rem; }
+
+/* member: public site look */
+.auth-member { --role: var(--brand-primary); --on-role: var(--brand-primary-contrast); --auth-radius: var(--brand-radius); background: var(--brand-surface-alt); color: var(--brand-ink); }
+.auth-member .auth-card { background: var(--brand-surface); border: 1px solid var(--brand-line); box-shadow: 0 8px 30px rgba(20, 32, 43, 0.08); }
+.auth-member .auth-head h1 { font-family: var(--brand-font-display); letter-spacing: -0.02em; }
+.auth-member .wordmark strong { color: var(--brand-primary); }
+.auth-member .auth-body input, .auth-member .auth-body select { border-color: var(--brand-line); border-radius: 8px; }
+.auth-member .auth-submit { border-color: var(--brand-primary); border-radius: 999px; }
+.auth-member .auth-submit:hover:not(:disabled) { box-shadow: 0 0 0 3px rgba(11, 61, 145, 0.25); }
+.auth-member .muted { color: var(--brand-muted); }
+
+/* staff: portal look */
+.auth-staff { background: var(--mist); }
+.auth-staff:not([data-role]) .awning { --awning: repeating-linear-gradient(90deg, var(--plum) 0 28px, #fff 28px 56px, var(--blue) 56px 84px, #fff 84px 112px, var(--amber) 112px 140px, #fff 140px 168px); }
+.auth-staff .auth-card { --auth-radius: 8px; background: var(--panel); border: 2px solid var(--ink); }
+.auth-staff .auth-head { background: var(--pine); color: #fff; }
+.auth-staff .auth-head .wordmark small { color: inherit; }
+.auth-staff .auth-body { padding-top: 22px; }
+.auth-staff select:disabled { background: #f1f4f3; color: var(--muted); cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .auth-main { justify-content: flex-start; padding-top: 24px; }
+  .auth-head { padding: 20px 20px 14px; }
+  .auth-body { padding: 4px 20px 22px; }
+  .auth-staff .auth-body { padding-top: 18px; }
+}

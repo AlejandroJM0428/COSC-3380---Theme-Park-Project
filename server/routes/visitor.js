@@ -14,7 +14,7 @@ import { describeTrigger } from '../demos/triggerCatalog.js';
 // accidental double-bookings. Their messages (errno 1644) reach the browser through handleError(),
 // together with the trigger's name, so the portal can show a "trigger fired" card.
 
-const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`));
+export const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`));
 
 // Rides: current state from v_RideAvailability. Wait readings are NOT in this query: they are
 // loaded separately (RIDE_WAITS_SQL) and only for a signed-in customer with an active membership.
@@ -34,7 +34,7 @@ const RIDE_WAITS_SQL = `
     FROM v_RideAvailability a`;
 
 // One customer's tickets (v_CustomerTickets already carries the refund flag).
-const TICKETS_SQL = `
+export const TICKETS_SQL = `
   SELECT t.TicketID, t.VisitDate, t.HasExpress, t.TicketPrice, t.PurchaseDate, t.IsRefunded,
          (t.VisitDate < CURDATE()) AS IsPast,
          EXISTS (SELECT 1 FROM RideLog l WHERE l.TicketID = t.TicketID AND l.EventType = 'Boarding') AS HasBoarded
@@ -48,7 +48,7 @@ function ticketStatus(r) {
   return 'Confirmed';
 }
 
-function ticketJson(r) {
+export function ticketJson(r) {
   return {
     ticketId: r.TicketID,
     visitDate: r.VisitDate,
@@ -59,7 +59,7 @@ function ticketJson(r) {
   };
 }
 
-async function loadTicket(customerId, ticketId) {
+export async function loadTicket(customerId, ticketId) {
   const [rows] = await pool.query(`${TICKETS_SQL} AND t.TicketID = ?`, [customerId, ticketId]);
   return rows[0] ?? null;
 }
@@ -149,6 +149,7 @@ route('GET', '/api/visitor/dashboard', async (ctx) => {
   const out = {
     customer: null,
     membership: null,
+    membershipHistory: [],
     waitsVisible: false,
     perks: [],
     tiers: [],
@@ -161,18 +162,52 @@ route('GET', '/api/visitor/dashboard', async (ctx) => {
   if (session?.role === 'Customer' && session.CustomerID) {
     out.tiers = await loadTiers();
     const [[cust]] = await pool.query(
-      'SELECT CustomerID, FirstName, LastName FROM Customer WHERE CustomerID = ? AND IsActive = 1',
+      'SELECT CustomerID, FirstName, LastName, DOB, HeightCm FROM Customer WHERE CustomerID = ? AND IsActive = 1',
       [session.CustomerID],
     );
     if (!cust) throw new HttpError(404, 'Your customer profile could not be found');
-    out.customer = { customerId: cust.CustomerID, firstName: cust.FirstName, lastName: cust.LastName };
+    out.customer = { customerId: cust.CustomerID, firstName: cust.FirstName, lastName: cust.LastName, dob: cust.DOB, heightCm: cust.HeightCm };
 
-    const m = await loadActiveMembership(cust.CustomerID);
+    const [[m]] = await pool.query(
+      `SELECT MembershipID, Tier, StartDate, EndDate, Price, AutoRenew, IncludesExpress, AnyDayAccess
+         FROM v_CustomerMemberships
+        WHERE CustomerID = ? AND IsActiveNow = 1
+        ORDER BY EndDate DESC LIMIT 1`,
+      [cust.CustomerID],
+    );
+
     if (m) {
-      out.membership = membershipJson(m);
+      out.membership = {
+        membershipId: m.MembershipID,
+        tier: m.Tier,
+        startDate: m.StartDate,
+        endDate: m.EndDate,
+        annualPrice: Number(m.Price),
+        autoRenew: Boolean(m.AutoRenew),
+        benefits: benefits(m),
+      };
       out.perks = await loadPerks(m.MembershipID);
       out.waitsVisible = true;
     }
+
+    const [membershipRows] = await pool.query(
+      `SELECT MembershipID, Tier, StartDate, EndDate,
+              Price, AutoRenew, IncludesExpress, AnyDayAccess
+         FROM Membership
+        WHERE CustomerID = ?
+        ORDER BY StartDate DESC`,
+      [cust.CustomerID],
+    );
+    out.membershipHistory = membershipRows.map((row) => ({
+      membershipId: row.MembershipID,
+      tier: row.Tier,
+      startDate: row.StartDate,
+      endDate: row.EndDate,
+      annualPrice: Number(row.Price),
+      autoRenew: Boolean(row.AutoRenew),
+      includesExpress: Boolean(row.IncludesExpress),
+      anyDayAccess: Boolean(row.AnyDayAccess),
+    }));
 
     const [ticketRows] = await pool.query(`${TICKETS_SQL} ORDER BY t.VisitDate DESC, t.TicketID DESC LIMIT 200`, [cust.CustomerID]);
     out.tickets = ticketRows.map(ticketJson);
@@ -237,7 +272,7 @@ route(
 
 // What the database did for this ticket, for the "trigger fired" card. Only triggers that really exist are listed.
 // The two notice triggers are listed only when their notice was created within the last few seconds.
-async function ticketTriggersThatRan(ticket, visitDate) {
+export async function ticketTriggersThatRan(ticket, visitDate) {
   const names = await installedTriggers(['trg_Ticket_BI_Guard', 'trg_Ticket_BI', 'trg_Ticket_AI_SellingFast', 'trg_Ticket_AI_Notify']);
   const out = [];
   if (names.includes('trg_Ticket_BI_Guard')) out.push(fired('trg_Ticket_BI_Guard', 'Spam check passed: no recent duplicate for this date.'));
@@ -320,4 +355,162 @@ route(
     }
     return ticketJson(await loadTicket(customerId, id));
   }),
+);
+
+route(
+  'POST',
+  '/api/visitor/membership/renew',
+  requireRole('Customer')(async (ctx) => {
+    const customerId = ctx.session.CustomerID;
+    const { tier } = ctx.body;
+
+    const allowedTiers = ['Basic', 'Plus', 'Premier'];
+
+    if (!allowedTiers.includes(tier)) {
+      throw new HttpError(400, 'Invalid membership tier.');
+    }
+
+    // Retrieve the customer's most recent membership.
+    const [[previous]] = await pool.query(
+      `SELECT EndDate
+         FROM Membership
+        WHERE CustomerID = ?
+        ORDER BY EndDate DESC
+        LIMIT 1`,
+      [customerId]
+    );
+
+    // Start tomorrow if the existing membership is still active.
+    // Otherwise, start today.
+    const [[dateResult]] = await pool.query(
+      'SELECT CURDATE() AS today'
+    );
+
+    let startDate = dateResult.today;
+
+    if (previous && previous.EndDate >= dateResult.today) {
+      const [[nextDate]] = await pool.query(
+        'SELECT DATE_ADD(?, INTERVAL 1 DAY) AS nextDate',
+        [previous.EndDate]
+      );
+
+      startDate = nextDate.nextDate;
+    }
+
+    // The existing database membership rules and triggers
+    // determine the price and enforce membership constraints.
+    const [result] = await pool.query(
+      `INSERT INTO Membership
+         (CustomerID, Tier, StartDate, EndDate, Price, AutoRenew)
+       VALUES (
+         ?, ?, ?,
+         DATE_SUB(DATE_ADD(?, INTERVAL 1 YEAR), INTERVAL 1 DAY),
+         0, 0
+       )`,
+      [customerId, tier, startDate, startDate]
+    );
+
+    return {
+      message: 'Membership renewal created successfully.',
+      membershipId: result.insertId,
+      startDate
+    };
+  })
+  
+);
+// PUT /api/visitor/profile
+// Updates only the profile belonging to the logged-in customer.
+route(
+  'PUT',
+  '/api/visitor/profile',
+  requireRole('Customer')(async (ctx) => {
+    const customerId = ctx.session.CustomerID;
+    const { firstName, lastName, dob, heightCm } = ctx.body ?? {};
+
+    const updates = [];
+    const values = [];
+
+    // First name
+    if (firstName !== undefined) {
+      if (typeof firstName !== 'string' || !firstName.trim()) {
+        throw new HttpError(400, 'First name cannot be empty.');
+      }
+
+      updates.push('FirstName = ?');
+      values.push(firstName.trim());
+    }
+
+    // Last name
+    if (lastName !== undefined) {
+      if (typeof lastName !== 'string' || !lastName.trim()) {
+        throw new HttpError(400, 'Last name cannot be empty.');
+      }
+
+      updates.push('LastName = ?');
+      values.push(lastName.trim());
+    }
+
+    // Date of birth
+    if (dob !== undefined) {
+      if (dob !== null && !isDate(dob)) {
+        throw new HttpError(400, 'Enter a valid date of birth (YYYY-MM-DD).');
+      }
+
+      updates.push('DOB = ?');
+      values.push(dob);
+    }
+
+    // Height
+    if (heightCm !== undefined) {
+      if (
+        heightCm !== null &&
+        (
+          typeof heightCm !== 'number' ||
+          !Number.isFinite(heightCm) ||
+          heightCm <= 0 ||
+          heightCm > 300
+        )
+      ) {
+        throw new HttpError(400, 'Height must be between 0 and 300 cm.');
+      }
+
+      updates.push('HeightCm = ?');
+      values.push(heightCm);
+    }
+
+    if (updates.length === 0) {
+      throw new HttpError(400, 'No profile information was provided.');
+    }
+
+    values.push(customerId);
+
+    await pool.query(
+      `UPDATE Customer
+          SET ${updates.join(', ')}
+        WHERE CustomerID = ?`,
+      values
+    );
+
+    const [[profile]] = await pool.query(
+      `SELECT CustomerID, FirstName, LastName, DOB, HeightCm
+         FROM Customer
+        WHERE CustomerID = ?`,
+      [customerId]
+    );
+
+    if (!profile) {
+      throw new HttpError(404, 'Your customer profile could not be found.');
+    }
+
+    return {
+      message: 'Profile updated successfully.',
+      profile: {
+        customerId: profile.CustomerID,
+        firstName: profile.FirstName,
+        lastName: profile.LastName,
+        dob: profile.DOB,
+        heightCm: profile.HeightCm,
+      },
+    };
+  })
 );

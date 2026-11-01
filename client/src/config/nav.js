@@ -13,7 +13,7 @@ export const ROLE_INFO = {
   Manager: { title: 'Operations desk', blurb: 'Ride availability and performance, attendance and capacity, the ride log, the weather log and maintenance status.' },
   Cashier: { title: 'Ticket booth', blurb: 'Sell tickets, look up guests and memberships, record purchases and game plays.' },
   Customer: { title: 'Customer account', blurb: 'Explore rides, manage your tickets, and view your membership' },
-  RetailManager: { title: 'Retail desk', blurb: 'Revenue and sales, memberships, attendance, ticket sales and refunds, guests and park notices.' },
+  RetailManager: { title: 'Retail desk', blurb: 'Revenue and sales, memberships and cancellation requests, attendance, ticket sales and refunds, guests and park notices.' },
   HRManager: { title: 'People desk', blurb: 'Employee performance, staff by zone and shift ratings.' },
   MaintenanceManager: { title: 'Maintenance desk', blurb: 'Repair jobs, repair costs and ride downtime.' },
   MaintenanceWorker: { title: 'Maintenance crew', blurb: 'Your repair jobs and shifts.' },
@@ -45,6 +45,7 @@ export const FORM_PAGES = [
   { path: 'game-plays',  label: 'Game Plays',             roles: SALES_ROLES, ready: true },
   { path: 'customers',   label: 'Customers',              roles: SALES_ROLES, ready: true },
   { path: 'memberships', label: 'Memberships',            roles: SALES_ROLES, ready: true },
+  { path: 'cancellations', label: 'Membership Cancellations', roles: ['Admin', 'RetailManager'], ready: true }, // same reviewers as REVIEWERS in server/routes/cancellations.js
   { path: 'ride-log',    label: 'Ride Log',               roles: OPS_ROLES, ready: true },
   { path: 'weather',     label: 'Weather Log',            roles: OPS_ROLES, ready: true },
   { path: 'maintenance', label: 'Maintenance',            roles: [...OPS_ROLES, 'MaintenanceManager'], ready: true }, // Manager can view only
@@ -107,6 +108,6 @@ export const ADMIN_NAV_SECTIONS = [
   {
     title: 'Daily records',
     zone: 'var(--coral)',
-    items: ['tickets', 'refunds', 'purchases', 'game-plays', 'customers', 'memberships', 'ride-log', 'weather', 'maintenance', 'employees'].map(formItem),
+    items: ['tickets', 'refunds', 'purchases', 'game-plays', 'customers', 'memberships', 'cancellations', 'ride-log', 'weather', 'maintenance', 'employees'].map(formItem),
   },
 ]

@@ -17,6 +17,8 @@ import './routes/maintenance.js';
 import './routes/shifts.js';
 import './routes/notifications.js';
 import './routes/visitor.js';
+import './routes/family.js';
+import './routes/cancellations.js';
 import './routes/publicSite.js';
 import './routes/me.js';
 import './routes/admin.js';

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
-import { buyVisitorTicket, getVisitorDashboard, refundVisitorTicket } from '../api/index.js'
+import { buyVisitorTicket,getVisitorDashboard, refundVisitorTicket, renewVisitorMembership, updateVisitorProfile } from '../api/index.js'
 import NotificationBar from '../components/NotificationBar.jsx'
 import Wordmark from '../components/Wordmark.jsx'
 import { BRAND, LANDS } from '../config/brand.js'
@@ -79,8 +79,28 @@ export default function VisitorPortal({ mode = 'public' }) {
   useEffect(() => { refresh() }, [refresh])
 
   const membership = dashboard?.membership
+  //function to determine membership status:Expired, not active, Expires soon.
+  function getMembershipStatus(membership){
+    if (!membership) return 'No Membership'
+    const today = localDate(0);
+    if (today < membership.startDate){
+      return 'Not yet Active'
+    }
+    if (today > membership.startDate){
+      return 'Expired'
+    }
+    const todayDate = new Date(`${today}T12:00:00`)
+    const endDate = new Date(`${membership.endDate}T12:00:00`)
+
+    const daysRemaining = Math.ceil(
+      (endDate - todayDate) / (1000 * 60 * 60 * 24)
+    )
+
+  return daysRemaining <= 30 ? 'Expiring Soon' : 'Active'
+  }
+  const membershipStatus = getMembershipStatus(membership)
   const isPremier = membership?.tier === 'Premier'
-  const passPrice = dashboard?.prices?.dayPass ?? 79
+  const passPrice = dashboard?.prices?.dayPass ?? 59
   const expressPrice = dashboard?.prices?.expressAddOn ?? 25
   const totalPrice = (membership ? 0 : passPrice) + (hasExpress && !isPremier ? expressPrice : 0)
   const rides = dashboard?.rides ?? []
@@ -129,6 +149,47 @@ export default function VisitorPortal({ mode = 'public' }) {
       setRefundBusy(null)
     }
   }
+  async function handleProfileUpdate(event) {
+  event.preventDefault()
+
+  setError('')
+  setSuccess('')
+
+  const formData = new FormData(event.currentTarget)
+
+  const profile = {
+    firstName: formData.get('firstName').trim(),
+    lastName: formData.get('lastName').trim(),
+    dob: formData.get('dob') || null,
+    heightCm: formData.get('heightCm')
+      ? Number(formData.get('heightCm'))
+      : null,
+  }
+
+  try {
+    await updateVisitorProfile(profile)
+    setSuccess('Your profile has been updated.')
+    await refresh()
+  } catch (err) {
+    setError(err.message || 'Profile update failed.')
+  }
+}
+  async function handleRenewal(tier) {
+  setError('')
+  setSuccess('')
+
+  try {
+    const result = await renewVisitorMembership({ tier })
+
+    setSuccess(
+      `Your ${tier} membership has been created.`
+    )
+
+    await refresh()
+  } catch (err) {
+    setError(err.message || 'Membership renewal failed.')
+  }
+}
 
   const tickets = dashboard?.tickets ?? []
   const upcomingTickets = tickets.filter((ticket) => ticket.status !== 'Refunded' && ticket.visitDate >= localDate(0))
@@ -150,21 +211,23 @@ export default function VisitorPortal({ mode = 'public' }) {
 
   return (
     <main className="visitor-portal">
-      <header className="vp-header">
-        <div className="vp-utility">
-          <span>{BRAND.name}</span>
-          <span className="vp-utility-links">
-            {isMember ? (
-              <>
-                <span>{user?.username}</span>
-                <button type="button" className="vp-link-button" onClick={() => { logout(); navigate('/') }}>Sign out</button>
-              </>
-            ) : (
-              <>
-                <Link to="/member/login">Sign in</Link>
-                <Link to="/member/register">Join</Link>
-              </>
-            )}
+      <header className="visitor-header">
+        <Link to="/" className="visitor-brand" aria-label="Thunder Valley home">
+          <span className="brand-mark" aria-hidden="true">TV</span>
+          <span><strong>Thunder Valley</strong><small>Adventure Park</small></span>
+        </Link>
+        <nav className="visitor-nav" aria-label="Visitor portal navigation">
+          {isMember && <a href="#my-membership">Membership</a>}
+          {isMember && <a href="#my-profile">My Profile</a>}
+          {isMember && <a href="#membership-history">Membership history</a>}
+          {isMember && <a href="#my-tickets">My tickets</a>}
+          <a href="#rides">Rides & waits</a>
+          {!isMember && <a href="#visit">Plan a visit</a>}
+        </nav>
+        {isMember ? (
+          <span className="visitor-auth">
+            <span className="demo-pill"><span /> {user?.username}</span>
+            <button type="button" className="text-button" onClick={() => { logout(); navigate('/') }}>Sign out</button>
           </span>
         </div>
         <div className="vp-navbar">
@@ -211,6 +274,11 @@ export default function VisitorPortal({ mode = 'public' }) {
         <>
         <section className="overview-grid" aria-label="Park summary">
           <article className="overview-card membership-overview" id="my-membership">
+          <span className={`membership-status ${membershipStatus
+              .toLowerCase()
+              .replaceAll(' ', '-')}`}>
+              {membershipStatus}
+              </span>
             <div className="overview-card-top"><span className="mini-icon gold-icon" aria-hidden="true">✦</span><span className="subtle-label">YOUR MEMBERSHIP</span><span className="tier-chip">{membership?.tier ?? '—'} TIER</span></div>
             <h3>{membership?.tier ?? 'Membership'} Member</h3>
             <p className="overview-description">{membership?.tier === 'Premier' ? 'The full-throttle park experience.' : membership?.tier === 'Basic' ? 'Your weekday escape starts here.' : 'More flexibility for your next adventure.'}</p>
@@ -237,6 +305,105 @@ export default function VisitorPortal({ mode = 'public' }) {
           </article>
         </section>
 
+           {/* Membership History */}
+        <section className="visitor-section" id="membership-history">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">YOUR ACCOUNT</p>
+              <h2>Membership history</h2>
+              <p>Review your previous and current memberships.</p>
+            </div>
+          </div>
+            <button
+              type="button"
+              className="visitor-primary-button"
+              onClick={() => handleRenewal(membership?.tier ?? 'Basic')}>
+              Renew membership
+            </button>
+          {dashboard?.membershipHistory?.length ? (
+            <div className="customer-ticket-list">
+              {dashboard.membershipHistory.map((item) => (
+                <article
+                  className="customer-ticket"
+                  key={item.membershipId}
+                >
+                  <div className="customer-ticket-main">
+                    <strong>{item.tier} Membership</strong>
+                    <span>
+                      {formatDate(item.startDate)} – {formatDate(item.endDate)}
+                    </span>
+                    <strong>{money(item.annualPrice)}</strong>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <strong>No membership history</strong>
+              <p>Your previous memberships will appear here.</p>
+            </div>
+          )}
+        </section>
+        <section className="visitor-section" id="my-profile">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">YOUR ACCOUNT</p>
+                <h2>My Profile</h2>
+              <p>View and update your personal information.</p>
+            </div>
+          </div>
+
+        <form className="profile-form" onSubmit={handleProfileUpdate}>
+          <div className="profile-form-grid">
+            <label>
+            First Name
+            <input
+            type="text"
+            name="firstName"
+            defaultValue={dashboard?.customer?.firstName ?? ''}
+            required
+        />
+        </label>
+
+      <label>
+        Last Name
+        <input
+          type="text"
+          name="lastName"
+          defaultValue={dashboard?.customer?.lastName ?? ''}
+          required
+        />
+      </label>
+
+      <label>
+        Date of Birth
+        <input
+          type="date"
+          name="dob"
+          defaultValue={dashboard?.customer?.dob?.slice(0, 10) ?? ''}
+        />
+      </label>
+
+      <label>
+        Height (cm)
+        <input
+          type="number"
+          name="heightCm"
+          min="1"
+          max="300"
+          step="0.1"
+          defaultValue={dashboard?.customer?.heightCm ?? ''}
+          />
+          </label>
+          </div>
+          <button
+          type="submit"
+          className="visitor-primary-button"
+            >
+             Save Changes
+        </button>
+        </form>
+        </section>
         <section className="visitor-section ticket-section" id="my-tickets">
           <div className="section-heading">
             <div><p className="eyebrow">PLAN YOUR VISIT</p><h2>Tickets & refunds</h2><p>Book a visit or manage an existing ticket.</p></div>

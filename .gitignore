@@ -29,3 +29,5 @@ zipitup.sh
 db-inventory.sh
 check.sh
 project-audit.sh
+# generated history (rebuild with SQL/tools/load_history.sh or gen_test_data.py)
+SQL/history/

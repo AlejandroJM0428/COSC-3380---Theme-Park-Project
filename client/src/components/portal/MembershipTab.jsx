@@ -1,5 +1,6 @@
 import { formatDate, money } from '../../utils/portalFormat.js'
 import { buildStats, SAMPLE_TILES } from '../../utils/membershipStats.js'
+import CancelMembership from './CancelMembership.jsx'
 import MembershipBuy from './MembershipBuy.jsx'
 
 const Tile = ({ t }) => (
@@ -14,8 +15,9 @@ const Tile = ({ t }) => (
 // Membership. Two looks:
 //   member:     a stats page (term progress, level, stat tiles, perks, benefits).
 //   not member: a "get one now" pitch with a blurred preview of the stats and the tier picker.
+// A member also gets the cancellation request card at the bottom (components/portal/CancelMembership.jsx).
 // Real numbers come from buildStats(); tiles marked Sample are placeholders (see utils/membershipStats.js).
-export default function MembershipTab({ membership, perks, tiers, tickets, dayPassPrice, onBuy, buying }) {
+export default function MembershipTab({ membership, perks, tiers, tickets, dayPassPrice, onBuy, buying, messages }) {
   if (!membership) {
     return (
       <div className="pt-getone">
@@ -77,6 +79,8 @@ export default function MembershipTab({ membership, perks, tiers, tickets, dayPa
           <ul className="pt-ticks">{membership.benefits.map((b) => <li key={b}>{b}</li>)}</ul>
         </section>
       </div>
+
+      <CancelMembership messages={messages} />
     </>
   )
 }

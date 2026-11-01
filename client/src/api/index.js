@@ -6,10 +6,16 @@ import * as mock from './mock.js'
 // Mock mode is ON unless .env says VITE_USE_MOCK=false
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
 
-export function login(username, password) {
+// audience = 'staff' or 'member': which sign in page is asking. The server refuses the other kind of account.
+export function login(username, password, audience) {
   return USE_MOCK
-    ? mock.login(username, password)
-    : http('/auth/login', { method: 'POST', body: { username, password } })
+    ? mock.login(username, password, audience)
+    : http('/auth/login', { method: 'POST', body: { username, password, audience } })
+}
+
+// Active staff accounts for the staff sign in selects: [{ username, role, name, jobTitle }].
+export function listStaffAccounts() {
+  return USE_MOCK ? mock.listStaffAccounts() : http('/auth/staff').then((r) => r.accounts)
 }
 
 // Who does the server think is signed in? Used once on page load, because the browser only remembers
@@ -75,6 +81,97 @@ export function buyVisitorMembership(data) {
 export function refundVisitorTicket(ticketId) {
   needLive()
   return http(`/visitor/tickets/${ticketId}/refund`, { method: 'POST', body: {} })
+}
+export function renewVisitorMembership(data) {
+  needLive()
+  return http('/visitor/membership/renew', {
+    method: 'POST',
+    body: data
+  })
+}
+export function updateVisitorProfile(data) {
+  needLive()
+
+  return http('/visitor/profile', {
+    method: 'PUT',
+    body: data
+  })
+}
+
+// My Family (dependents under 18). Live database only. The server uses the CustomerID of the session and
+// checks every dependent id against that parent, so these never need a parent id.
+// getFamily resolves to { limit, dependents: [{ customerId, firstName, dob, age, heightCm, consentedAt, tickets[] }] }.
+export function getFamily() {
+  needLive()
+  return http('/family')
+}
+
+// data: { firstName, dob (YYYY-MM-DD), heightCm, consent: true }. The parent must have ticked the consent box.
+export function addDependent(data) {
+  needLive()
+  return http('/family/dependents', { method: 'POST', body: data })
+}
+
+// data: { firstName, dob, heightCm }
+export function updateDependent(id, data) {
+  needLive()
+  return http(`/family/dependents/${id}`, { method: 'PUT', body: data })
+}
+
+// The row is anonymised on the server (past tickets stay for reporting). Refused while a ticket is upcoming.
+export function removeDependent(id) {
+  needLive()
+  return http(`/family/dependents/${id}`, { method: 'DELETE' })
+}
+
+// What the database will charge. Saves nothing. Resolves to { dayPass, expressAddOn, discountPct, discount, total, ... }.
+export function quoteDependentTicket(id, visitDate, hasExpress) {
+  needLive()
+  const qs = new URLSearchParams({ visitDate, hasExpress: hasExpress ? '1' : '0' }).toString()
+  return http(`/family/dependents/${id}/quote?${qs}`)
+}
+
+// Send { visitDate, hasExpress } only. The server sets the price. Resolves to the ticket plus { discount, firedTriggers }.
+export function buyDependentTicket(id, data) {
+  needLive()
+  return http(`/family/dependents/${id}/tickets`, { method: 'POST', body: data })
+}
+
+export function refundDependentTicket(ticketId) {
+  needLive()
+  return http(`/family/tickets/${ticketId}/refund`, { method: 'POST', body: {} })
+}
+
+// Membership cancellation. A request, not an instant cancel: a manager approves or rejects it.
+// Resolves to { membership, canRequest, blockedReason, requests[] } for the signed-in member.
+export function getMyCancellations() {
+  needLive()
+  return http('/cancellations/mine')
+}
+
+// Send { reason } only (required, 200 characters or fewer). The server picks the membership that is active today.
+export function requestCancellation(reason) {
+  needLive()
+  return http('/cancellations', { method: 'POST', body: { reason } })
+}
+
+// Cancellation review (Admin and RetailManager). The server sends every request, Pending first, then newest.
+// Each row: { requestId, customerName, tier, startDate, endDate, autoRenew, requestedAt, reason, status, decidedAt, decidedBy, decisionNote }.
+export function listCancellations() {
+  needLive()
+  return http('/cancellations')
+}
+
+// Approving turns auto-renew off and marks the request Approved. Nothing is refunded and the end date does not change.
+// note is optional (200 characters or fewer). A request that was already decided comes back as a 409 error.
+export function approveCancellation(requestId, note) {
+  needLive()
+  return http(`/cancellations/${requestId}/approve`, { method: 'POST', body: { note } })
+}
+
+export function rejectCancellation(requestId, note) {
+  needLive()
+  return http(`/cancellations/${requestId}/reject`, { method: 'POST', body: { note } })
 }
 
 // Public site data for the homepage and public pages: prices, hours, membership tiers, rides

@@ -16,6 +16,14 @@ const BLOCKED_COPY = {
     help: 'A membership can only run once at a time, so the park kept your current one.',
     action: { label: 'View my membership', tab: 'membership' },
   },
+  trg_Customer_BI_Dependent: {
+    title: 'That child could not be added',
+    help: 'Dependents must be under 18, and a parent can have up to 6. Check the date of birth and your places in use.',
+  },
+  trg_Customer_BU_Dependent: {
+    title: 'Those details could not be saved',
+    help: 'A dependent must be under 18 and the birth date cannot be in the future. Check the date of birth.',
+  },
   trg_Ticket_BI: {
     title: 'That ticket could not be booked',
     help: 'Try another date, or check what your membership covers.',

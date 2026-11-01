@@ -9,6 +9,7 @@ import DataPanel from '../components/admin/DataPanel.jsx'
 import RowEditorPanel from '../components/admin/RowEditorPanel.jsx'
 import SqlConsolePanel from '../components/admin/SqlConsolePanel.jsx'
 import TransactionsPanel from '../components/admin/TransactionsPanel.jsx'
+import CancellationsPage from './CancellationsPage.jsx'
 import MaintenancePage from './MaintenancePage.jsx'
 import NotificationsPage from './NotificationsPage.jsx'
 import Placeholder from './Placeholder.jsx'
@@ -40,6 +41,7 @@ const PAGES = {
   notifications: NotificationsPage,
   customers: CustomersPage,
   memberships: MembershipsPage,
+  cancellations: CancellationsPage,
   purchases: PurchasesPage,
   'game-plays': GamePlaysPage,
   'ride-log': RideLogPage,
