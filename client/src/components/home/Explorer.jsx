@@ -115,7 +115,15 @@ export default function Explorer({ rides = [], venues = [] }) {
                 <p className="pub-feature-meta">Nothing listed here yet.</p>
               </>
             )}
-            <Link to={`/rides?land=${tab.key}`} className="pub-feature-link">See all in {tab.title} <span aria-hidden="true">→</span></Link>
+            
+              <Link
+                to={`/rides?land=${tab.key}#explore-rides`}
+                className="pub-feature-link"
+              >
+                See all in {tab.title}
+                <span aria-hidden="true">→</span>
+              </Link>
+
           </div>
         </BrandImage>
 
@@ -126,7 +134,16 @@ export default function Explorer({ rides = [], venues = [] }) {
               <small>{item.zone}</small>
             </button>
           ))}
-          {more > 0 && <Link to={`/rides?land=${tab.key}`} className="pub-chip pub-chip-more">+{more} more</Link>}
+          
+          {more > 0 && (
+            <Link
+              to={`/rides?land=${tab.key}#explore-rides`}
+              className="pub-chip pub-chip-more"
+            >
+              +{more} more
+            </Link>
+          )}
+
         </div>
       </div>
     </section>

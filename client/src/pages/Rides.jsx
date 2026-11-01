@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import BrandImage from '../components/BrandImage.jsx'
 import LoadError from '../components/LoadError.jsx'
@@ -58,7 +58,37 @@ export default function Rides() {
   const { site, loading, error, retry } = usePublicSite()
   const [params] = useSearchParams()
   const [picked, setPicked] = useState(null)
-  const [rideCategory, setRideCategory] = useState('premier')
+  
+  const [rideCategory, setRideCategory] = useState(() => {
+    const land = params.get('land')
+    return ['thrill', 'family', 'kids'].includes(land)
+      ? land
+      : 'premier'
+  })
+
+  
+useEffect(() => {
+  const land = params.get('land')
+
+  setRideCategory(
+    ['thrill', 'family', 'kids'].includes(land)
+      ? land
+      : 'premier'
+  )
+}, [params])
+
+
+useEffect(() => {
+  if (window.location.hash === '#explore-rides') {
+    document.getElementById('explore-rides')?.scrollIntoView({
+      behavior: 'auto',
+      block: 'start',
+    })
+  }
+}, [params])
+
+
+
 
   const fromLink = useMemo(() => {
     const zone = params.get('zone')
@@ -126,7 +156,7 @@ const filteredRides = useMemo(() => {
       {loading && <p className="pub-empty">Loading…</p>}
 
       
-      <section aria-labelledby="pub-rides-title">
+      <section id="explore-rides" aria-labelledby="pub-rides-title">
         <h2 id="pub-rides-title" className="pub-h2">
           Explore Our Rides
         </h2>
