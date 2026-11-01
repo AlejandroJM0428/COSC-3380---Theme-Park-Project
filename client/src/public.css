@@ -1284,3 +1284,165 @@
     transform: none;
   }
 }
+
+/* THUNDER VALLEY - Plan Your Visit Page */
+
+.pub-plan-page .pub-plan-heading {
+  margin-bottom: 34px;
+}
+
+.pub-plan-eyebrow {
+  display: inline-block;
+  color: #3B82F6;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.pub-plan-page .pub-h1 {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 900;
+  color: #14213D;
+}
+
+.pub-plan-page .pub-lede {
+  line-height: 1.6;
+}
+
+/* Existing Hours, Height Rules, Getting Here Cards */
+
+.pub-plan-page .pub-plan article {
+  border-radius: 20px;
+  border: 2px solid #DCE8F8;
+  background: #FFFFFF;
+  padding: 28px;
+  box-shadow: 0 6px 20px rgba(20, 33, 61, 0.07);
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.pub-plan-page .pub-plan article:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 30px rgba(59, 130, 246, 0.14);
+}
+
+.pub-plan-page .pub-plan article h3 {
+  color: #14213D;
+  font-size: 1.25rem;
+  font-weight: 900;
+  margin-bottom: 12px;
+}
+
+.pub-plan-page .pub-plan article p {
+  color: #64748B;
+  line-height: 1.7;
+}
+
+/* Good to Know Cards */
+
+.pub-plan-page .pub-plan-info {
+  margin-top: 20px;
+}
+
+.pub-plan-page .pub-plan-info .pub-info-card {
+  padding: 30px;
+}
+
+.pub-info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: #EAF4FF;
+  font-size: 28px;
+  margin-bottom: 18px;
+}
+
+.pub-plan-page .pub-info-blue {
+  border-color: #3B82F6 !important;
+  background: linear-gradient(
+    180deg, #EFF6FF, #FFFFFF 75%
+  ) !important;
+}
+
+.pub-plan-page .pub-info-purple {
+  border-color: #8B5CF6 !important;
+  background: linear-gradient(
+    180deg, #F3E8FF, #FFFFFF 75%
+  ) !important;
+}
+
+.pub-plan-page .pub-info-gold {
+  border-color: #E5B94B !important;
+  background: linear-gradient(
+    180deg, #FFF5D9, #FFFFFF 75%
+  ) !important;
+}
+
+.pub-info-purple .pub-info-icon {
+  background: #EDE9FE;
+}
+
+.pub-info-gold .pub-info-icon {
+  background: #FEF3C7;
+}
+
+/* Ticket Call to Action */
+
+.pub-plan-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 48px;
+  padding: 36px;
+  border-radius: 24px;
+  background: linear-gradient(
+    120deg, #2459B8, #3B82F6, #00A9D6
+  );
+  color: #FFFFFF;
+  box-shadow: 0 12px 30px rgba(36, 89, 184, 0.2);
+}
+
+.pub-plan-cta h2 {
+  margin: 0 0 10px;
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+.pub-plan-cta p {
+  margin: 0;
+  line-height: 1.6;
+  color: #FFFFFF;
+}
+
+.pub-plan-cta .pub-buy {
+  flex-shrink: 0;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .pub-plan-cta {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 26px;
+  }
+
+  .pub-plan-cta .pub-buy {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-plan-page .pub-plan article {
+    transition: none;
+  }
+
+  .pub-plan-page .pub-plan article:hover {
+    transform: none;
+  }
+}
