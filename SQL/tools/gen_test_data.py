@@ -327,23 +327,42 @@ for t, at, reason, status, dec, note in sorted(reqs, key=lambda r: r[1]):
             "INSERT INTO MembershipCancellationRequest (MembershipID, RequestedAt, Reason, Status, DecidedAt, DecidedByUserID, DecisionNote)\n"
             "  SELECT %d, %s, %s, %s, %s, u.UserID, %s FROM (SELECT %s AS UserID) u WHERE u.UserID IS NOT NULL;\n" % (t['id'], v(at), v(reason), v(status), v(dec), v(note), REVIEWER))
 
-# weather
+# weather: the whole history (START to LAST), Houston seasons. Closing events are the ones that cross a Park limit
+# (wind 35+, lightning 8 miles or less, 100F or more, 32F or less). Every month gets at least one, so Rain-outs per Month has a spread.
 wev = []
 def wadd(typ, s, e, temp, wind, light): wev.append(dict(type=typ, start=s, end=e, temp=temp, wind=wind, light=light))
-for (m,d) in [(8,4),(8,17),(8,29),(9,6),(9,14),(9,27),(10,3),(10,12),(10,18)]:
-    s = dtm(dd(2026,m,d), R.randint(14,17), R.choice([0,15,30,45]))
-    wadd('Storm', s, s+timedelta(minutes=R.randint(120,210)), R.randint(78,90), R.randint(36,52), round(R.uniform(2.0,7.8),1))
-for (m,d) in [(7,28),(8,9),(8,21)]:
-    wadd('Heat', dtm(dd(2026,m,d),12), dtm(dd(2026,m,d),18), R.randint(101,105), R.randint(6,12), 99.9)
-used = {e['start'].date() for e in wev}
-days = [FIRST + timedelta(days=i) for i in range((LAST-FIRST).days+1)]
-for d in R.sample([d for d in days if d not in used], 26):
-    typ = R.choice(['Rain','Rain','Cloudy','Clear','Cold'] if d.month == 10 else ['Rain','Cloudy','Clear','Clear'])
-    s = dtm(d, R.randint(9,18), R.choice([0,30])); dur = timedelta(minutes=R.randint(60,180))
-    if typ == 'Rain':   wadd(typ, s, s+dur, R.randint(68,84), R.randint(8,24), round(R.uniform(12,40),1))
-    elif typ == 'Cold': wadd(typ, s, s+dur, R.randint(42,52), R.randint(5,18), 99.9)
-    else:               wadd(typ, s, s+dur, R.randint(75,92), R.randint(4,18), 99.9)
+HIST_DAYS = [START + timedelta(days=i) for i in range((LAST - START).days + 1)]
+MONTH_HIGH = {1:62, 2:66, 3:72, 4:79, 5:85, 6:91, 7:94, 8:94, 9:90, 10:82, 11:72, 12:64}   # typical Houston highs, F
+STORMS = {1:0, 2:0, 3:2, 4:3, 5:3, 6:4, 7:3, 8:4, 9:4, 10:2, 11:1, 12:0}                   # closing storms per month
+HEAT   = {6:1, 7:3, 8:3, 9:1}                                                                # closing heat days (100F+)
+FREEZE = {1:1, 2:1, 12:1}                                                                    # closing hard-freeze mornings (32F or less)
+FILLER = 7                                                                                   # non-closing readings per month
+wused = set()
+def wpick(pool):
+    free = [d for d in pool if d not in wused]
+    d = R.choice(free); wused.add(d); return d
+months = sorted({(d.year, d.month) for d in HIST_DAYS})
+for (y, m) in months:
+    pool = [d for d in HIST_DAYS if (d.year, d.month) == (y, m)]
+    hi = MONTH_HIGH[m]
+    for _ in range(STORMS.get(m, 0)):
+        d = wpick(pool); s = dtm(d, R.randint(13, 18), R.choice([0, 15, 30, 45]))
+        wadd('Storm', s, s + timedelta(minutes=R.randint(90, 210)), R.randint(hi - 12, hi - 2), R.randint(36, 52), round(R.uniform(2.0, 7.8), 1))
+    for _ in range(HEAT.get(m, 0)):
+        d = wpick(pool)
+        wadd('Heat', dtm(d, 12), dtm(d, 18), R.randint(100, 105), R.randint(6, 12), 99.9)
+    for _ in range(FREEZE.get(m, 0)):
+        d = wpick(pool)
+        wadd('Cold', dtm(d, 6), dtm(d, 11), R.randint(25, 32), R.randint(5, 14), 99.9)
+    for _ in range(FILLER):
+        d = wpick(pool)
+        typ = R.choice(['Rain', 'Cloudy', 'Clear', 'Clear'] if m not in (12, 1, 2) else ['Cold', 'Cloudy', 'Clear', 'Rain'])
+        s = dtm(d, R.randint(9, 18), R.choice([0, 30])); dur = timedelta(minutes=R.randint(60, 180))
+        t = min(98, R.randint(hi - 8, hi + 4)) if typ != 'Cold' else R.randint(38, 52)
+        if typ == 'Rain': wadd(typ, s, s + dur, min(t, 86), R.randint(8, 24), round(R.uniform(12, 40), 1))
+        else:             wadd(typ, s, s + dur, t, R.randint(4, 18), 99.9)
 wadd('Cloudy', dtm(TODAY,7), None, 72, 10, 99.9)   # ongoing, does not close rides
+days = [FIRST + timedelta(days=i) for i in range((LAST - FIRST).days + 1)]   # the 94-day block that stages 7 to 10 still replace
 wev.sort(key=lambda e: e['start'])
 for i, e in enumerate(wev, 1):
     e['id'] = i
@@ -530,3 +549,4 @@ print('demo tickets', demo_ids)
 print('closing days', sorted(closing))
 print('customers', len(cust), 'inactive', len(inactive), 'dependents', len(deps), 'parents with dependents', len({d[6] for d in deps}))
 print('sign-ups per month', {m.strftime('%Y-%m'): sum(1 for c in range(7, CUST_END+1) if signup[c].year == m.year and signup[c].month == m.month) for m in month_starts})
+print('closing weather per month', dict(sorted(Counter(e['start'].strftime('%Y-%m') for e in wev if e['closes']).items())))
