@@ -49,7 +49,11 @@ route(
     if (status !== undefined && status !== 'active' && status !== 'inactive') {
       throw new HttpError(400, 'Status must be active or inactive');
     }
-    const where = status === 'active' ? ' WHERE IsActive = 1' : status === 'inactive' ? ' WHERE IsActive = 0' : '';
+    // Dependents (children added by a parent, ParentCustomerID set) are not listed for staff.
+    const where =
+      status === 'active' ? ' WHERE IsActive = 1 AND ParentCustomerID IS NULL'
+      : status === 'inactive' ? ' WHERE IsActive = 0 AND ParentCustomerID IS NULL'
+      : ' WHERE ParentCustomerID IS NULL';
     const [rows] = await pool.query(`${SELECT_CUSTOMER}${where} ORDER BY CustomerID DESC LIMIT 500`);
     return rows;
   }),
@@ -81,7 +85,7 @@ route(
     if (!name && !dob) throw new HttpError(400, 'Enter a name, a date of birth, or both');
     if (name.length > 60) throw new HttpError(400, 'Name must be 60 characters or fewer');
 
-    const where = ['c.IsActive = 1'];
+    const where = ['c.IsActive = 1', 'c.ParentCustomerID IS NULL']; // dependents are not searchable by staff
     const args = [];
     if (name) {
       where.push("CONCAT(c.FirstName, ' ', c.LastName) LIKE ?");

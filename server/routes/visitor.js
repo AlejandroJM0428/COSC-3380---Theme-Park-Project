@@ -14,7 +14,7 @@ import { describeTrigger } from '../demos/triggerCatalog.js';
 // accidental double-bookings. Their messages (errno 1644) reach the browser through handleError(),
 // together with the trigger's name, so the portal can show a "trigger fired" card.
 
-const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`));
+export const isDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`));
 
 // Rides: current state from v_RideAvailability. Wait readings are NOT in this query: they are
 // loaded separately (RIDE_WAITS_SQL) and only for a signed-in customer with an active membership.
@@ -34,7 +34,7 @@ const RIDE_WAITS_SQL = `
     FROM v_RideAvailability a`;
 
 // One customer's tickets (v_CustomerTickets already carries the refund flag).
-const TICKETS_SQL = `
+export const TICKETS_SQL = `
   SELECT t.TicketID, t.VisitDate, t.HasExpress, t.TicketPrice, t.PurchaseDate, t.IsRefunded,
          (t.VisitDate < CURDATE()) AS IsPast,
          EXISTS (SELECT 1 FROM RideLog l WHERE l.TicketID = t.TicketID AND l.EventType = 'Boarding') AS HasBoarded
@@ -48,7 +48,7 @@ function ticketStatus(r) {
   return 'Confirmed';
 }
 
-function ticketJson(r) {
+export function ticketJson(r) {
   return {
     ticketId: r.TicketID,
     visitDate: r.VisitDate,
@@ -59,7 +59,7 @@ function ticketJson(r) {
   };
 }
 
-async function loadTicket(customerId, ticketId) {
+export async function loadTicket(customerId, ticketId) {
   const [rows] = await pool.query(`${TICKETS_SQL} AND t.TicketID = ?`, [customerId, ticketId]);
   return rows[0] ?? null;
 }
@@ -237,7 +237,7 @@ route(
 
 // What the database did for this ticket, for the "trigger fired" card. Only triggers that really exist are listed.
 // The two notice triggers are listed only when their notice was created within the last few seconds.
-async function ticketTriggersThatRan(ticket, visitDate) {
+export async function ticketTriggersThatRan(ticket, visitDate) {
   const names = await installedTriggers(['trg_Ticket_BI_Guard', 'trg_Ticket_BI', 'trg_Ticket_AI_SellingFast', 'trg_Ticket_AI_Notify']);
   const out = [];
   if (names.includes('trg_Ticket_BI_Guard')) out.push(fired('trg_Ticket_BI_Guard', 'Spam check passed: no recent duplicate for this date.'));
