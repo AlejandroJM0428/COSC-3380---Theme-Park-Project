@@ -24,6 +24,16 @@ const RIDE_IMAGES = {
 
   // kids corner
   'Mini Carousel': '/images/mini-carousel.jpg',
+
+    // Dining & Shops
+  'Bay Fish Shack': '/images/bay-fish-shack.jpg',
+  'Canyon Grill': '/images/canyon-grill.jpg',
+  'Forest Pizza': '/images/forest-pizza.jpg',
+  'Main Street Diner': '/images/main-street-diner.jpg',
+  'Sweet Treats Cart': '/images/sweet-treats-cart.jpg',
+  'Canyon Outfitters': '/images/canyon-outfitters.jpg',
+  'Main Street Emporium': '/images/main-street-emporium.jpg',
+  "Pirate's Trading Post": '/images/pirates-trading-post.jpg',
 }
 
 const TABS = [
