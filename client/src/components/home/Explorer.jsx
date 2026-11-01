@@ -21,6 +21,9 @@ const RIDE_IMAGES = {
   'Heritage Railroad': '/images/heritage-railroad.jpg',
   "Dragon's Nest": '/images/dragons-nest.jpg',
   'Grand Carousel': '/images/grand-carousel.jpg',
+
+  // kids corner
+  'Mini Carousel': '/images/mini-carousel.jpg',
 }
 
 const TABS = [
