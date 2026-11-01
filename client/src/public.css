@@ -696,3 +696,159 @@
 .pub-duo > .pub-panel:last-child .pub-link:hover {
   color: #E63946;
 }
+
+
+
+
+/* THUNDER VALLEY - Colorful Homepage Background */
+
+.pub {
+  background: linear-gradient(
+    135deg,
+    #E3F0FF 0%,
+    #F0F7FF 40%,
+    #DDF7FF 75%,
+    #E3F0FF 100%
+  );
+}
+
+/* THUNDER VALLEY - Interactive Ride Cards */
+
+#explore .pub-chip {
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
+}
+
+#explore .pub-chip:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 22px rgba(59, 130, 246, 0.18);
+}
+
+#explore .pub-feature {
+  transition: transform 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+#explore .pub-feature:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 35px rgba(0, 200, 248, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #explore .pub-chip,
+  #explore .pub-feature {
+    transition: none;
+  }
+
+  #explore .pub-chip:hover,
+  #explore .pub-feature:hover {
+    transform: none;
+  }
+}
+
+
+/* THUNDER VALLEY - Interactive Homepage Panels */
+
+.pub-duo > .pub-panel {
+  transition: transform 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+.pub-duo > .pub-panel:first-child:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 35px rgba(59, 130, 246, 0.20);
+}
+
+.pub-duo > .pub-panel:last-child:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 35px rgba(0, 200, 248, 0.20);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-duo > .pub-panel {
+    transition: none;
+  }
+
+  .pub-duo > .pub-panel:hover {
+    transform: none;
+  }
+}
+
+
+/* THUNDER VALLEY - Cinematic Homepage Hero */
+
+.pub-hero {
+  min-height: 720px;
+  padding: 80px 0;
+  overflow: hidden;
+}
+
+.pub-hero::before {
+  background: linear-gradient(
+    90deg,
+    rgba(5, 15, 40, 0.90) 0%,
+    rgba(10, 35, 75, 0.70) 40%,
+    rgba(10, 35, 75, 0.20) 100%
+  );
+}
+
+.pub-hero-inner {
+  max-width: 1320px;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 70px;
+}
+
+.pub-hero-copy h1 {
+  font-size: clamp(3.5rem, 6.5vw, 6rem);
+  font-weight: 900;
+  line-height: 1.02;
+  max-width: 12ch;
+  letter-spacing: -0.05em;
+  text-shadow: 3px 4px 0 #E63946;
+}
+
+.pub-hero-copy p {
+  font-size: 1.3rem;
+  max-width: 440px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.pub .pub-hero-link {
+  padding: 18px 34px;
+  font-size: 1.1rem;
+  border-radius: 50px;
+  box-shadow: 0 7px 0 #009AC4;
+}
+
+.pub-pc {
+  border: 2px solid rgba(0, 200, 248, 0.45);
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 980px) {
+  .pub-hero {
+    min-height: auto;
+    padding: 65px 0;
+  }
+
+  .pub-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .pub-hero-copy h1 {
+    font-size: clamp(2.8rem, 8vw, 4.5rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .pub-hero {
+    padding: 45px 0;
+  }
+
+  .pub-hero-copy h1 {
+    font-size: 2.8rem;
+  }
+}
