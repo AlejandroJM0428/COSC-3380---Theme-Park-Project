@@ -49,7 +49,7 @@ function useChosenText(kind, value) {
   return loaded.value === value ? loaded.text : 'Loading…'
 }
 
-function CustomerSearch({ onPick }) {
+function CustomerSearch({ onPick, needsLogin }) {
   const [name, setName] = useState('')
   const [dob, setDob] = useState('')
   const [results, setResults] = useState(null)
@@ -64,7 +64,7 @@ function CustomerSearch({ onPick }) {
     }
     setBusy(true)
     try {
-      setResults(await searchCustomers(name.trim(), dob))
+      setResults(await searchCustomers(name.trim(), dob, needsLogin))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -88,7 +88,9 @@ function CustomerSearch({ onPick }) {
         </button>
       </div>
       <ErrorBanner message={error} onClose={() => setError('')} />
-      {results && results.length === 0 && <p className="muted">No active guests match.</p>}
+      {results && results.length === 0 && (
+        <p className="muted">{needsLogin ? 'No active guests with an account match. A guest must create an account before buying a membership.' : 'No active guests match.'}</p>
+      )}
       {results && results.length > 0 && (
         <ul className="lf-results">
           {results.map((c) => (
@@ -193,7 +195,7 @@ function MembershipSelect({ id, value, customerId, required, onChange }) {
   )
 }
 
-export default function LookupField({ id, kind, value, onChange, required, forCustomer }) {
+export default function LookupField({ id, kind, value, onChange, required, forCustomer, needsLogin }) {
   const [searching, setSearching] = useState(false)
   const [pickedText, setPickedText] = useState({ value: '', text: '' })
   const loadedText = useChosenText(kind, value)
@@ -223,7 +225,7 @@ export default function LookupField({ id, kind, value, onChange, required, forCu
         </div>
       ) : (
         <>
-          <Search onPick={pick} />
+          <Search onPick={pick} needsLogin={needsLogin} />
           {value && (
             <button type="button" onClick={() => setSearching(false)}>
               Keep the current {noun}

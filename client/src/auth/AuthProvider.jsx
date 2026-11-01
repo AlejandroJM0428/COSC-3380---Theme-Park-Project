@@ -27,7 +27,7 @@ export default function AuthProvider({ children }) {
     api.getSessionUser()
       .then((found) => {
         if (!alive || !found?.username) return
-        const who = { username: found.username, role: found.role }
+        const who = { username: found.username, role: found.role, name: found.name ?? null }
         setUser(who)
         try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(who)) } catch { /* storage blocked */ }
       })
@@ -35,6 +35,25 @@ export default function AuthProvider({ children }) {
       .finally(() => { if (alive) setReady(true) })
     return () => { alive = false }
   }, [ready])
+
+  // A tab that was signed in before names were sent has no name stored. Ask the server once so the top bar shows the person's name.
+  const needsName = !USE_MOCK && user != null && !user.name
+  useEffect(() => {
+    if (!needsName) return undefined
+    let alive = true
+    api.getSessionUser()
+      .then((found) => {
+        if (!alive || !found?.name) return
+        setUser((prev) => {
+          if (!prev) return prev
+          const who = { ...prev, name: found.name }
+          try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(who)) } catch { /* storage blocked */ }
+          return who
+        })
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [needsName])
 
   // The server no longer knows this session (it restarted, or the session ran out): forget the user.
   // The route guards then send them to the sign in page, and back to this page after they sign in.
@@ -52,7 +71,7 @@ export default function AuthProvider({ children }) {
   }, [])
 
   async function login(username, password, audience) {
-    const loggedIn = await api.login(username, password, audience) // { username, role }
+    const loggedIn = await api.login(username, password, audience) // { username, role, name }
     setUser(loggedIn)
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(loggedIn))
     return loggedIn

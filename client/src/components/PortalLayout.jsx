@@ -21,7 +21,7 @@ export default function PortalLayout({ title, tabs = [], active, onSelect, child
           <Link to="/" className="pt-brand" aria-label={`${BRAND.name} home`}><Wordmark tagline={false} /></Link>
           <span className="pt-title">{title}</span>
           <details className="pt-account">
-            <summary>{user?.username ?? 'Account'}</summary>
+            <summary>{user?.name || 'Account'}</summary>
             <div className="pt-menu">
               <Link to="/">Park website</Link>
               <button type="button" onClick={() => { logout(); navigate('/') }}>Sign out</button>

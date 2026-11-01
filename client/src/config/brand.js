@@ -3,8 +3,9 @@
 // Images: any path that is missing or fails to load falls back to a neutral gradient
 // (see components/BrandImage.jsx), so the layout still holds with no photos.
 export const BRAND = {
-  name: 'Thunder Valley',
-  shortName: 'Thunder Valley',
+  name: 'Thunder Valley Adventure Park',   // the same name as Park.ParkName in the database
+  shortName: 'Thunder Valley',             // compact wordmark in the headers
+  established: 2025,                       // shown as "Est. 2025"; no database column for it
   tagline: 'Where Adventure Comes Alive!',
 
   // Placeholder homepage copy. Change it here.

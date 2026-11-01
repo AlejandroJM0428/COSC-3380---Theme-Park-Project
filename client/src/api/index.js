@@ -13,11 +13,6 @@ export function login(username, password, audience) {
     : http('/auth/login', { method: 'POST', body: { username, password, audience } })
 }
 
-// Active staff accounts for the staff sign in selects: [{ username, role, name, jobTitle }].
-export function listStaffAccounts() {
-  return USE_MOCK ? mock.listStaffAccounts() : http('/auth/staff').then((r) => r.accounts)
-}
-
 // Who does the server think is signed in? Used once on page load, because the browser only remembers
 // the user per tab but the session cookie is shared by every tab. Mock mode has no server session.
 export function getSessionUser() {
@@ -221,9 +216,9 @@ export function getMyWork() {
 }
 
 // Customer lookup for the ticket forms. name and dob (YYYY-MM-DD) are each optional, but one is needed.
-export function searchCustomers(name, dob) {
+export function searchCustomers(name, dob, hasLogin = false) {
   needLive()
-  const qs = new URLSearchParams(Object.entries({ name, dob }).filter(([, v]) => v)).toString()
+  const qs = new URLSearchParams(Object.entries({ name, dob, hasLogin: hasLogin ? '1' : '' }).filter(([, v]) => v)).toString()
   return http(`/customers/search?${qs}`)
 }
 

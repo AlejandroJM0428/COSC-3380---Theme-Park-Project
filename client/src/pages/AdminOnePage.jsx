@@ -205,7 +205,7 @@ export default function AdminOnePage() {
         </div>
         <div className="onepage-user">
           <span>
-            {user.username} ({info.title})
+            {user.name || 'Admin'} ({info.title})
           </span>
           <button type="button" onClick={handleLogout}>
             Log out

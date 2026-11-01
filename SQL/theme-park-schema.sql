@@ -307,7 +307,7 @@ CREATE TABLE EmployeeZone (
     EmployeeID INT UNSIGNED NOT NULL,
     ZoneID     INT UNSIGNED NOT NULL,
     CONSTRAINT PK_EmployeeZone PRIMARY KEY (EmployeeID, ZoneID),
-    CONSTRAINT FK_EmpZone_Employee FOREIGN KEY (EmployeeID) REFERENCES Employee (EmployeeID) ON DELETE CASCADE,
+    CONSTRAINT FK_EmpZone_Employee FOREIGN KEY (EmployeeID) REFERENCES Employee (EmployeeID) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT FK_EmpZone_Zone     FOREIGN KEY (ZoneID)     REFERENCES Zone (ZoneID)
 ) ENGINE = InnoDB;
 
@@ -317,7 +317,7 @@ CREATE TABLE RideCertification (
     RideID      INT UNSIGNED NOT NULL,
     CertifiedOn DATE NOT NULL,
     CONSTRAINT PK_RideCertification PRIMARY KEY (EmployeeID, RideID),
-    CONSTRAINT FK_Cert_Employee FOREIGN KEY (EmployeeID) REFERENCES Employee (EmployeeID) ON DELETE CASCADE,
+    CONSTRAINT FK_Cert_Employee FOREIGN KEY (EmployeeID) REFERENCES Employee (EmployeeID) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT FK_Cert_Ride     FOREIGN KEY (RideID)     REFERENCES Ride (RideID) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
@@ -331,7 +331,7 @@ CREATE TABLE Shift (
     -- [CONSTRAINT] One shift per employee per clock-in; clock-out after clock-in; rating 1 to 5.
     CONSTRAINT PK_Shift PRIMARY KEY (ShiftID),
     CONSTRAINT UQ_Shift UNIQUE (EmployeeID, ClockIn),
-    CONSTRAINT FK_Shift_Employee FOREIGN KEY (EmployeeID) REFERENCES Employee (EmployeeID) ON DELETE CASCADE,
+    CONSTRAINT FK_Shift_Employee FOREIGN KEY (EmployeeID) REFERENCES Employee (EmployeeID) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT CHK_Shift_Time   CHECK (ClockOut IS NULL OR ClockOut > ClockIn),
     CONSTRAINT CHK_Shift_Rating CHECK (ShiftRating IS NULL OR ShiftRating BETWEEN 1 AND 5)
 ) ENGINE = InnoDB;
@@ -373,7 +373,7 @@ CREATE TABLE MaintenanceCrew (
     CrewRole      ENUM('Lead','Assistant') NOT NULL,
     CONSTRAINT PK_MaintenanceCrew PRIMARY KEY (MaintenanceID, EmployeeID),
     CONSTRAINT FK_MC_Maint FOREIGN KEY (MaintenanceID) REFERENCES Maintenance (MaintenanceID) ON DELETE CASCADE,
-    CONSTRAINT FK_MC_Emp   FOREIGN KEY (EmployeeID)    REFERENCES Employee (EmployeeID)
+    CONSTRAINT FK_MC_Emp   FOREIGN KEY (EmployeeID)    REFERENCES Employee (EmployeeID) ON UPDATE CASCADE
 ) ENGINE = InnoDB;
 
 -- LOGIN

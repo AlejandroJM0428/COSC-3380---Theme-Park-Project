@@ -23,7 +23,7 @@ export default function Dashboard({ base = '/staff', sections: menu = NAV_SECTIO
   return (
     <div className="thunder-home">
       <div className="thunder-intro" id="park-dashboard">
-        <span className="thunder-section-label">Welcome back, {user.username}</span>
+        <span className="thunder-section-label">Welcome back, {user.name || 'there'}</span>
         <h2>{info.title}</h2>
         <p>{info.blurb}</p>
       </div>

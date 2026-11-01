@@ -187,7 +187,7 @@ export const TICKETS = {
 export const SHIFTS = {
   title: 'Shift Ratings',
   intro:
-    'Employee performance records. Log a shift, then rate it from 1 to 5 once it has ended. The database refuses overlapping shifts and shifts before the hire date.',
+    'Employee performance records. Log a shift, then rate it from 1 to 5 once it has ended. The database refuses overlapping shifts, shifts before the hire date, and any shift that would take someone over 40 clocked hours in a week (Monday to Sunday).',
   resource: 'shifts',
   idKey: 'ShiftID',
   noun: 'shift',

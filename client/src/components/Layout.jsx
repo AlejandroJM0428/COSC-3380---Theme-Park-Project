@@ -56,7 +56,7 @@ export default function Layout({ base = '/staff', sections = NAV_SECTIONS, brand
             <div className="stub-main">
               <span className="stub-role">{info.title}</span>
               <span className="stub-user">
-                {user.username} ({user.role})
+                {user.name || 'Staff member'} ({user.role})
               </span>
             </div>
             <div className="stub-tear">

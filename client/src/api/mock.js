@@ -2,11 +2,10 @@
 const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const USERS = {
-  admin: { username: 'admin', role: 'Admin' },
-  manager: { username: 'manager', role: 'Manager' },
-  cashier: { username: 'cashier', role: 'Cashier' },
-  customer: { username: 'customer', role: 'Customer' },
-  
+  avery0001: { username: 'avery0001', role: 'Admin', name: 'Avery Stone' },
+  blake0002: { username: 'blake0002', role: 'Manager', name: 'Blake Reed' },
+  casey0003: { username: 'casey0003', role: 'Cashier', name: 'Casey Lane' },
+  customer: { username: 'customer', role: 'Customer', name: 'Demo Customer' },
 }
 
 export async function login(username, password, audience) {
@@ -18,20 +17,11 @@ export async function login(username, password, audience) {
   return user
 }
 
-export async function listStaffAccounts() {
-  await delay(120)
-  return [
-    { username: 'admin', role: 'Admin', name: null, jobTitle: null },
-    { username: 'manager', role: 'Manager', name: null, jobTitle: null },
-    { username: 'cashier', role: 'Cashier', name: null, jobTitle: null },
-  ]
-}
-
-export async function register({ username }) {
+export async function register({ username, firstName = '', lastName = '' }) {
   await delay()
   const key = String(username).trim().toLowerCase()
   if (USERS[key]) throw new Error('That username is already taken')
-  USERS[key] = { username: String(username).trim(), role: 'Customer' }
+  USERS[key] = { username: String(username).trim(), role: 'Customer', name: `${firstName} ${lastName}`.trim() || 'Member' }
   return USERS[key]
 }
 
