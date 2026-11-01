@@ -32,5 +32,9 @@ project-audit.sh
 # generated history (rebuild with SQL/tools/load_history.sh or gen_test_data.py)
 SQL/history/
 
-#local scripts
-*.sh
+apply-*.sh
+backup.sh
+/scripts/
+SQL/tools/
+server/scripts/set-password.js
+server/scripts/report-sweep.js
