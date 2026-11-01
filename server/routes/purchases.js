@@ -8,9 +8,10 @@ import { friendlyDbError, needId, needInt, optDateTime, recordId } from '../vali
 // There is no PUT. MySQL no longer blocks a direct UPDATE of a purchase. The browser never sends the price: trg_Purchase_BI copies it from the item.
 // trg_Purchase_BI also refuses retired items and venues under maintenance (errno 1644 -> handleError).
 
-const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_WRITE = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
+// Role matrix (TA fixes plan): the retail desk and the ticket booth own these records. The operations manager has no access.
+const CAN_READ = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_WRITE = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_DELETE = ['Admin', 'RetailManager'];
 
 const SELECT_PURCHASE = `
   SELECT p.PurchaseID, p.TicketID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,

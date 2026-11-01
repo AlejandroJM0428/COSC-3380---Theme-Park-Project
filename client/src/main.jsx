@@ -4,6 +4,10 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import AuthProvider from './auth/AuthProvider.jsx'
 import './index.css'
+import './theme.css'
+import { BRAND } from './config/brand.js'
+
+document.title = `${BRAND.name} Operations`
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

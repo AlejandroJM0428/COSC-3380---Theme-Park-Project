@@ -1,0 +1,69 @@
+/* Row Editor panel. Every class starts with rowedit- so nothing else is affected. */
+
+.rowedit-form {
+  margin: 14px 0;
+  padding: 14px 16px;
+  background: var(--panel, #fff);
+  border: 1px solid var(--line, #c3d3ce);
+  border-left: 6px solid var(--role, #7b2d8e);
+  border-radius: 6px;
+}
+
+.rowedit-form h4 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.rowedit-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rowedit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rowedit-field > label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.rowedit-field textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.rowedit-null {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.rowedit-actions {
+  white-space: nowrap;
+}
+
+.rowedit-actions button {
+  padding: 4px 10px;
+  margin-right: 6px;
+}
+
+.rowedit-key {
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.rowedit-log {
+  margin-top: 18px;
+}
+
+.rowedit-log > summary {
+  cursor: pointer;
+  font-weight: 700;
+}

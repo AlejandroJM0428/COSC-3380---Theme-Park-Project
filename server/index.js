@@ -10,13 +10,23 @@ import './routes/health.js';
 import './routes/auth.js';
 import './routes/reports.js';
 import './routes/queries.js';
-import './routes/demos.js';
+import './routes/triggers.js';
+import './routes/dataentry.js';
 import './routes/tickets.js';
 import './routes/maintenance.js';
 import './routes/shifts.js';
 import './routes/notifications.js';
 import './routes/visitor.js';
+import './routes/family.js';
+import './routes/cancellations.js';
+import './routes/publicSite.js';
 import './routes/me.js';
+import './routes/admin.js';
+import './routes/adminBrowse.js';
+import './routes/adminSql.js';
+import './routes/adminTransactions.js';
+import './routes/adminRows.js';
+import './routes/adminBuilder.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',

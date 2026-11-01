@@ -18,7 +18,7 @@ export const CUSTOMERS = {
   resource: 'customers',
   idKey: 'CustomerID',
   noun: 'customer',
-  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  deleteRoles: ['Admin', 'RetailManager'],
   deleteLabel: 'Deactivate',
   deletePast: 'Deactivated',
   deleteNote: 'The record is kept and can be turned back on by editing it.',
@@ -74,7 +74,7 @@ export const MEMBERSHIPS = {
   resource: 'memberships',
   idKey: 'MembershipID',
   noun: 'membership',
-  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  deleteRoles: ['Admin', 'RetailManager'],
   deleteNote: 'Memberships that already have tickets cannot be deleted.',
   filters: [
     {
@@ -98,7 +98,7 @@ export const MEMBERSHIPS = {
     { key: 'IsCurrent', label: 'Status', format: (v) => (Number(v) ? 'Current' : 'Not current') },
   ],
   fields: [
-    { key: 'customerId', label: 'Customer ID', type: 'number', required: true, min: 1, step: '1' },
+    { key: 'customerId', label: 'Guest', type: 'lookup', kind: 'customer', required: true },
     {
       key: 'tier',
       label: 'Tier',
@@ -142,7 +142,9 @@ export const PURCHASES = {
   resource: 'purchases',
   idKey: 'PurchaseID',
   noun: 'purchase',
-  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  lockedNote:
+    'These rows are sales records and feed the revenue reports. They are permanent records, so the totals in the reports cannot be changed quietly after the fact. To fix a mistake, delete the entry and add it again.',
+  deleteRoles: ['Admin', 'RetailManager'],
   deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
   canEditRow: () => false,
   columns: [
@@ -157,7 +159,7 @@ export const PURCHASES = {
     { key: 'LineTotal', label: 'Total', format: money },
   ],
   fields: [
-    { key: 'ticketId', label: 'Ticket ID', type: 'number', required: true, min: 1, step: '1' },
+    { key: 'ticketId', label: 'Ticket', type: 'lookup', kind: 'ticket', required: true },
     {
       key: 'itemId',
       label: 'Item',
@@ -193,7 +195,9 @@ export const GAME_PLAYS = {
   resource: 'game-plays',
   idKey: 'GamePlayID',
   noun: 'game play',
-  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  lockedNote:
+    'These rows are sales records and feed the revenue reports. They are permanent records, so the totals in the reports cannot be changed quietly after the fact. To fix a mistake, delete the play and add it again.',
+  deleteRoles: ['Admin', 'RetailManager'],
   deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
   canEditRow: () => false,
   columns: [
@@ -205,7 +209,7 @@ export const GAME_PLAYS = {
     { key: 'AmountPaid', label: 'Paid', format: money },
   ],
   fields: [
-    { key: 'ticketId', label: 'Ticket ID', type: 'number', required: true, min: 1, step: '1' },
+    { key: 'ticketId', label: 'Ticket', type: 'lookup', kind: 'ticket', required: true },
     {
       key: 'gameId',
       label: 'Game',
@@ -233,6 +237,8 @@ export const RIDE_LOG = {
   resource: 'ride-log',
   idKey: 'RideLogID',
   noun: 'ride log entry',
+  lockedNote:
+    'These rows are the permanent record of guest traffic and wait times, and the ride reports read them. They are permanent records, so the numbers in the reports cannot be changed quietly after the fact. To fix a mistake, delete the entry and add it again.',
   deleteRoles: ['Admin', 'Manager'],
   deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
   canEditRow: () => false,
@@ -271,7 +277,7 @@ export const RIDE_LOG = {
       required: true,
       optionsFrom: (form, lookups) => (lookups?.rides ?? []).map((x) => [String(x.id), x.name]),
     },
-    { key: 'ticketId', label: 'Ticket ID (for a boarding)', type: 'number', min: 1, step: '1' },
+    { key: 'ticketId', label: 'Ticket (for a boarding)', type: 'lookup', kind: 'ticket', show: (form) => form.eventType === 'Boarding' },
     { key: 'waitMinutes', label: 'Wait minutes (for a wait reading)', type: 'number', min: 0, step: '1' },
     { key: 'usedExpress', label: 'Used the Express line (boardings)', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
     { key: 'loggedAt', label: 'Time (leave empty for now)', type: 'datetime' },
@@ -370,6 +376,7 @@ export const FACILITIES = {
     'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Edit one to turn it back on. Set a ride to Maintenance and save: MySQL adds a notice, a toast appears in the corner, and the notice stays on Promos & Notices.',
   resource: 'facilities',
   idKey: 'FacilityKey',
+  hideIds: true, // the page never shows internal keys
   noun: 'attraction',
   deleteRoles: ['Admin'],
   deleteLabel: 'Deactivate',
@@ -513,6 +520,7 @@ export const USERS = {
     'Staff logins for this site. Add an account, change its role, set a new password, or deactivate it. A deactivated account cannot log in. You cannot deactivate yourself or change your own role.',
   resource: 'users',
   idKey: 'UserID',
+  hideIds: true, // the page never shows user numbers
   noun: 'user',
   deleteRoles: ['Admin'],
   deleteLabel: 'Deactivate',
@@ -531,10 +539,9 @@ export const USERS = {
     },
   ],
   columns: [
-    { key: 'UserID', label: 'User #' },
     { key: 'Username', label: 'Username' },
     { key: 'Role', label: 'Role' },
-    { key: 'EmployeeName', label: 'Employee', format: (v, row) => (v ? `${v} (#${row.EmployeeID})` : '—') },
+    { key: 'EmployeeName', label: 'Employee', format: (v) => v || '—' },
     { key: 'IsActive', label: 'Status', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
   ],
   fields: [
@@ -547,7 +554,13 @@ export const USERS = {
       options: ['Admin', 'Manager', 'Cashier', 'RetailManager', 'HRManager', 'MaintenanceManager', 'MaintenanceWorker', 'RestaurantWorker'].map((r) => [r, r]),
     },
     { key: 'password', label: 'Password, at least 8 characters (empty keeps the current one)', type: 'password', maxLength: 72 },
-    { key: 'employeeId', label: 'Employee ID (optional)', type: 'number', min: 1, step: '1' },
+    {
+      key: 'employeeId',
+      label: 'Employee (optional)',
+      type: 'select',
+      options: [['', 'Not linked to an employee']],
+      optionsFrom: (form, lookups) => [['', 'Not linked to an employee'], ...(lookups?.employees ?? []).map((e) => [String(e.id), e.name])],
+    },
     { key: 'isActive', label: 'Status', type: 'select', options: [['yes', 'Active'], ['no', 'Inactive']] },
   ],
   blank: () => ({ username: '', role: '', password: '', employeeId: '', isActive: 'yes' }),

@@ -1,5 +1,9 @@
 // The ONLY place that talks to the network. Every call goes to /api/..., which the
 // Vite dev server forwards to the backend (see the proxy in vite.config.js).
+// Sent on window when the server says "not logged in" (HTTP 401) for a page request, for example after the
+// server restarted and forgot the session. AuthProvider listens and signs the user out, so the routes send them to login.
+export const SESSION_EXPIRED = 'themepark:session-expired'
+
 export async function http(path, { method = 'GET', body } = {}) {
   let res
   try {
@@ -21,9 +25,17 @@ export async function http(path, { method = 'GET', body } = {}) {
   }
 
   if (!res.ok) {
+    // A wrong password at login is also a 401, so the /auth/ calls are left out.
+    if (res.status === 401 && !path.startsWith('/auth/') && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(SESSION_EXPIRED))
+    }
     // Database triggers send messages like "Park is at capacity for that date".
     // The backend should return them as { "message": "..." } so they show up here.
-    throw new Error(data?.message ?? `Request failed (${res.status})`)
+    // When the message came from a known trigger, the server adds { trigger: { name, table, timing, event, rule } };
+    // it is kept on the error so a page can show a "trigger fired" card.
+    const error = new Error(data?.message ?? `Request failed (${res.status})`)
+    if (data?.trigger) error.trigger = data.trigger
+    throw error
   }
   return data
 }

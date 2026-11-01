@@ -9,9 +9,11 @@ import { requireRole } from '../middleware/requireRole.js';
 // (sp_AssertTicketRules, fn_TicketPrice) because the update trigger was removed.
 // A refund uses the current time and no weather id, so the old refund trigger is not required here.
 
+// Role matrix: the retail desk and the ticket booth sell tickets. The operations manager may only READ tickets,
+// because the Ride Log needs to pick the guest's ticket for a boarding. Reading is not selling: POST, PUT and void stay closed to Manager.
 const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_WRITE = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_VOID = ['Admin', 'Manager', 'RetailManager'];
+const CAN_WRITE = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_VOID = ['Admin', 'RetailManager'];
 
 const isId = (n) => Number.isInteger(n) && n > 0;
 

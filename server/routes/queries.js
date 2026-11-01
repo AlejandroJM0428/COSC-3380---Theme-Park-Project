@@ -44,7 +44,7 @@ function readParam(def, raw) {
 route(
   'GET',
   '/api/queries',
-  requireRole('Admin', 'Manager')(async () =>
+  requireRole('Admin')(async () =>
     Object.entries(QUERIES).map(([id, q]) => ({ id, title: q.title, params: q.params })),
   ),
 );
@@ -52,7 +52,7 @@ route(
 route(
   'GET',
   '/api/queries/:id',
-  requireRole('Admin', 'Manager')(async (ctx) => {
+  requireRole('Admin')(async (ctx) => {
     const q = Object.hasOwn(QUERIES, ctx.params.id) ? QUERIES[ctx.params.id] : null;
     if (!q) throw new HttpError(404, 'Unknown query');
 

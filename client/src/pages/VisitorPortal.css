@@ -15,7 +15,6 @@
 .visitor-portal button, .visitor-portal input { font: inherit; }
 .visitor-header { min-height: 78px; padding: 0 max(5vw, calc((100vw - 1240px) / 2)); background: #fffefa; display: flex; align-items: center; justify-content: space-between; gap: 26px; border-bottom: 1px solid #e8ede3; }
 .visitor-brand { display: flex; align-items: center; gap: 11px; min-width: 215px; }
-.brand-mark { width: 42px; height: 42px; background: var(--vp-forest); color: #f4c86c; border-radius: 13px 13px 13px 4px; display: grid; place-items: center; font-size: .85rem; letter-spacing: -.06em; font-weight: 900; }
 .visitor-brand strong, .visitor-brand small { display: block; }
 .visitor-brand strong { font-family: var(--font-display); font-size: 1.03rem; letter-spacing: -.03em; }
 .visitor-brand small { color: var(--vp-muted); font-size: .78rem; margin-top: -2px; }
@@ -148,3 +147,101 @@
 
 .hero-ticket-secondary { margin: 14px 0 0; text-align: center; font-size: 0.9rem; opacity: 0.8; }
 .hero-ticket-secondary a { font-weight: 700; text-decoration: underline; color: inherit; }
+
+/* ---- Disney-style home: header, hero, rides list ---- */
+.vp-header { background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.12); position: sticky; top: 0; z-index: 20; }
+.vp-utility { display: flex; justify-content: space-between; align-items: center; padding: 6px max(5vw, calc((100vw - 1240px) / 2)); font-size: .72rem; color: #5b6770; border-bottom: 1px solid #eef0f2; }
+.vp-utility-links { display: flex; gap: 16px; align-items: center; }
+.vp-utility a, .vp-link-button { color: #1f6fb2; font-weight: 600; background: none; border: 0; padding: 0; cursor: pointer; font-size: .72rem; }
+.vp-navbar { display: flex; align-items: center; gap: 28px; padding: 12px max(5vw, calc((100vw - 1240px) / 2)); }
+.vp-nav { display: flex; gap: 28px; margin-right: auto; margin-left: 12px; }
+.vp-nav a { font-size: .95rem; color: #1b2a41; }
+.vp-nav a:hover { color: #1f6fb2; }
+.vp-buy { display: inline-block; background: #f5b400; color: #1b2a41; font-weight: 800; font-size: .9rem; padding: 11px 24px; border-radius: 999px; white-space: nowrap; transition: background .15s ease; }
+.vp-buy:hover { background: #ffc61f; }
+.vp-hero { min-height: 460px; display: flex; align-items: flex-end; padding: 60px max(5vw, calc((100vw - 1240px) / 2)); color: #fff; background: linear-gradient(to top, rgba(10,20,35,.75), rgba(10,20,35,.1) 60%), url('/images/roller-coaster.jpg') center / cover no-repeat; }
+.vp-hero-copy { max-width: 560px; }
+.vp-hero-eyebrow { margin: 0 0 8px; font-size: .85rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: #ffd566; }
+.vp-hero h1 { font-family: var(--font-display); font-size: clamp(2.4rem, 5vw, 3.8rem); line-height: 1.02; letter-spacing: -.03em; margin: 0 0 24px; }
+.vp-rides { margin-top: 12px; scroll-margin-top: 110px; }
+.vp-rides h2 { font-family: var(--font-display); font-size: 2.2rem; font-weight: 400; letter-spacing: -.02em; margin: 0 0 22px; }
+.vp-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 26px; }
+.vp-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 10px; background: #fff; border: 2px solid #d5dce3; border-radius: 12px; color: #1f6fb2; cursor: pointer; }
+.vp-tile strong { font-size: 1.6rem; font-family: var(--font-display); }
+.vp-tile span { font-size: .85rem; font-weight: 600; }
+.vp-tile:hover { border-color: #1f6fb2; background: #fff !important; }
+.vp-tile.active { border-color: #1f6fb2; background: #eaf3fb !important; }
+.vp-list-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid #d5dce3; font-size: .9rem; }
+.vp-search input { border: 1px solid #c5ced6; border-radius: 6px; padding: 9px 12px; min-width: 260px; background: #fff; }
+.vp-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 4px; border-bottom: 1px solid #e3e8ed; }
+.vp-row h3 { font-family: var(--font-display); font-size: 1.2rem; margin: 0 0 4px; color: #1b2a41; }
+.vp-row p { margin: 0 0 8px; font-size: .85rem; color: #667785; }
+.vp-row-closed { opacity: .7; }
+.vp-row-wait { text-align: right; min-width: 90px; }
+.vp-row-wait strong { display: block; font-family: var(--font-display); font-size: 2rem; line-height: 1; color: #1f6fb2; }
+.vp-row-wait small { font-size: .72rem; color: #667785; }
+@media (max-width: 760px) {
+  .vp-navbar { flex-wrap: wrap; gap: 12px; }
+  .vp-nav { order: 3; width: 100%; margin: 0; gap: 18px; overflow-x: auto; }
+  .vp-hero { min-height: 360px; padding: 40px 22px; }
+  .vp-search input { min-width: 0; width: 100%; }
+  .vp-list-bar { flex-direction: column; align-items: stretch; }
+}
+
+/* ---- Round 2: more theme park, less bank ---- */
+.visitor-portal { background: #fff; --vp-blue: #0b3d91; }
+.vp-hero { min-height: 620px; align-items: center; justify-content: center; text-align: center; background: linear-gradient(to bottom, rgba(8,24,60,.55), rgba(8,24,60,.15) 45%, rgba(8,24,60,.7)), url('/images/roller-coaster.jpg') center / cover no-repeat; }
+.vp-hero-copy { max-width: 760px; }
+.vp-hero-eyebrow { color: #fff; font-size: 1rem; letter-spacing: .2em; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+.vp-hero h1 { font-size: clamp(3rem, 8vw, 6rem); font-weight: 800; text-shadow: 0 4px 24px rgba(0,0,0,.55); margin-bottom: 30px; }
+.vp-hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.vp-buy { box-shadow: 0 4px 0 #c88f00; }
+.vp-buy:active { transform: translateY(2px); box-shadow: 0 2px 0 #c88f00; }
+.vp-ghost { display: inline-block; padding: 11px 24px; border: 2px solid #fff; border-radius: 999px; color: #fff; font-weight: 800; font-size: .9rem; }
+.vp-ghost:hover { background: rgba(255,255,255,.18); }
+.vp-ghost-dark { border-color: #fff; }
+.visitor-content { max-width: 1240px; padding-top: 64px; }
+.vp-lands h2, .vp-rides h2 { font-family: var(--font-display); font-size: clamp(1.9rem, 3.4vw, 2.6rem); font-weight: 800; color: #0b3d91; text-align: center; letter-spacing: -.02em; margin: 0 0 28px; }
+.vp-rides h2 { text-align: left; }
+.vp-land-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.vp-land { position: relative; height: 380px; border: 0; padding: 0; border-radius: 20px; overflow: hidden; background-size: cover; background-position: center; cursor: pointer; text-align: left; box-shadow: 0 10px 24px rgba(11,61,145,.18); transition: transform .2s ease, box-shadow .2s ease; }
+.vp-land:hover { transform: translateY(-6px); box-shadow: 0 18px 34px rgba(11,61,145,.28); }
+.vp-land.active { outline: 4px solid #f5b400; }
+.vp-land-label { position: absolute; inset: auto 0 0 0; padding: 70px 24px 24px; color: #fff; background: linear-gradient(to top, rgba(8,24,60,.9), transparent); }
+.vp-land-label strong { display: block; font-family: var(--font-display); font-size: 1.7rem; }
+.vp-land-label small { font-size: .95rem; opacity: .9; }
+.vp-promo { margin: 72px 0; display: grid; grid-template-columns: 1fr 1fr; border-radius: 24px; overflow: hidden; background: linear-gradient(135deg, #0b3d91, #1b64d1); color: #fff; box-shadow: 0 14px 34px rgba(11,61,145,.3); }
+.vp-promo-img { min-height: 340px; background: url('/images/family-rides.jpg') center / cover; }
+.vp-promo-copy { padding: 48px; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+.vp-promo-eyebrow { margin: 0; color: #ffd566; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; font-size: .8rem; }
+.vp-promo h2 { font-family: var(--font-display); font-size: clamp(2rem, 3.6vw, 2.8rem); margin: 0; letter-spacing: -.02em; }
+.vp-promo p:not(.vp-promo-eyebrow) { margin: 0 0 8px; line-height: 1.6; color: #dbe8ff; font-size: 1.02rem; }
+.vp-promo-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.vp-clear { margin-left: 10px; font-size: .8rem; font-weight: 700; color: #1f6fb2; background: #eaf3fb; border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; vertical-align: middle; }
+.vp-rides { margin-top: 72px; }
+.vp-tile { border-radius: 16px; border-width: 2px; }
+.vp-tile.active { background: #0b3d91 !important; border-color: #0b3d91; }
+.vp-tile.active strong, .vp-tile.active span { color: #fff; }
+.vp-row { justify-content: flex-start; gap: 22px; padding: 18px 4px; }
+.vp-row-img { flex: none; width: 190px; height: 120px; border-radius: 12px; background-size: cover; background-position: center; }
+.vp-row-main { flex: 1; min-width: 0; }
+.vp-row-wait { margin-left: auto; }
+.vp-footer { margin-top: 72px; background: #0b2a66; color: #cfdcf5; padding: 40px max(5vw, calc((100vw - 1240px) / 2)) 28px; }
+.vp-footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+.vp-footer-brand { display: flex; align-items: center; gap: 12px; color: #fff; font-family: var(--font-display); font-size: 1.2rem; }
+.vp-footer nav { display: flex; gap: 26px; flex-wrap: wrap; }
+.vp-footer nav a { color: #fff; font-weight: 600; font-size: .9rem; }
+.vp-footer nav a:hover { color: #ffd566; }
+.vp-footer p { margin: 28px 0 0; font-size: .75rem; color: #8fa6d1; }
+@media (max-width: 860px) {
+  .vp-land-grid { grid-template-columns: 1fr; }
+  .vp-land { height: 260px; }
+  .vp-promo { grid-template-columns: 1fr; }
+  .vp-promo-img { min-height: 220px; }
+  .vp-promo-copy { padding: 30px 24px; }
+  .vp-row { flex-wrap: wrap; }
+  .vp-row-img { width: 100%; height: 160px; }
+  .vp-hero { min-height: 480px; }
+}
+.vp-row-wait-locked { max-width: 130px; }
+.vp-row-wait-locked small { font-size: .78rem; line-height: 1.3; }

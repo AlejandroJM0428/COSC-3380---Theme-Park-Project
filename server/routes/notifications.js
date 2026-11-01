@@ -17,7 +17,7 @@ const SEVERITIES = ['Info', 'Warning', 'Alert'];
 route(
   'POST',
   '/api/notifications',
-  requireRole('Admin', 'Manager', 'RetailManager')(async (ctx) => {
+  requireRole('Admin', 'RetailManager')(async (ctx) => {
     const { severity = 'Info', title, message, expiresAt } = ctx.body;
     if (!SEVERITIES.includes(severity)) throw new HttpError(400, `Severity must be one of: ${SEVERITIES.join(', ')}`);
     if (typeof title !== 'string' || !title.trim() || title.trim().length > 100) throw new HttpError(400, 'Title is required (100 characters or fewer)');
@@ -41,7 +41,7 @@ route(
 route(
   'DELETE',
   '/api/notifications/:id',
-  requireRole('Admin', 'Manager', 'RetailManager')(async (ctx) => {
+  requireRole('Admin', 'RetailManager')(async (ctx) => {
     const id = Number(ctx.params.id);
     if (!Number.isInteger(id) || id < 1) throw new HttpError(400, 'Notification ID must be a whole number');
     const [result] = await pool.query('UPDATE Notification SET IsActive = 0 WHERE NotificationID = ?', [id]);

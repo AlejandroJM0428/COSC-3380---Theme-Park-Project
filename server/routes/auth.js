@@ -8,11 +8,17 @@ import { createSession, getSession, destroySession } from '../session.js';
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
 const BAD_LOGIN = 'Invalid username or password';
 
+// The staff and member sign-in pages are separate. Each says which one it is ('staff' or 'member'), and the
+// server refuses an account of the other kind with the same message as a wrong password, so neither page
+// reveals what the other one is for. No audience (older callers, check.sh) keeps the old behaviour.
+const AUDIENCES = ['staff', 'member'];
+
 route('POST', '/api/auth/login', async (ctx) => {
-  const { username, password } = ctx.body;
+  const { username, password, audience } = ctx.body;
   if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
     throw new HttpError(400, 'Username and password are required');
   }
+  if (audience !== undefined && !AUDIENCES.includes(audience)) throw new HttpError(400, 'Unknown sign in page');
 
   const [rows] = await pool.query(
     'SELECT UserID, Username, PasswordHash, Role, CustomerID, EmployeeID FROM AppUser WHERE Username = ? AND IsActive = 1',
@@ -21,9 +27,35 @@ route('POST', '/api/auth/login', async (ctx) => {
   const user = rows[0];
   const ok = await bcrypt.compare(password, user ? user.PasswordHash : DUMMY_HASH);
   if (!user || !ok) throw new HttpError(401, BAD_LOGIN);
+  const isCustomer = user.Role === 'Customer';
+  if ((audience === 'staff' && isCustomer) || (audience === 'member' && !isCustomer)) throw new HttpError(401, BAD_LOGIN);
 
   createSession(ctx.res, { userId: user.UserID, username: user.Username, role: user.Role, CustomerID: user.CustomerID, EmployeeID: user.EmployeeID });
   return { username: user.Username, role: user.Role };
+});
+
+// The staff sign-in lists the active staff accounts so a person picks their portal and their name instead of
+// typing a username. Public on purpose (the password is still required). It sends no ids, no hashes and no
+// customers, only what the two selects show.
+const STAFF_ORDER = ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker'];
+
+route('GET', '/api/auth/staff', async () => {
+  const [rows] = await pool.query(
+    `SELECT u.Username, u.Role, e.FirstName, e.LastName, e.JobTitle
+       FROM AppUser u
+       LEFT JOIN Employee e ON e.EmployeeID = u.EmployeeID
+      WHERE u.IsActive = 1 AND u.Role <> 'Customer' AND u.CustomerID IS NULL
+      ORDER BY e.LastName IS NULL, e.LastName, e.FirstName, u.Username
+      LIMIT 500`,
+  );
+  const accounts = rows.map((r) => ({
+    username: r.Username,
+    role: r.Role,
+    name: r.FirstName ? `${r.FirstName} ${r.LastName}` : null,
+    jobTitle: r.JobTitle ?? null,
+  }));
+  accounts.sort((a, b) => STAFF_ORDER.indexOf(a.role) - STAFF_ORDER.indexOf(b.role));
+  return { accounts };
 });
 
 // Member self sign-up. Always creates a Customer row + a 'Customer' AppUser, never a staff role.

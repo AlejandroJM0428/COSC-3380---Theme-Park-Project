@@ -2,6 +2,8 @@
 // add / edit / delete form, so a new page is one config object and a few lines (see pages/MaintenancePage.jsx).
 //
 // fields:    what the form shows. type = text | number | datetime | select | multicheck.
+//            writeRoles (optional): the only roles that see Add and Edit; everyone else who can open the page sees the table read only.
+//            type 'lookup' picks a guest, ticket or membership by name or date (kind = customer | ticket | membership) and keeps the ID out of sight.
 //            select options come from `options` ([value, label] pairs) or `optionsFrom(form, lookups)`.
 // columns:   what the table shows. `format(value, row)` is optional.
 // toPayload: form state -> the JSON body the server expects. The browser never sends ids, prices or roles.
@@ -25,6 +27,7 @@ export const MAINTENANCE = {
   resource: 'maintenance',
   idKey: 'MaintenanceID',
   noun: 'job',
+  writeRoles: ['Admin', 'MaintenanceManager'], // the operations manager can view jobs but not add or change them
   deleteRoles: ['Admin', 'MaintenanceManager'],
   filters: [
     {
@@ -130,7 +133,7 @@ export const TICKETS = {
   resource: 'tickets',
   idKey: 'TicketID',
   noun: 'ticket',
-  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
+  deleteRoles: ['Admin', 'RetailManager'],
   deleteLabel: 'Refund',
   deletePast: 'Refunded',
   askReason: true,
@@ -159,8 +162,8 @@ export const TICKETS = {
     { key: 'RefundedAt', label: 'Refunded on', format: shortDate },
   ],
   fields: [
-    { key: 'customerId', label: 'Customer ID', type: 'number', required: true, min: 1, step: '1' },
-    { key: 'membershipId', label: 'Membership ID (optional)', type: 'number', min: 1, step: '1' },
+    { key: 'customerId', label: 'Guest', type: 'lookup', kind: 'customer', required: true },
+    { key: 'membershipId', label: 'Membership (optional)', type: 'lookup', kind: 'membership', forCustomerKey: 'customerId', wide: false },
     { key: 'visitDate', label: 'Visit date', type: 'date', required: true },
     { key: 'hasExpress', label: 'Express add-on', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
   ],

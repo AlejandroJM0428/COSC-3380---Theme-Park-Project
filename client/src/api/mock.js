@@ -9,11 +9,22 @@ const USERS = {
   
 }
 
-export async function login(username, password) {
+export async function login(username, password, audience) {
   await delay()
   const user = USERS[String(username).trim().toLowerCase()]
   if (!user || password !== 'password') throw new Error('Invalid username or password')
+  const isCustomer = user.role === 'Customer'
+  if ((audience === 'staff' && isCustomer) || (audience === 'member' && !isCustomer)) throw new Error('Invalid username or password')
   return user
+}
+
+export async function listStaffAccounts() {
+  await delay(120)
+  return [
+    { username: 'admin', role: 'Admin', name: null, jobTitle: null },
+    { username: 'manager', role: 'Manager', name: null, jobTitle: null },
+    { username: 'cashier', role: 'Cashier', name: null, jobTitle: null },
+  ]
 }
 
 export async function register({ username }) {
@@ -89,6 +100,22 @@ const reports = {
     { Tier: 'Plus', Memberships: 45, ActiveNow: 33, ExpiringIn30Days: 4, MembershipRevenue: 8999.55, Visits: 610, VisitsPerMembership: 13.56 },
     { Tier: 'Premier', Memberships: 25, ActiveNow: 19, ExpiringIn30Days: 2, MembershipRevenue: 9999.75, Visits: 480, VisitsPerMembership: 19.2 },
   ],
+  'membership-performance': [
+    { Tier: 'Basic', StartDate: '2025-08-01', EndDate: '2026-07-31', Price: 99, AutoRenew: 0, IsActiveNow: 0, DaysToExpiry: -92, RenewedLater: 1, Visits: 9, ExtrasSpend: 140.5 },
+    { Tier: 'Plus', StartDate: '2025-12-01', EndDate: '2026-11-30', Price: 149, AutoRenew: 1, IsActiveNow: 1, DaysToExpiry: 30, RenewedLater: 0, Visits: 12, ExtrasSpend: 260 },
+    { Tier: 'Premier', StartDate: '2026-03-01', EndDate: '2027-02-28', Price: 249, AutoRenew: 0, IsActiveNow: 1, DaysToExpiry: 120, RenewedLater: 0, Visits: 0, ExtrasSpend: 0 },
+  ],
+  'ride-performance': [
+    { ZoneName: 'Adventure', RideName: 'Thunder Ridge', VisitYear: 2026, VisitMonth: 7, Boardings: 420, AvgWaitMinutes: 48.2, DowntimeHours: 2 },
+    { ZoneName: 'Future', RideName: 'Galaxy Rush', VisitYear: 2026, VisitMonth: 7, Boardings: 90, AvgWaitMinutes: 12.5, DowntimeHours: 66 },
+    { ZoneName: 'Fantasy', RideName: 'Carousel of Dreams', VisitYear: 2026, VisitMonth: 7, Boardings: 380, AvgWaitMinutes: 9.3, DowntimeHours: 0 },
+  ],
+  'item-sales': [
+    { VenueName: 'Burger Barn', VenueType: 'Restaurant', Category: 'Entree', ItemName: 'Cheeseburger', SaleYear: 2026, SaleMonth: 7, Units: 320, Revenue: 2880 },
+    { VenueName: 'Burger Barn', VenueType: 'Restaurant', Category: 'Drink', ItemName: 'Lemonade', SaleYear: 2026, SaleMonth: 7, Units: 410, Revenue: 1435 },
+    { VenueName: 'Sunny Gifts', VenueType: 'Gift Shop', Category: 'Toy', ItemName: 'Plush Dragon', SaleYear: 2026, SaleMonth: 7, Units: 45, Revenue: 899.55 },
+    { VenueName: 'Sunny Gifts', VenueType: 'Gift Shop', Category: 'Candy', ItemName: 'Fudge Box', SaleYear: null, SaleMonth: null, Units: 0, Revenue: 0 },
+  ],
   'revenue-by-source': [
     { RevenueDate: '2026-07-04', Source: 'Tickets', Revenue: 16828.13 },
     { RevenueDate: '2026-07-04', Source: 'Food', Revenue: 5240.5 },
@@ -110,3 +137,38 @@ export async function getReport(endpoint) {
   if (!rows) throw new Error(`No mock data for report "${endpoint}"`)
   return rows.map((r) => ({ ...r })) // copy so pages can't mutate the originals
 }
+
+// Public site data (same shape as GET /api/public/site). No wait times, on purpose.
+export async function getPublicSite() {
+  await delay()
+  return {
+    prices: { dayPass: 59, expressAddOn: 25 },
+    hours: { open: '09:00', close: '22:00' },
+    tiers: [
+      { tier: 'Basic', annualPrice: 69, anyDayAccess: false, includesExpress: false, benefits: ['Weekday admission', 'Standard queues included'] },
+      { tier: 'Plus', annualPrice: 89, anyDayAccess: true, includesExpress: false, benefits: ['Any-day admission', 'Standard queues included'] },
+      { tier: 'Premier', annualPrice: 179, anyDayAccess: true, includesExpress: true, benefits: ['Any-day admission', 'Express queues included'] },
+    ],
+    rides: [
+      { rideId: 3, rideName: 'Thunder Run', zoneName: 'Thunder Canyon', rideType: 'Coaster', minHeightCm: 122, expressEligible: true, state: 'Open' },
+      { rideId: 4, rideName: 'Canyon Cyclone', zoneName: 'Thunder Canyon', rideType: 'Coaster', minHeightCm: 132, expressEligible: true, state: 'Open' },
+      { rideId: 5, rideName: 'Rapids Rampage', zoneName: 'Thunder Canyon', rideType: 'Water Ride', minHeightCm: 107, expressEligible: true, state: 'Closed' },
+      { rideId: 1, rideName: 'Heritage Railroad', zoneName: 'Main Street', rideType: 'Train', minHeightCm: null, expressEligible: false, state: 'Open' },
+      { rideId: 2, rideName: 'Grand Carousel', zoneName: 'Main Street', rideType: 'Carousel', minHeightCm: null, expressEligible: false, state: 'Open' },
+      { rideId: 9, rideName: 'Enchanted Journey', zoneName: 'Fantasy Forest', rideType: 'Dark Ride', minHeightCm: null, expressEligible: true, state: 'Open' },
+      { rideId: 14, rideName: 'Little Dino Dash', zoneName: 'Kids Corner', rideType: 'Coaster', minHeightCm: 91, expressEligible: false, state: 'Open' },
+      { rideId: 15, rideName: 'Mini Carousel', zoneName: 'Kids Corner', rideType: 'Carousel', minHeightCm: null, expressEligible: false, state: 'Open' },
+    ],
+    venues: [
+      { venueId: 6, venueName: 'Main Street Emporium', venueType: 'Gift Shop', serviceType: null, zoneName: 'Main Street' },
+      { venueId: 1, venueName: 'Main Street Diner', venueType: 'Restaurant', serviceType: 'Table Service', zoneName: 'Main Street' },
+      { venueId: 2, venueName: 'Canyon Grill', venueType: 'Restaurant', serviceType: 'Quick Service', zoneName: 'Thunder Canyon' },
+    ],
+    games: [
+      { gameId: 1, gameName: 'Skee-Ball', playPrice: 2, zoneName: 'Main Street' },
+      { gameId: 2, gameName: 'Ring Toss', playPrice: 3, zoneName: 'Fantasy Forest' },
+      { gameId: 3, gameName: 'High Striker', playPrice: 4, zoneName: 'Thunder Canyon' },
+    ],
+  }
+}
+

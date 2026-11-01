@@ -1,0 +1,12 @@
+.trg-page { max-width: 900px; }
+.trg-summary { margin: 12px 0 4px; font-size: 1.05rem; }
+.trg-group { margin-top: 24px; }
+.trg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+.trg-head h2 { margin: 0; font-size: 1.15rem; }
+.trg-where { margin: 4px 0 0; color: var(--muted); }
+.trg-rule { margin: 6px 0 8px; max-width: 70ch; }
+.trg-status { font-size: .8rem; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); }
+.trg-status-ok { color: var(--good); background: var(--good-bg); border-color: var(--good); }
+.trg-status-missing { color: var(--bad); background: var(--bad-bg); border-color: var(--bad); font-weight: 700; }
+.trg-errors { margin: 0; padding-left: 1.2rem; font-size: .92rem; color: var(--bad); }
+.trg-errors li { margin: 2px 0; }

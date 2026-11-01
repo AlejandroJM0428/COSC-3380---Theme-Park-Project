@@ -8,8 +8,9 @@ import { requireRole } from '../middleware/requireRole.js';
 // The browser never sends the id or IsPlanned. MaintenanceID is auto-numbered and IsPlanned is generated.
 // Closing a job without a repair cost is rejected in parseJob. MySQL does not check it.
 
+// Role matrix: the operations manager can view maintenance jobs (to see which rides are down) but only the maintenance side changes them.
 const CAN_READ = ['Admin', 'Manager', 'MaintenanceManager'];
-const CAN_WRITE = ['Admin', 'Manager', 'MaintenanceManager'];
+const CAN_WRITE = ['Admin', 'MaintenanceManager'];
 const CAN_DELETE = ['Admin', 'MaintenanceManager']; // hard delete: Maintenance has no IsActive column
 
 const TYPES = ['Routine Inspection', 'Preventive Service', 'Refurbishment', 'Emergency Repair', 'Safety Recall'];
