@@ -15,57 +15,57 @@ const RIDE_CATEGORIES = [
   { key: 'premier', label: 'Premier Rides' },
   { key: 'thrill', label: 'Thrill Rides' },
   { key: 'family', label: 'Family Favorites' },
-  { key: 'kids', label: 'Kids Corner' },
+  { key: 'kids', label: 'Kids Rides' },
 ]
 
 
 const RIDE_IMAGES = {
   // Thrill Rides
-  'Canyon Cyclone': '/images/canyon-cyclone.jpg',
-  'Rapids Rampage': '/images/rapids-rampage.jpg',
-  'Thunder Run': '/images/thunder-run.jpg',
+  'Beltway 8 Orbit': '/images/canyon-cyclone.jpg',
+  'Allen Parkway Splashdown': '/images/rapids-rampage.jpg',
+  'Kirby Drive Launch': '/images/thunder-run.jpg',
 
   // Family Favorites
-  "Kraken's Lair": '/images/krakens-lair.jpg',
-  "Pirate's Plunge": '/images/pirates-plunge.jpg',
-  'Tidal Simulator': '/images/tidal-simulator.jpg',
-  'Enchanted Journey': '/images/enchanted-journey.jpg',
-  'Forest Express': '/images/forest-express.jpg',
-  "Wizard's Workshop": '/images/wizards-workshop.jpg',
-  'Heritage Railroad': '/images/heritage-railroad.jpg',
-  "Dragon's Nest": '/images/dragons-nest.jpg',
-  'Grand Carousel': '/images/grand-carousel.jpg',
+  "Gator Alley": '/images/krakens-lair.jpg',
+  "Bayou Plunge": '/images/pirates-plunge.jpg',
+  'Hurricane Simulator': '/images/tidal-simulator.jpg',
+  'Art Car Odyssey': '/images/enchanted-journey.jpg',
+  'Katy Flyer': '/images/forest-express.jpg',
+  "Fannin Street Funhouse": '/images/wizards-workshop.jpg',
+  'Main Street Streetcar': '/images/heritage-railroad.jpg',
+  "Chimney Rock": '/images/dragons-nest.jpg',
+  'Market Square Carousel': '/images/grand-carousel.jpg',
 
-  // Kids Corner
-  'Mini Carousel': '/images/mini-carousel.jpg',
+  // Hermann Park
+  'Zoo Carousel': '/images/mini-carousel.jpg',
 }
 
 
 const GAME_IMAGES = {
-  'Dunk Tank': '/images/dunk-tank.jpg',
+  'Dunk on Dunlavy': '/images/dunk-tank.jpg',
   'Whack-a-Gator': '/images/whack-a-gator.jpg',
   'Fantasy Grove': '/images/fantasy-grove.jpg',
-  'Skee Ball': '/images/skee-ball.jpg',
-  'Basketball Shot': '/images/basketball-shot.jpg',
-  'Ring Toss': '/images/ring-toss.jpg',
-  'Balloon Pop': '/images/balloon-pop.jpg',
+  'Skee on Shepherd': '/images/skee-ball.jpg',
+  'Hoops on Holcombe': '/images/basketball-shot.jpg',
+  'Rodeo Ring Toss': '/images/ring-toss.jpg',
+  'Pop on Post Oak': '/images/balloon-pop.jpg',
 }
 
 
 const VENUE_IMAGES = {
-  'Bay Fish Shack': '/images/bay-fish-shack.jpg',
-  'Canyon Grill': '/images/canyon-grill.jpg',
-  'Forest Pizza': '/images/forest-pizza.jpg',
-  'Main Street Diner': '/images/main-street-diner.jpg',
-  'Sweet Treats Cart': '/images/sweet-treats-cart.jpg',
-  'Canyon Outfitters': '/images/canyon-outfitters.jpg',
-  'Main Street Emporium': '/images/main-street-emporium.jpg',
-  "Pirate's Trading Post": '/images/pirates-trading-post.jpg',
+  'Crawfish Shack': '/images/bay-fish-shack.jpg',
+  'Richmond Strip BBQ': '/images/canyon-grill.jpg',
+  'Montrose Taco Stand': '/images/forest-pizza.jpg',
+  'Waugh Drive Diner': '/images/main-street-diner.jpg',
+  'Almeda Snowball Cart': '/images/sweet-treats-cart.jpg',
+  'Post Oak Outfitters': '/images/canyon-outfitters.jpg',
+  'Westheimer Emporium': '/images/main-street-emporium.jpg',
+  "Bayou Trading Post": '/images/pirates-trading-post.jpg',
 }
 
 
 // Public rides page (/rides): premier rides, entertainment, then a park map.
-// Deep links still work: ?zone=Thunder Canyon, or ?land=thrill|family|kids (that land's zones). Anything else selects nothing.
+// Deep links still work: ?zone=The Loop, or ?land=thrill|family|kids (that land's zones). Anything else selects nothing.
 // Open/Closed only: no wait times, no member data.
 export default function Rides() {
   const { site, loading, error, retry } = usePublicSite()
@@ -139,7 +139,7 @@ useEffect(() => {
     {
       gameId: 'fantasy-grove-display',
       gameName: 'Fantasy Grove',
-      zoneName: 'Fantasy Forest',
+      zoneName: 'Montrose',
       playPrice: 12.00,
     },
   ]
@@ -290,8 +290,8 @@ const filteredRides = useMemo(() => {
           <ul className="pub-games pub-games-enhanced">
             {[...games]
               .sort((a, b) => {
-               if (a.gameName === 'Balloon Pop') return -1
-               if (b.gameName === 'Balloon Pop') return 1
+               if (a.gameName === 'Pop on Post Oak') return -1
+               if (b.gameName === 'Pop on Post Oak') return 1
                return 0
              })
              .slice(0, MAX_GAMES)
@@ -374,7 +374,7 @@ const filteredRides = useMemo(() => {
       <section aria-labelledby="pub-map-title">
         
         <h2 id="pub-map-title" className="pub-h2 pub-h2-spaced">
-          Explore Thunder Valley
+          Explore Beltway Park
         </h2>
 
         <p className="pub-lede">

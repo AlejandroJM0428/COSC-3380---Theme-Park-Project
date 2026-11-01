@@ -40,7 +40,7 @@ export default function Plan() {
 
         <p className="pub-lede">
           Everything you need to prepare for an unforgettable
-          day at Thunder Valley!
+          day at Beltway Park!
         </p>
       </div>
 
@@ -85,7 +85,7 @@ export default function Plan() {
           <h2>Ready for an Adventure?</h2>
           <p>
             Get your tickets and experience the excitement
-            of Thunder Valley!
+            of Beltway Park!
           </p>
         </div>
 

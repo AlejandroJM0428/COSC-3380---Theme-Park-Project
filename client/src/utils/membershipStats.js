@@ -12,8 +12,8 @@ const at = (iso) => new Date(`${iso}T12:00:00`).getTime()
 // Placeholder tiles. Change the values here and nothing else.
 export const SAMPLE_TILES = [
   { key: 'rides', icon: '🎢', label: 'Rides ridden', value: '42', note: 'across 9 different rides' },
-  { key: 'favourite', icon: '⭐', label: 'Favourite ride', value: 'Thunder Run', note: 'ridden 7 times' },
-  { key: 'zone', icon: '🗺️', label: 'Favourite zone', value: 'Thunder Canyon', note: '38% of your boardings' },
+  { key: 'favourite', icon: '⭐', label: 'Favourite ride', value: 'Kirby Drive Launch', note: 'ridden 7 times' },
+  { key: 'zone', icon: '🗺️', label: 'Favourite zone', value: 'The Loop', note: '38% of your boardings' },
   { key: 'wait', icon: '⏱️', label: 'Time in queues', value: '3h 10m', note: 'avg 14 min per ride' },
   { key: 'streak', icon: '🔥', label: 'Visit streak', value: '3 weeks', note: 'visited 3 weeks in a row' },
   { key: 'day', icon: '📅', label: 'Favourite day', value: 'Saturday', note: 'most of your visits' },

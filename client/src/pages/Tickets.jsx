@@ -57,7 +57,7 @@ useEffect(() => {
           <h1>YOUR ADVENTURE STARTS HERE!</h1>
           <p>
             Big thrills. Amazing memories. Endless fun.
-            Get ready for an unforgettable day at Thunder Valley!
+            Get ready for an unforgettable day at Beltway Park!
           </p>
           <a href="#ticket-options" className="tv-ticket-hero-btn">
             Explore Tickets ↓

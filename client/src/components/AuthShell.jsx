@@ -26,7 +26,7 @@ export default function AuthShell({ variant = 'member', role, title, children })
             </h1>
             {isMemberLogin && (
               <p className="tv-login-subtitle">
-                  Sign in to unlock your Thunder Valley adventure.
+                  Sign in to unlock your Beltway Park adventure.
               </p>
              )}
           </header>
