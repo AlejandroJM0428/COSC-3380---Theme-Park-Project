@@ -39,3 +39,7 @@
   .auth-body { padding: 4px 20px 22px; }
   .auth-staff .auth-body { padding-top: 18px; }
 }
+
+/* Member sign in and sign up: the awning hangs across the top of the page without taking part in the page layout */
+.auth-member { position: relative; }
+.auth-member > .awning-wrap { position: absolute; top: 0; left: 0; right: 0; z-index: 1; }

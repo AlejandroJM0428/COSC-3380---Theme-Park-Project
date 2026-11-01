@@ -12,11 +12,9 @@ export default function AuthShell({ variant = 'member', role, title, children })
      className={`auth auth-${variant} ${isMemberLogin ? 'tv-member-login' : ''}`}
      data-role={role || undefined}
     >
-      {variant === 'staff' && (
-        <div className="awning-wrap" aria-hidden="true">
-          <div className="awning" />
-        </div>
-      )}
+      <div className={variant === 'staff' ? 'awning-wrap' : 'awning-wrap is-blue'} aria-hidden="true">
+        <div className="awning" />
+      </div>
       <main className="auth-main">
         <section className="auth-card" aria-labelledby="auth-title">
           <header className="auth-head">

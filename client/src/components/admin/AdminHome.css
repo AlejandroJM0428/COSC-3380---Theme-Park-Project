@@ -2,21 +2,12 @@
 .ah { display: flex; flex-direction: column; gap: 16px; }
 
 .ah-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-.ah-kpi { display: grid; grid-template-columns: 1fr 1fr; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.ah-kpi-main { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; padding: 18px 10px; color: #fff; text-align: center; }
-.ah-kpi-value { font-size: 1.9rem; font-weight: 800; line-height: 1.1; }
-.ah-kpi-label { font-size: 0.85rem; }
-.ah-kpi-note { display: flex; align-items: center; justify-content: center; padding: 8px; font-size: 0.85rem; color: var(--muted); text-align: center; }
-.ah-a .ah-kpi-main { background: var(--pine); }
-.ah-b .ah-kpi-main { background: var(--lagoon); }
-.ah-c .ah-kpi-main { background: var(--bayou); }
-.ah-d .ah-kpi-main { background: var(--plum); }
 
 .ah-main { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 16px; }
 .ah-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 
 .ah-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.ah-card h2 { margin: 0; padding: 12px 16px; font-size: 1.05rem; border-bottom: 1px solid var(--line); background: #f7faf9; }
+.ah-card h2 { margin: 0; padding: 12px 16px; font-size: 1.05rem; border-bottom: 1px solid var(--line); background: var(--wash); }
 .ah-card-body { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .ah-chart .ah-card-body { align-items: stretch; }
 

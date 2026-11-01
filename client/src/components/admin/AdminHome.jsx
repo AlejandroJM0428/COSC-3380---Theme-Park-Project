@@ -17,12 +17,12 @@ function countBy(rows, key) {
 
 function Kpi({ value, label, note, tone }) {
   return (
-    <div className={`ah-kpi ah-${tone}`}>
-      <div className="ah-kpi-main">
-        <span className="ah-kpi-value">{value ?? '…'}</span>
-        <span className="ah-kpi-label">{label}</span>
+    <div className={`kpi kpi-${tone}`}>
+      <div className="kpi-main">
+        <span className="kpi-value">{value ?? '…'}</span>
+        <span className="kpi-label">{label}</span>
       </div>
-      <div className="ah-kpi-note">{note}</div>
+      <div className="kpi-note">{note}</div>
     </div>
   )
 }

@@ -16,6 +16,9 @@ export default function PortalLayout({ title, tabs = [], active, onSelect, child
 
   return (
     <div className="pt">
+      <div className="awning-wrap is-blue" aria-hidden="true">
+        <div className="awning" />
+      </div>
       <header className="pt-bar">
         <div className="pt-bar-inner">
           <Link to="/" className="pt-brand" aria-label={`${BRAND.name} home`}><Wordmark tagline={false} /></Link>

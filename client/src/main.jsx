@@ -5,6 +5,7 @@ import App from './App.jsx'
 import AuthProvider from './auth/AuthProvider.jsx'
 import './index.css'
 import './theme.css'
+import './shared.css'
 import { BRAND } from './config/brand.js'
 
 document.title = `${BRAND.name} Operations`

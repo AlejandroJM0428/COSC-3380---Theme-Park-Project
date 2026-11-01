@@ -52,11 +52,11 @@ export default function Dashboard({ base = '/staff', sections: menu = NAV_SECTIO
             style={{ '--section-accent': section.zone }}
           >
             <div className="thunder-section-heading">
-              <span className="thunder-section-number">
+              <span className="thunder-section-number shield">
                 {String(index + 1).padStart(2, '0')}
               </span>
               <div>
-                <h2>{section.title}</h2>
+                <h2 className="nameplate">{section.title}</h2>
                 <p>{items.length} {items.length === 1 ? 'page' : 'pages'} for your role</p>
               </div>
             </div>
