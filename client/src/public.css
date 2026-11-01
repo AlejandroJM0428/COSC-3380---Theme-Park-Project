@@ -118,12 +118,59 @@
 .pub-footer a:hover { opacity: 1; text-decoration: underline; }
 .pub-footer-bottom { max-width: 1240px; margin: 36px auto 0; padding: 18px 20px 0; box-sizing: border-box; border-top: 1px solid rgba(255, 255, 255, .14); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: .8rem; opacity: .8; }
 
+/* Public pages (/rides, /memberships, /plan) */
+.pub-page-wide { max-width: 1240px; padding: 0 20px 72px; }
+.pub-h1 { font-family: var(--brand-font-display); font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -.03em; margin: 0 0 8px; }
+.pub-lede { margin: 0 0 24px; color: var(--brand-muted); font-size: 1.05rem; }
+.pub-h2-spaced { margin-top: 40px; }
+.pub-note { margin: 18px 0 0; color: var(--brand-muted); font-size: .9rem; }
+.pub-empty { padding: 28px 16px; text-align: center; border: 1px dashed var(--brand-line); border-radius: var(--brand-radius); color: var(--brand-muted); }
+.pub-page .pub-alert { margin: 0 0 16px; }
+
+.pub-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.pub .pub-tabs a { text-decoration: none; font-weight: 700; font-size: .9rem; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--brand-line); background: var(--brand-surface); }
+.pub .pub-tabs a:hover { border-color: var(--brand-primary); }
+.pub .pub-tabs a.active { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--brand-primary-contrast); }
+
+.pub-list-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.pub-search input { font: inherit; min-width: min(320px, 80vw); padding: 11px 14px; border: 1px solid var(--brand-line); border-radius: 10px; background: #fff; color: var(--brand-ink); }
+
+.pub-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.pub-row { display: flex; align-items: center; gap: 16px; background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: var(--brand-radius); padding: 10px 16px 10px 10px; }
+.pub-row-img { flex: none; width: 96px; height: 72px; border-radius: 8px; }
+.pub-row-main { flex: 1; min-width: 0; }
+.pub-row-main h2 { margin: 0 0 2px; font-size: 1.05rem; }
+.pub-row-main p { margin: 0; color: var(--brand-muted); font-size: .88rem; }
+.pub-row-closed .pub-row-img { filter: grayscale(.8); opacity: .75; }
+.pub-badge { flex: none; font-size: .78rem; font-weight: 800; padding: 5px 12px; border-radius: 999px; }
+.pub-badge.open { background: #e3f5e8; color: #1b6a35; }
+.pub-badge.closed { background: #eceff2; color: #4c5b68; }
+
+.pub-tier-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 36px; }
+.pub-tier-card { background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: var(--brand-radius); padding: 28px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.pub-tier-card h2 { margin: 0; font-family: var(--brand-font-display); font-size: 1.4rem; }
+.pub-tier-price { margin: 0; }
+.pub-tier-price strong { font-family: var(--brand-font-display); font-size: 2.4rem; letter-spacing: -.04em; }
+.pub-tier-price small { color: var(--brand-muted); }
+.pub-tier-card ul { margin: 0 0 14px; padding-left: 18px; color: var(--brand-muted); line-height: 1.6; flex: 1; }
+
+.pub-table-wrap { overflow-x: auto; background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: var(--brand-radius); }
+.pub-table { width: 100%; border-collapse: collapse; min-width: 480px; }
+.pub-table th, .pub-table td { padding: 14px 18px; text-align: center; border-bottom: 1px solid var(--brand-line); }
+.pub-table th:first-child { text-align: left; }
+.pub-table tbody tr:last-child > * { border-bottom: 0; }
+.pub .pub-table th { background: var(--brand-surface); color: var(--brand-ink); font-size: 1rem; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.pub .pub-table thead th { font-family: var(--brand-font-display); background: var(--brand-surface-alt); }
+.pub-table td { font-weight: 700; }
+.pub-no { color: var(--brand-muted); }
+
 /* Tablet and phone */
 @media (max-width: 980px) {
   .pub-quickbuy { grid-template-columns: 1fr 1fr; }
   .pub-qb-submit { grid-column: 1 / -1; }
   .pub-cards { grid-template-columns: 1fr 1fr; }
   .pub-plan { grid-template-columns: 1fr; }
+  .pub-tier-cards { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
   .pub-promo { grid-template-columns: 1fr; }
@@ -146,6 +193,8 @@
   .pub-cards { grid-template-columns: 1fr; }
   .pub-card-img { min-height: 190px; }
   .pub-section { padding-top: 44px; }
+  .pub-row-img { width: 72px; height: 60px; }
+  .pub-row { gap: 12px; padding-right: 12px; }
 }
 
 /* Visually hidden text (kept here so the public site does not depend on the portal stylesheet) */

@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom'
 import Wordmark from '../Wordmark.jsx'
 import { BRAND } from '../../config/brand.js'
 
-// Public site footer. The Rides / Memberships / Plan links use homepage anchors until the
-// public pages exist (Part 7), then these three `href` values change to /rides, /memberships, /plan.
+// Public site footer.
 export default function Footer() {
   return (
     <footer className="pub-footer">
@@ -17,12 +16,12 @@ export default function Footer() {
           <div>
             <h2>Visit</h2>
             <Link to="/tickets">Tickets</Link>
-            <a href="/#rides">Rides</a>
-            <a href="/#plan">Plan your visit</a>
+            <Link to="/rides">Rides</Link>
+            <Link to="/plan">Plan your visit</Link>
           </div>
           <div>
             <h2>Memberships</h2>
-            <a href="/#visit">Compare tiers</a>
+            <Link to="/memberships">Compare tiers</Link>
             <Link to="/member/register">Join</Link>
             <Link to="/member/login">Member sign in</Link>
           </div>

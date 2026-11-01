@@ -21,6 +21,9 @@ import NotFound from './pages/NotFound.jsx'
 import PublicLayout from './components/PublicLayout.jsx'
 import HomePage from './pages/HomePage.jsx'
 import Tickets from './pages/Tickets.jsx'
+import Rides from './pages/Rides.jsx'
+import Memberships from './pages/Memberships.jsx'
+import Plan from './pages/Plan.jsx'
 import MemberPortal from './pages/MemberPortal.jsx'
 import { ADMIN_NAV_SECTIONS, ADMIN_ONLY, FORM_PAGES, MANAGEMENT, STAFF_ROLES } from './config/nav.js'
 
@@ -50,6 +53,9 @@ export default function App() {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/tickets" element={<Tickets />} />
+        <Route path="/rides" element={<Rides />} />
+        <Route path="/memberships" element={<Memberships />} />
+        <Route path="/plan" element={<Plan />} />
       </Route>
 
       {/* 2. Member (customer) login + account */}

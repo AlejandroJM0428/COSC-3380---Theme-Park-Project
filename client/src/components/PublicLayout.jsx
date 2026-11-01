@@ -7,13 +7,12 @@ import Footer from './home/Footer.jsx'
 import { BRAND } from '../config/brand.js'
 import '../public.css'
 
-// Main navigation. Rides, Memberships and Plan point at homepage sections until their own
-// pages exist (Part 7), then these three `to` values change to /rides, /memberships, /plan.
+// Main navigation.
 const NAV = [
   { to: '/tickets', label: 'Tickets' },
-  { to: '/#rides', label: 'Rides & Entertainment', plain: true },
-  { to: '/#visit', label: 'Memberships', plain: true },
-  { to: '/#plan', label: 'Plan Your Visit', plain: true },
+  { to: '/rides', label: 'Rides & Entertainment' },
+  { to: '/memberships', label: 'Memberships' },
+  { to: '/plan', label: 'Plan Your Visit' },
 ]
 
 // Layout for the public site: notices strip, one-row header, page, footer.
@@ -34,9 +33,7 @@ export default function PublicLayout() {
           </Link>
 
           <nav id="pub-nav" className={`pub-nav ${menuOpen ? 'open' : ''}`} aria-label="Main navigation">
-            {NAV.map((item) => (item.plain
-              ? <a key={item.label} href={item.to} onClick={close}>{item.label}</a>
-              : <NavLink key={item.label} to={item.to} onClick={close}>{item.label}</NavLink>))}
+            {NAV.map((item) => <NavLink key={item.label} to={item.to} onClick={close}>{item.label}</NavLink>)}
             <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin-mobile" onClick={close}>{isCustomer ? 'My account' : 'Sign in'}</Link>
           </nav>
 

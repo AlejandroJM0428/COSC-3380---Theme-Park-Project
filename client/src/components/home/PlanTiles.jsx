@@ -8,15 +8,14 @@ function clock(value) {
 }
 
 // Plan your visit: hours and height rules come from the public site data; directions are placeholder copy.
-export default function PlanTiles({ hours, rides = [] }) {
+// `bare` renders just the tiles (for the /plan page, which has its own heading).
+export default function PlanTiles({ hours, rides = [], bare = false }) {
   const heights = rides.map((r) => r.minHeightCm).filter((cm) => cm != null)
   const shortest = heights.length ? Math.min(...heights) : null
   const tallest = heights.length ? Math.max(...heights) : null
 
-  return (
-    <section className="pub-section" id="plan" aria-labelledby="pub-plan-title">
-      <h2 id="pub-plan-title" className="pub-h2">Plan your visit</h2>
-      <div className="pub-plan">
+  const tiles = (
+    <div className="pub-plan">
         <article>
           <h3>Hours</h3>
           <p>{hours?.open && hours?.close ? `Open daily, ${clock(hours.open)} to ${clock(hours.close)}.` : 'Opening hours will be posted here.'}</p>
@@ -33,7 +32,14 @@ export default function PlanTiles({ hours, rides = [] }) {
           <h3>Getting here</h3>
           <p>{BRAND.plan.directions}</p>
         </article>
-      </div>
+    </div>
+  )
+
+  if (bare) return tiles
+  return (
+    <section className="pub-section" id="plan" aria-labelledby="pub-plan-title">
+      <h2 id="pub-plan-title" className="pub-h2">Plan your visit</h2>
+      {tiles}
     </section>
   )
 }
