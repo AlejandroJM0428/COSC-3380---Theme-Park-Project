@@ -28,3 +28,10 @@ export function statusTone(status) {
 export function rideImage(zoneName) {
   return (LANDS.find((land) => land.zones.includes(zoneName)) ?? LANDS[1]).img
 }
+
+// "07:30" or "22:00" -> "7:30 AM" / "10:00 PM"
+export function clock(value) {
+  const [h, m] = String(value ?? '').split(':').map(Number)
+  if (Number.isNaN(h) || Number.isNaN(m)) return ''
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
+}

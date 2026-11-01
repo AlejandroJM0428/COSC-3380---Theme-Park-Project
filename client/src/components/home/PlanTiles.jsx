@@ -1,11 +1,5 @@
 import { BRAND } from '../../config/brand.js'
-
-// "07:30" or "22:00" -> "7:30 AM" / "10:00 PM"
-function clock(value) {
-  const [h, m] = String(value ?? '').split(':').map(Number)
-  if (Number.isNaN(h) || Number.isNaN(m)) return ''
-  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
-}
+import { clock } from '../../utils/portalFormat.js'
 
 // Plan your visit: hours and height rules come from the public site data; directions are placeholder copy.
 // `bare` renders just the tiles (for the /plan page, which has its own heading).
