@@ -4,8 +4,8 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, needInt, oneOf, optDateTime, recordId } from '../validate.js';
 
-// Ride log: list, get, add, delete. A row is either a Boarding (has a ticket) or a Wait Reading (has wait minutes).
-// There is no PUT. MySQL no longer blocks a direct UPDATE of a ride log row.
+// Ride log: list, get, add, edit, delete. A row is either a Boarding (has a ticket) or a Wait Reading (has wait minutes).
+// An edit goes through trg_RideLog_BU, which runs the boarding checks again when the ride, ticket, time or Express use changes.
 // trg_RideLog_BI refuses retired rides,
 // rides under maintenance, closed outdoor rides, guests under the height limit and bad Express use.
 // Those messages (errno 1644) reach the browser through handleError().
@@ -86,6 +86,29 @@ route(
         1062: 'A wait reading for this ride at this exact time already exists',
       });
     }
+  }),
+);
+
+// PUT changes an entry. An empty time keeps the time it already had. The database re-checks a changed boarding (trg_RideLog_BU).
+route(
+  'PUT',
+  '/api/ride-log/:id',
+  requireRole(...CAN_WRITE)(async (ctx) => {
+    const id = recordId(ctx, 'Ride log');
+    await loadLog(id); // 404 if missing
+    const l = parseLog(ctx.body);
+    try {
+      await pool.query(
+        'UPDATE RideLog SET RideID = ?, EventType = ?, TicketID = ?, WaitMinutes = ?, UsedExpress = ?, LoggedAt = COALESCE(?, LoggedAt) WHERE RideLogID = ?',
+        [l.rideId, l.eventType, l.ticketId, l.waitMinutes, l.usedExpress, l.loggedAt, id],
+      );
+    } catch (err) {
+      throw friendlyDbError(err, {
+        1452: 'Ticket ID or ride does not exist',
+        1062: 'A wait reading for this ride at this exact time already exists',
+      });
+    }
+    return loadLog(id);
   }),
 );
 

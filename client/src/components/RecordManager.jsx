@@ -11,6 +11,7 @@ export default function RecordManager({ entity }) {
   const { user } = useAuth()
   const canDelete = entity.deleteRoles.includes(user?.role)
   const canWrite = !entity.writeRoles || entity.writeRoles.includes(user?.role) // false = view only
+  const canEdit = canWrite && (!entity.editRoles || entity.editRoles.includes(user?.role)) // editRoles: only these roles get the Edit button (they must match the PUT route)
 
   const [filters, setFilters] = useState(() => Object.fromEntries((entity.filters ?? []).map((f) => [f.key, ''])))
   const [rows, setRows] = useState(null)
@@ -236,7 +237,7 @@ export default function RecordManager({ entity }) {
           <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
         ))}
         <td className="rm-actions">
-          {canWrite && (entity.canEditRow?.(row) ?? true) && (
+          {canEdit && (entity.canEditRow?.(row) ?? true) && (
             <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
               Edit
             </button>
