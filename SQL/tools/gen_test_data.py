@@ -438,8 +438,16 @@ for i, e in enumerate(wev, 1):
     e['closes'] = e['wind'] >= 35 or e['light'] <= 8.0 or e['temp'] >= 100 or e['temp'] <= 32
 insert(part('WeatherLog'), 'WeatherLog', ['WeatherID','ParkID','WeatherType','StartedAt','EndedAt','TemperatureF','WindMph','LightningMiles','ClosesOutdoorRides'],
        [(e['id'],1,e['type'],e['start'],e['end'],e['temp'],e['wind'],e['light'],0) for e in wev])
+_closing_by_day = {}
+for e in wev:
+    if e['closes']: _closing_by_day.setdefault(e['start'].date(), []).append(e)
 def weather_closed(at):
-    return any(e['closes'] and at >= e['start'] and (e['end'] is None or at < e['end']) for e in wev)
+    """An event that closes outdoor rides is running at `at` (looked up by day: an event is never longer than a day or two)."""
+    d = at.date()
+    for day in (d, d - timedelta(days=1)):
+        for e in _closing_by_day.get(day, ()):
+            if at >= e['start'] and (e['end'] is None or at < e['end']): return True
+    return False
 
 # maintenance (stage 6): a believable service history from the first weeks after opening to yesterday, plus the demo state for today.
 # Own generator RM; the 16 old crew draws are still burned on R so the old 94-day block that follows is unchanged.
@@ -822,22 +830,48 @@ active_games = [g for g in GAMES if g[4]]
 rl, gp, pu = [], [], []
 def pick_time(a, b):
     return a + timedelta(minutes=R.randint(0, max(1, int((b-a).total_seconds()//60))))
+
+# ride log (stage 8): 4 to 6 boardings per ticket, popular rides drawn more often, and the order of the rides changes from month to month.
+# Own generator RL, so the rides never disturb the games, purchases and shifts that share R.
+RL = random.Random(3380 + 8)
+POP = {1:3.0, 2:3.2, 3:10.0, 4:8.5, 5:7.5, 6:7.5, 7:6.0, 8:4.5, 9:4.0, 10:2.8, 11:3.0, 12:6.5, 14:4.5, 15:2.5}   # base pull of each active ride
+WATER_M = {1:.35, 2:.4, 3:.6, 4:.9, 5:1.3, 6:1.9, 7:2.1, 8:2.0, 9:1.4, 10:.9, 11:.5, 12:.35}                    # water rides: busy in the heat
+INDOOR_M = {1:1.3, 2:1.3, 3:1.1, 4:1.0, 5:1.0, 6:.95, 7:.95, 8:.95, 9:1.0, 10:1.05, 11:1.2, 12:1.3}              # indoor rides: busy in the cold
+DRIFT = {(r[0], y, m): RL.lognormvariate(0, 0.25) for r in active_rides for y in (2025, 2026) for m in range(1, 13)}   # taste changes by month
+WX_TYPE = {}
+for e in wev: WX_TYPE.setdefault(e['start'].date(), e['type'])
+_day_w = {}
+def ride_weights(d):
+    if d not in _day_w:
+        wet = WX_TYPE.get(d) in ('Rain', 'Storm', 'Cold', 'Heat')       # on bad-weather days guests head indoors
+        _day_w[d] = {r[0]: POP[r[0]] * DRIFT[(r[0], d.year, d.month)]
+                           * (WATER_M[d.month] if r[3] == 'Water Ride' else 1.0)
+                           * (INDOOR_M[d.month] * (1.6 if wet else 1.0) if r[6] else 1.0) for r in active_rides}
+    return _day_w[d]
+def board(t, arr, h):
+    """The boardings for one ticket. Every rule of trg_RideLog_BI is checked here: ride in service, not under maintenance,
+    outdoor rides closed during a weather event, height, Express only with the benefit on an eligible ride, park hours, ticket not refunded."""
+    d = t['date']; rw = ride_weights(d)
+    n = RL.choices([4, 5, 6], [30, 45, 25])[0]
+    now, used, out, tries = arr, set(), [], 0
+    while len(out) < n and now <= dtm(d, 21, 30) and tries < 40:
+        tries += 1
+        wc = weather_closed(now)
+        cand = [r for r in active_rides if r[5] <= h and (r[6] or not wc) and not under_maint('Ride', r[0], now)]
+        fresh = [r for r in cand if r[0] not in used] or cand            # a guest rides something new before repeating
+        if not fresh:
+            now += timedelta(minutes=20); continue
+        ride = RL.choices(fresh, [rw[r[0]] * (2.0 if h < 120 and r[5] <= 107 else 1.0) for r in fresh])[0]   # small guests favour the gentle rides
+        used.add(ride[0])
+        out.append((ride[0], 'Boarding', t['id'], None, bool(t['express'] and ride[7] and RL.random() < 0.75), now))
+        now += timedelta(minutes=RL.randint(20, 55))
+    return out
 for t in tickets:
     if t['date'] > LAST or t['id'] in refunded: continue
     d, h = t['date'], height[t['cust']]
     arr = dtm(d, 9, 30) + timedelta(minutes=R.randint(0, 210))
     end = min(arr + timedelta(hours=R.randint(4,8)), dtm(d, 21, 30))
-    now = arr
-    for _ in range(R.randint(2, 6)):
-        if now > dtm(d, 21, 30): break
-        ride = None
-        for _a in range(8):
-            c = R.choice(active_rides)
-            if c[5] > h or under_maint('Ride', c[0], now) or (not c[6] and weather_closed(now)): continue
-            ride = c; break
-        if ride:
-            rl.append((ride[0], 'Boarding', t['id'], None, bool(t['express'] and ride[7] and R.random() < 0.75), now))
-        now += timedelta(minutes=R.randint(25, 75))
+    rl.extend(board(t, arr, h))
     for _ in range(R.choices([0,1,2,3], [40,30,20,10])[0]):
         at = pick_time(arr, end); g = R.choice(active_games)
         if not under_maint('Game', g[0], at): gp.append((g[0], t['id'], at, 0))
@@ -846,13 +880,15 @@ for t in tickets:
         if not under_maint('Venue', it[1], at):
             pu.append((t['id'], it[0], R.choices([1,2,3],[6,3,1])[0], 0, at))
 base = {'Coaster':35,'Water Ride':28,'Simulator':22,'Dark Ride':18,'Train':8,'Carousel':6,'Walkthrough':10}
-for d in days:
+att_ref = sorted(per_day[d] for d in HIST_DAYS)[len(HIST_DAYS) // 2]      # a typical day's tickets; busy days queue longer, quiet days shorter
+for d in HIST_DAYS:
+    load = min(2.0, max(0.35, (per_day[d] / att_ref) ** 0.6))
     for r in active_rides:
         for hh in (12, 16):
             at = dtm(d, hh)
             if under_maint('Ride', r[0], at) or (not r[6] and weather_closed(at)): continue
             b = 20 if r[0] == 14 else base[r[3]]
-            w = max(2, round(b * (1.4 if d.weekday() >= 5 else 1) * (1.1 if hh == 16 else 1) * R.uniform(0.7, 1.3)))
+            w = max(2, min(150, round(b * load * (POP[r[0]] / 5) ** 0.35 * (1.1 if hh == 16 else 1) * RL.uniform(0.8, 1.2))))
             rl.append((r[0], 'Wait Reading', None, w, False, at))
 rl.sort(key=lambda x: (x[5], x[1]))
 gp.sort(key=lambda x: x[2]); pu.sort(key=lambda x: x[4])
