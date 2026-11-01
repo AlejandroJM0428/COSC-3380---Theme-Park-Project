@@ -125,7 +125,25 @@ useEffect(() => {
   const selected = picked ?? fromLink
 
   const rides = useMemo(() => site?.rides ?? [], [site])
- const games = useMemo(() => site?.games ?? [], [site])
+ const games = useMemo(() => {
+  const allGames = site?.games ?? []
+
+  const hasFantasyGrove = allGames.some(
+    (g) => g.gameName === 'Fantasy Grove'
+  )
+
+  if (hasFantasyGrove) return allGames
+
+  return [
+    ...allGames,
+    {
+      gameId: 'fantasy-grove-display',
+      gameName: 'Fantasy Grove',
+      zoneName: 'Fantasy Forest',
+      playPrice: 12.00,
+    },
+  ]
+}, [site])
 
 console.log('Games:', games)
   console.log("GAMES:", games)
