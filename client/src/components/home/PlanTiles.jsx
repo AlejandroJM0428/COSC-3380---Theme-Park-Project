@@ -8,26 +8,43 @@ export default function PlanTiles({ hours, rides = [], bare = false }) {
   const shortest = heights.length ? Math.min(...heights) : null
   const tallest = heights.length ? Math.max(...heights) : null
 
+    
   const tiles = (
-    <div className="pub-plan">
-        <article>
-          <h3>Hours</h3>
-          <p>{hours?.open && hours?.close ? `Open daily, ${clock(hours.open)} to ${clock(hours.close)}.` : 'Opening hours will be posted here.'}</p>
-        </article>
-        <article>
-          <h3>Height requirements</h3>
-          <p>
-            {shortest != null
-              ? `Some rides have a minimum height, from ${shortest} cm up to ${tallest} cm. Each ride lists its own rule.`
-              : 'Each ride lists its own height rule.'}
-          </p>
-        </article>
-        <article>
-          <h3>Getting here</h3>
-          <p>{BRAND.plan.directions}</p>
-        </article>
+    <div className="pub-plan pub-plan-featured">
+      <article className="pub-plan-featured-card">
+        <div className="pub-plan-featured-icon" aria-hidden="true">
+          🕒
+        </div>
+        <h3>Hours</h3>
+        <p>
+          {hours?.open && hours?.close
+            ? `Open daily, ${clock(hours.open)} to ${clock(hours.close)}.`
+            : 'Opening hours will be posted here.'}
+        </p>
+      </article>
+
+      <article className="pub-plan-featured-card">
+        <div className="pub-plan-featured-icon" aria-hidden="true">
+          📏
+        </div>
+        <h3>Height Requirements</h3>
+        <p>
+          {shortest != null
+            ? `Some rides have a minimum height, from ${shortest} cm up to ${tallest} cm. Each ride lists its own rule.`
+            : 'Each ride lists its own height rule.'}
+        </p>
+      </article>
+
+      <article className="pub-plan-featured-card">
+        <div className="pub-plan-featured-icon" aria-hidden="true">
+          🗺️
+        </div>
+        <h3>Getting Here</h3>
+        <p>{BRAND.plan.directions}</p>
+      </article>
     </div>
   )
+
 
   if (bare) return tiles
   return (
