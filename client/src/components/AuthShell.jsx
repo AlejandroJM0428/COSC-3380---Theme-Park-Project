@@ -32,6 +32,8 @@ export default function AuthShell({ variant = 'member', role, title, children })
           </header>
           <div className="auth-body">{children}</div>
         </section>
+        {title === 'Member sign in' && <p className="auth-back">Park employee? <Link to="/staff/login">Staff sign in</Link></p>}
+        {title === 'Staff sign in' && <p className="auth-back">Park guest? <Link to="/member/login">Member sign in</Link></p>}
         <p className="auth-back"><Link to="/">← Back to the park home</Link></p>
       </main>
     </div>
