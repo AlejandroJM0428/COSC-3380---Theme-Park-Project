@@ -3,7 +3,13 @@ import { Link } from 'react-router-dom'
 import BrandImage from '../BrandImage.jsx'
 import { BRAND, LANDS } from '../../config/brand.js'
 
-const MAX_CHIPS = 8
+const MAX_CHIPS = 9
+
+const RIDE_IMAGES = {
+  'Canyon Cyclone': '/images/canyon-cyclone.jpg',
+  'Rapids Rampage': '/images/rapids-rampage.jpg',
+  'Thunder Run': '/images/thunder-run.jpg',
+}
 
 const TABS = [
   ...LANDS.map((land) => ({ key: land.key, title: land.title, blurb: land.blurb, img: land.img })),
@@ -62,7 +68,11 @@ export default function Explorer({ rides = [], venues = [] }) {
       </div>
 
       <div className="pub-explore">
-        <BrandImage key={`${tab.key}-${picked?.id ?? 'none'}`} src={tab.img} className="pub-feature">
+        <BrandImage
+          key={`${tab.key}-${picked?.id ?? 'none'}`}
+          src={RIDE_IMAGES[picked?.name] ?? tab.img}
+          className="pub-feature"
+        >
           <div className="pub-feature-body">
             <p className="pub-eyebrow">{tab.title}</p>
             {picked ? (
