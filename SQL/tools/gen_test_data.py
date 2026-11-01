@@ -13,6 +13,9 @@ from collections import Counter
 
 R = random.Random(3380)
 OUT = Path(__file__).resolve().parent.parent
+# EmployeeIDs are seven digits. The generator numbers employees 1 to 90 internally and writes them as 1000001 to 1000090,
+# so logins (AppUser.EmployeeID) stay valid across a history reload and usernames (first name + last four digits) never change.
+EMP_BASE = 1_000_000
 # ---- dates: history ends on the day the generator is run ----
 TODAY = date.today()
 LAST = TODAY - timedelta(days=1)          # last day with ride activity
@@ -117,7 +120,7 @@ o1.append("UPDATE MembershipTier SET AnnualPrice = CASE Tier " + " ".join(f"WHEN
 
 (OUT/'00_clear_data.sql').write_text("""-- 00_clear_data.sql: empties all data tables so 01 and the history files (02, or history/10 to 80) can be reloaded.
 -- Keeps AppUser (logins), AdminAudit, MembershipTier (price list) and promo notices. Needs the full schema (files 14 and 16 add three of the tables it empties). Run only before re-loading 01 and the history.
--- AppUser.EmployeeID is not cleared, but employees come back as ids 1 to 90: run apply-logins-on-server.sh afterwards so every login points at a real employee again.
+-- AppUser.EmployeeID is not cleared, and employees come back with the same seven-digit ids (1000001 to 1000090), so every login still points at a real employee.
 USE theme_park;
 SET FOREIGN_KEY_CHECKS = 0;
 """ + "".join(f"TRUNCATE TABLE {t};\n" for t in
@@ -224,7 +227,7 @@ avg_hours = sum(e[7] for e in emps) / len(emps)
 assert 22 <= avg_hours <= 26, avg_hours
 TECHS = [i for i, t in enumerate(legacy_titles, 1) if t == 'Technician']     # founding technicians (the old maintenance block)
 TECHS_ALL = [i for i, t in enumerate(titles, 1) if t == 'Technician']        # every technician (stage 6)
-insert(part('Employee'), 'Employee', ['EmployeeID','FirstName','LastName','DOB','JobTitle','HireDate','HourlyPay','HoursPerWeek','IsActive'], emps)
+insert(part('Employee'), 'Employee', ['EmployeeID','FirstName','LastName','DOB','JobTitle','HireDate','HourlyPay','HoursPerWeek','IsActive'], [(e[0] + EMP_BASE,) + e[1:] for e in emps])
 ez = []
 for i in range(1, len(titles)+1):
     if i <= len(legacy_titles): z = set(leg_zone[i])
@@ -232,7 +235,7 @@ for i in range(1, len(titles)+1):
         z = {(i-1) % 5 + 1}
         if titles[i-1] in ('Technician','Manager','Performer') or RE.random() < 0.25: z.add(RE.randint(1,5))
     ez += [(i, zz) for zz in sorted(z)]
-insert(part('EmployeeZone'), 'EmployeeZone', ['EmployeeID','ZoneID'], ez)
+insert(part('EmployeeZone'), 'EmployeeZone', ['EmployeeID','ZoneID'], [(e + EMP_BASE, z) for e, z in ez])
 # ride certifications: ride operators only, never before the hire date or in the future; 3 to 5 active rides each
 cert = []
 active_rides = [r[0] for r in RIDES if r[8]]
@@ -240,7 +243,7 @@ for i, t in enumerate(titles, 1):
     if t == 'Ride Operator':
         for rid in sorted(RE.sample(active_rides, RE.choice([3, 3, 4, 4, 5]))):
             cert.append((i, rid, min(TODAY, hire[i] + timedelta(days=RE.randint(7, 120)))))
-insert(part('RideCertification'), 'RideCertification', ['EmployeeID','RideID','CertifiedOn'], cert)
+insert(part('RideCertification'), 'RideCertification', ['EmployeeID','RideID','CertifiedOn'], [(c[0] + EMP_BASE,) + c[1:] for c in cert])
 
 # customers. signup / dob_of are kept so later stages never put a visit before sign-up or birth.
 # Sign-ups follow the park's year: an opening rush, then the seasons, tapering a little after the first summer.
@@ -644,7 +647,7 @@ for j in J:
 assert all(2 <= sum(1 for c in crew if c[0] == j[0]) <= 3 for j in J)
 insert(part('Maintenance'), 'Maintenance', ['MaintenanceID','MaintType','RideID','GameID','VenueID','StartDate','EndDate','Outcome','Reason','RepairCost'],
        [(j[0],j[3],j[2] if j[1]=='Ride' else None,j[2] if j[1]=='Game' else None,j[2] if j[1]=='Venue' else None,j[4],j[5],j[6],j[7],j[8]) for j in J])
-insert(part('MaintenanceCrew'), 'MaintenanceCrew', ['MaintenanceID','EmployeeID','CrewRole'], crew)
+insert(part('MaintenanceCrew'), 'MaintenanceCrew', ['MaintenanceID','EmployeeID','CrewRole'], [(c[0], c[1] + EMP_BASE, c[2]) for c in crew])
 _mt, _ms = {}, {}
 for j in J: _mt.setdefault((j[1], j[2]), []).append(j)
 for k in _mt: _mt[k].sort(key=lambda j: j[4]); _ms[k] = [j[4] for j in _mt[k]]
@@ -998,10 +1001,10 @@ for s in shifts:
 assert all(a[1] <= b[0] for v in _by.values() for a, b in zip(sorted(v), sorted(v)[1:])), 'overlapping shifts'
 assert all(s[1] >= datetime.combine(hire[s[0]], time(0)) for s in shifts), 'shift before hire date'
 assert not any(s[0] in left_on and s[1].date() >= left_on[s[0]] for s in shifts), 'shift after leaving'
-insert(part('Shift'), 'Shift', ['EmployeeID','ClockIn','ClockOut','ShiftRating'], shifts)
+insert(part('Shift'), 'Shift', ['EmployeeID','ClockIn','ClockOut','ShiftRating'], [(s[0] + EMP_BASE,) + s[1:] for s in shifts])
 # leavers are switched off only now: trg_Shift_BI refuses a shift for an inactive employee, so their shifts go in first
 part('Shift').append("-- people who have left the park (their shifts are above; they have none after the leave date)\n" +
-    "".join(f"UPDATE Employee SET IsActive = 0 WHERE EmployeeID = {i};  -- left {d}\n" for i, d in sorted(left_on.items())))
+    "".join(f"UPDATE Employee SET IsActive = 0 WHERE EmployeeID = {i + EMP_BASE};  -- left {d}\n" for i, d in sorted(left_on.items())))
 
 COUNTS = ("""
 -- Row counts after loading

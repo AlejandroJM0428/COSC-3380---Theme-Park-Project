@@ -108,6 +108,6 @@ if [ "$BAD" != 0 ]; then
 fi
 echo "Done. Backup kept at $BACKUP."
 echo "Expect about 25,000 tickets, 133,000 ride-log rows, 90 employees, 3,506 customers plus 1,732 dependents, 421 memberships, 40 cancellation requests."
-echo "Next: bash apply-logins-on-server.sh   (employees came back as ids 1 to 90: this renumbers them, links every login and renames it; safe to run twice)"
+echo "Employees come back with their seven-digit ids (1000001 to 1000090), so every login still points at the same person. No renumbering step."
 echo "Then: deploy-now --allow-infra"
 echo "Then: open the Triggers tab (32), the five required reports and the home page (sold out, selling fast, and the closed rides)."
