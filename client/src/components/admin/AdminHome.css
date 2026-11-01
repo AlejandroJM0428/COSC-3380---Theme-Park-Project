@@ -9,7 +9,7 @@
 .ah-kpi-note { display: flex; align-items: center; justify-content: center; padding: 8px; font-size: 0.85rem; color: var(--muted); text-align: center; }
 .ah-a .ah-kpi-main { background: var(--pine); }
 .ah-b .ah-kpi-main { background: var(--lagoon); }
-.ah-c .ah-kpi-main { background: var(--blue); }
+.ah-c .ah-kpi-main { background: var(--bayou); }
 .ah-d .ah-kpi-main { background: var(--plum); }
 
 .ah-main { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 16px; }

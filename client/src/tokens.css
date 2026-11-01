@@ -1,0 +1,45 @@
+/* Design tokens: the one place for the Luv Ya Blue look (public site, member portal, staff and admin portals).
+   Change a color, radius or shadow here. index.css and theme.css point their older names at these values,
+   so nothing else needs to move. Scarlet is for "Buy Tickets" only. */
+:root {
+  /* signature colors */
+  --blue: #4b92db;        /* Columbia blue: accents, borders, chart lines. White text on it is only 3.3:1, so use --blue-deep for text and buttons */
+  --blue-deep: #0b3d91;   /* dark twin of the blue: buttons, links, text on white */
+  --navy: #0c2340;        /* headers, sidebar, dark text */
+  --navy-2: #1c3a63;      /* hover and borders on navy */
+  --paper: #f4f7fb;       /* page background */
+  --scarlet: #c8102e;     /* "Buy Tickets" only */
+
+  /* text and lines on white or paper */
+  --ink-soft: #50617a;    /* secondary text: 6.3:1 on white */
+  --rule: #d5dde5;        /* borders and dividers */
+  --rule-soft: #e4eaf1;   /* table row dividers */
+  --wash: #eef3fa;        /* hover background */
+  --on-navy: #d6e4f5;     /* text on navy: 12:1 */
+  --on-navy-soft: #9fb6d3; /* small labels on navy: 7.6:1 */
+
+  /* lands: a soft color for fills and tags, and a dark twin for text and borders (every dark twin is 6:1 or better on white) */
+  --land-main-street: #d3c4ec;  --land-main-street-dark: #5b3f94;
+  --land-loop: #f0c19c;         --land-loop-dark: #8a4b1f;
+  --land-bayou: #a5d3ec;        --land-bayou-dark: #14587f;
+  --land-montrose: #abd8a9;     --land-montrose-dark: #2f6b2d;
+  --land-hermann: #f7dc8c;      --land-hermann-dark: #7a5a00;
+
+  /* shape */
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-pill: 999px;
+
+  /* spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* shadow */
+  --shadow-1: 0 1px 2px rgba(12, 35, 64, 0.12);
+  --shadow-2: 0 8px 24px rgba(12, 35, 64, 0.16);
+  --shadow-3: 0 22px 54px rgba(5, 15, 35, 0.35);
+}

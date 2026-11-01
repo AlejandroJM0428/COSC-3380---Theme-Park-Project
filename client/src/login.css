@@ -27,7 +27,7 @@
 
 /* staff: portal look */
 .auth-staff { background: var(--mist); }
-.auth-staff:not([data-role]) .awning { --awning: repeating-linear-gradient(90deg, var(--plum) 0 28px, #fff 28px 56px, var(--blue) 56px 84px, #fff 84px 112px, var(--amber) 112px 140px, #fff 140px 168px); }
+.auth-staff:not([data-role]) .awning { --awning: repeating-linear-gradient(90deg, var(--plum) 0 28px, #fff 28px 56px, var(--bayou) 56px 84px, #fff 84px 112px, var(--amber) 112px 140px, #fff 140px 168px); }
 .auth-staff .auth-card { --auth-radius: 8px; background: var(--panel); border: 2px solid var(--ink); }
 .auth-staff .auth-head { background: var(--pine); color: #fff; }
 .auth-staff .auth-head .wordmark small { color: inherit; }
