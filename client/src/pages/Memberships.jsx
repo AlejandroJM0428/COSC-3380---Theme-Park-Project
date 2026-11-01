@@ -24,10 +24,21 @@ export default function Memberships() {
 
       {tiers.length > 0 && (
         <>
+          
           <div className="pub-tier-cards">
             {tiers.map((t) => (
-              <article key={t.tier} className="pub-tier-card">
+              <article
+                key={t.tier}
+                className={`pub-tier-card pub-tier-${t.tier.toLowerCase()}`}
+              >
+                {t.tier === 'Plus' && (
+                  <span className="pub-tier-popular">
+                    ★ MOST POPULAR
+                  </span>
+                )}
+
                 <h2>{t.tier}</h2>
+
                 <p className="pub-tier-price"><strong>{money(t.annualPrice)}</strong><small>/yr</small></p>
                 <ul>{t.benefits.map((b) => <li key={b}>{b}</li>)}</ul>
                 {signedIn
