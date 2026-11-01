@@ -31,6 +31,17 @@ const RIDE_IMAGES = {
   'Mini Carousel': '/images/mini-carousel.jpg',
 }
 
+
+const GAME_IMAGES = {
+  'Dunk Tank': '/images/dunk-tank.jpg',
+  'Whack-a-Gator': '/images/whack-a-gator.jpg',
+  'Skee Ball': '/images/skee-ball.jpg',
+  'Basketball Shot': '/images/basketball-shot.jpg',
+  'Ring Toss': '/images/ring-toss.jpg',
+  'Balloon Pop': '/images/balloon-pop.jpg',
+}
+
+
 // Public rides page (/rides): premier rides, entertainment, then a park map.
 // Deep links still work: ?zone=Thunder Canyon, or ?land=thrill|family|kids (that land's zones). Anything else selects nothing.
 // Open/Closed only: no wait times, no member data.
@@ -107,21 +118,57 @@ export default function Rides() {
         </section>
       )}
 
+      
       {games.length > 0 && (
         <section aria-labelledby="pub-ent-title">
-          <h2 id="pub-ent-title" className="pub-h2 pub-h2-spaced">Entertainment</h2>
-          <ul className="pub-games">
+          <h2 id="pub-ent-title" className="pub-h2 pub-h2-spaced">
+            Entertainment
+          </h2>
+
+          <p className="pub-lede">
+            Step right up! Discover exciting midway games
+            and fun challenges for everyone.
+          </p>
+
+          <ul className="pub-games pub-games-enhanced">
             {games.slice(0, MAX_GAMES).map((g) => (
-              <li key={g.gameId}>
-                <strong>{g.gameName}</strong>
-                <span>{g.zoneName}</span>
-                <b>{money(g.playPrice)} per play</b>
+              <li key={g.gameId} className="pub-game-card">
+                <div className="pub-game-image">
+                  <img
+                    src={GAME_IMAGES[g.gameName] || '/images/game-default.jpg'}
+                    alt={g.gameName}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+
+                <div className="pub-game-content">
+                  <h3>{g.gameName}</h3>
+                  <p className="pub-game-location">
+                    {g.zoneName}
+                  </p>
+
+                  <div className="pub-game-bottom">
+                    <span className="pub-game-price">
+                      {money(g.playPrice)} per play
+                    </span>
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
-          {games.length > MAX_GAMES && <p className="pub-note">+{games.length - MAX_GAMES} more games around the park. Pick a zone on the map to see them.</p>}
+
+          {games.length > MAX_GAMES && (
+            <p className="pub-note">
+              +{games.length - MAX_GAMES} more games around
+              the park. Pick a zone on the map to see them.
+            </p>
+          )}
         </section>
       )}
+
 
       <section aria-labelledby="pub-map-title">
         <h2 id="pub-map-title" className="pub-h2 pub-h2-spaced">Park map</h2>

@@ -852,3 +852,85 @@
     font-size: 2.8rem;
   }
 }
+
+
+/* Enhanced Entertainment Cards */
+
+.pub-games-enhanced {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.pub-games-enhanced .pub-game-card {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid #dce5f0;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.07);
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.pub-games-enhanced .pub-game-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}
+
+.pub-game-image {
+  height: 185px;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  overflow: hidden;
+}
+
+.pub-game-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pub-game-content {
+  padding: 16px;
+}
+
+.pub-game-content h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 7px;
+  color: #132344;
+}
+
+.pub-game-location {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 12px;
+}
+
+.pub-game-price {
+  display: inline-block;
+  padding: 7px 12px;
+  border-radius: 20px;
+  background: #e8f2ff;
+  color: #2454ba;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 800px) {
+  .pub-games-enhanced {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .pub-games-enhanced {
+    grid-template-columns: 1fr;
+  }
+}
+.pub-games-enhanced .pub-game-price {
+  color: #2454ba;
+}
