@@ -3,9 +3,10 @@
 // Images: any path that is missing or fails to load falls back to a neutral gradient
 // (see components/BrandImage.jsx), so the layout still holds with no photos.
 export const BRAND = {
-  name: 'Park Name',
-  shortName: 'Park Name',
-  tagline: 'Adventure Park',
+  name: 'Thunder Valley',
+  shortName: 'Thunder Valley',
+  tagline: 'Where Adventure Comes Alive!',
+
   // Placeholder homepage copy. Change it here.
   hero: { headline: 'More thrills. Less waiting.', sub: 'Day passes, Express queues and memberships for every kind of adventure.' },
   // Placeholder "Plan your visit" copy. Hours and height rules come from the database.
