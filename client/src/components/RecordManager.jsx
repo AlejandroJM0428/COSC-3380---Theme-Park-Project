@@ -127,7 +127,8 @@ export default function RecordManager({ entity }) {
     }
   }
 
-  const set = (key, value) => setForm((f) => ({ ...f, [key]: value }))
+  // An entity may add `onFieldChange(key, value, form, lookups)` to fill other fields when one changes (it returns the extra values, or null).
+  const set = (key, value) => setForm((f) => ({ ...f, [key]: value, ...(entity.onFieldChange?.(key, value, f, lookups) ?? {}) }))
 
   function renderField(field) {
     if (field.show && !field.show(form)) return null

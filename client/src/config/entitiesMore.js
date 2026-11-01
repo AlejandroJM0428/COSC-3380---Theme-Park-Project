@@ -517,7 +517,7 @@ export const FACILITIES = {
 export const USERS = {
   title: 'App Users',
   intro:
-    'Staff logins for this site. Add an account, change its role, set a new password, or deactivate it. A deactivated account cannot log in. You cannot deactivate yourself or change your own role.',
+    'Staff logins for this site. Every login belongs to an employee and is named after them (first name plus the last four digits of their ID). Add an account, change its role, set a new password, or deactivate it. A deactivated account cannot log in. You cannot deactivate yourself or change your own role.',
   resource: 'users',
   idKey: 'UserID',
   hideIds: true, // the page never shows user numbers
@@ -545,7 +545,15 @@ export const USERS = {
     { key: 'IsActive', label: 'Status', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
   ],
   fields: [
-    { key: 'username', label: 'Username', type: 'text', required: true, maxLength: 50 },
+    {
+      key: 'employeeId',
+      label: 'Employee (every staff login belongs to one)',
+      type: 'select',
+      required: true,
+      options: [],
+      optionsFrom: (form, lookups) => (lookups?.employees ?? []).map((e) => [String(e.id), e.name]),
+    },
+    { key: 'username', label: 'Username (filled from the employee: first name and last four digits of their ID; never a role name)', type: 'text', required: true, maxLength: 50 },
     {
       key: 'role',
       label: 'Role',
@@ -554,16 +562,17 @@ export const USERS = {
       options: ['Admin', 'Manager', 'Cashier', 'RetailManager', 'HRManager', 'MaintenanceManager', 'MaintenanceWorker', 'RestaurantWorker'].map((r) => [r, r]),
     },
     { key: 'password', label: 'Password, at least 8 characters (empty keeps the current one)', type: 'password', maxLength: 72 },
-    {
-      key: 'employeeId',
-      label: 'Employee (optional)',
-      type: 'select',
-      options: [['', 'Not linked to an employee']],
-      optionsFrom: (form, lookups) => [['', 'Not linked to an employee'], ...(lookups?.employees ?? []).map((e) => [String(e.id), e.name])],
-    },
     { key: 'isActive', label: 'Status', type: 'select', options: [['yes', 'Active'], ['no', 'Inactive']] },
   ],
-  blank: () => ({ username: '', role: '', password: '', employeeId: '', isActive: 'yes' }),
+  blank: () => ({ username: '', suggested: '', role: '', password: '', employeeId: '', isActive: 'yes' }),
+  // Picking an employee fills the username with that person's suggested name. It never overwrites a name you typed.
+  onFieldChange: (key, value, form, lookups) => {
+    if (key !== 'employeeId') return null
+    const emp = (lookups?.employees ?? []).find((e) => String(e.id) === value)
+    if (!emp) return null
+    if (form.username === '' || form.username === form.suggested) return { username: emp.username, suggested: emp.username }
+    return null
+  },
   fromRecord: (rec) => ({
     username: rec.Username,
     role: rec.Role,

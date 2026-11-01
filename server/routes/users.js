@@ -11,14 +11,33 @@ import { friendlyDbError, needId, oneOf, recordId } from '../validate.js';
 //   - Customer accounts are not shown here. They are created by member sign-up.
 //   - You cannot deactivate yourself or change your own role, so the last Admin cannot be locked out.
 //   - "Delete" is a soft delete (IsActive = 0). Deactivated accounts cannot log in.
+//   - Every staff login belongs to an employee, and its username is never a role name.
 
 const CAN_USE = ['Admin'];
 const STAFF_ROLES = ['Admin', 'Manager', 'Cashier', 'RetailManager', 'HRManager', 'MaintenanceManager', 'MaintenanceWorker', 'RestaurantWorker'];
 const USERNAME_RE = /^[A-Za-z0-9_.-]{3,50}$/;
 
+// A staff username is never a role name, and never one of the old shared logins (any case).
+const RESERVED_USERNAMES = new Set([
+  ...STAFF_ROLES.map((r) => r.toLowerCase()),
+  'customer',
+  'retail',
+  'hr',
+  'maintmgr',
+  'tech',
+  'cook',
+]);
+
+// first name (lower case, letters only) + last four digits of the EmployeeID: Mason, 1000028 -> mason0028.
+export function suggestUsername(firstName, employeeId) {
+  const letters = String(firstName ?? '').normalize('NFD').toLowerCase().replace(/[^a-z]/g, '');
+  return `${letters || 'user'}${String(employeeId).padStart(4, '0').slice(-4)}`;
+}
+
 const FRIENDLY = {
   1062: 'That username is already taken',
-  1452: 'That employee ID does not exist',
+  1452: 'That employee does not exist. Choose one from the list',
+  1048: 'A required value is missing. Every staff login needs an employee',
   3819: 'A value breaks a database rule. Staff accounts cannot be tied to a customer',
 };
 
@@ -46,13 +65,22 @@ function parsePassword(value, required) {
   return value;
 }
 
-export function parseUser(body, { isNew }) {
+// `currentUsername` is the account's present name when editing. An old name that is already in use is left
+// alone, so a password reset still works; a name you type now must pass the rules.
+export function parseUser(body, { isNew, currentUsername = null }) {
   const b = body ?? {};
   const username = typeof b.username === 'string' ? b.username.trim() : '';
   if (!USERNAME_RE.test(username)) {
     throw new HttpError(400, 'Username must be 3-50 characters: letters, numbers, dot, dash or underscore');
   }
-  const employeeId = b.employeeId == null || b.employeeId === '' ? null : needId(b.employeeId, 'Employee ID');
+  const unchanged = currentUsername != null && username.toLowerCase() === currentUsername.toLowerCase();
+  if (!unchanged && RESERVED_USERNAMES.has(username.toLowerCase())) {
+    throw new HttpError(400, 'A username cannot be a role name. Use the employee\'s first name and the last four digits of their ID');
+  }
+  if (b.employeeId == null || b.employeeId === '') {
+    throw new HttpError(400, 'Choose the employee this login belongs to. Every staff login needs one');
+  }
+  const employeeId = needId(b.employeeId, 'Employee ID');
   return {
     username,
     role: oneOf(b.role, 'Role', STAFF_ROLES),
@@ -84,13 +112,14 @@ route(
   '/api/users/lookups',
   requireRole(...CAN_USE)(async () => {
     const [employees] = await pool.query(
-      `SELECT EmployeeID AS id,
+      `SELECT EmployeeID AS id, FirstName,
               CONCAT(FirstName, ' ', LastName, ' - ', JobTitle, IF(IsActive = 1, '', ' (inactive)')) AS name
          FROM Employee
         ORDER BY LastName, FirstName, EmployeeID
         LIMIT 1000`,
     );
-    return { employees };
+    // `username` is the suggested login name for that employee. The form fills it in; it can still be changed.
+    return { employees: employees.map(({ id, FirstName, name }) => ({ id, name, username: suggestUsername(FirstName, id) })) };
   }),
 );
 
@@ -124,8 +153,8 @@ route(
   '/api/users/:id',
   requireRole(...CAN_USE)(async (ctx) => {
     const id = recordId(ctx, 'User');
-    const u = parseUser(ctx.body, { isNew: false });
     const current = await loadUser(id); // 404 if missing or a customer account
+    const u = parseUser(ctx.body, { isNew: false, currentUsername: current.Username });
     if (id === ctx.session.userId && (u.role !== current.Role || !u.isActive)) {
       throw new HttpError(400, 'You cannot change your own role or deactivate yourself');
     }
