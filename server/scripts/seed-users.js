@@ -2,35 +2,34 @@ import bcrypt from 'bcrypt';
 import { randomBytes } from 'node:crypto';
 import { pool } from '../db.js';
 
-// One account per role. Safe to run twice: one row per account, no duplicates. An existing account keeps
-// its password unless you set the matching SEED_*_PASSWORD variable.
+// Staff logins. Every login belongs to a real employee and is named after them: first name + last four digits
+// of the employee id (Mason Roberts, employee 1000028 -> mason0028). There are no role-named logins (admin, manager...).
 //
-// Guard: once the park has any staff login this script does nothing, so it cannot bring back admin, manager, cashier
-// and the other role-named logins. Staff logins are added and changed on the Users page. FORCE_SEED=1 skips the guard
-// (an empty database, or a deliberate RESEED).
+// Guard: once the park has any staff login this script does nothing. Staff logins are managed on the Users page.
+// FORCE_SEED=1 skips the guard (an empty database, or a deliberate RESEED).
 //
-// RESEED=1 is the one-time reseed for the final: every account below gets a NEW random password of its own
-// (printed once, never stored in the repo), and every other staff login is switched off. Customer logins are not touched.
+// What a run does:
+//   1. Makes sure every role has at least one active named login, adding one for an unlinked active employee when a role has none.
+//   2. RESEED=1: every named login gets a NEW random password of its own (printed once, never stored), and every other
+//      staff login (old role-named ones, anything not named after its employee) is switched off. Customers are not touched.
+//      Without RESEED, new logins share SEED_STAFF_PASSWORD (or one random password) and existing logins keep their password.
+//   3. Prints a username / role / password table and one suggested test login per role.
+//
 //   docker compose exec -e FORCE_SEED=1 -e RESEED=1 app npm run seed
-//
-// Accounts with `titles` are linked to a real Employee row (the nth active employee with one of
-// those job titles), so the employee portal can show that person's own shifts and jobs.
-// Without RESEED, accounts of the same kind share a password variable, to keep the demo easy to hand out.
-//
-// Named staff: after the 8 role accounts, a few more accounts are made for real, active employees (username: first name + last four digits of the id),
-// so the portals show a person's own shifts and jobs. Technician -> Maintenance crew, Cook and Server -> Restaurant team,
-// Shop Associate -> Ticket booth, and the Managers take the four desk roles in turn. Employees who already have a login are
-// skipped. All of them use SEED_STAFF_PASSWORD, or one random password printed once (own password each with RESEED=1).
-const ACCOUNTS = [
-  { username: 'admin', role: 'Admin', env: 'SEED_ADMIN_PASSWORD' },
-  { username: 'manager', role: 'Manager', env: 'SEED_MANAGER_PASSWORD' },
-  { username: 'cashier', role: 'Cashier', env: 'SEED_CASHIER_PASSWORD' },
-  { username: 'retail', role: 'RetailManager', env: 'SEED_RETAIL_PASSWORD' },
-  { username: 'hr', role: 'HRManager', env: 'SEED_HR_PASSWORD' },
-  { username: 'maintmgr', role: 'MaintenanceManager', env: 'SEED_MAINTMGR_PASSWORD' },
-  { username: 'tech', role: 'MaintenanceWorker', env: 'SEED_TECH_PASSWORD', titles: ['Technician'], nth: 0 },
-  { username: 'cook', role: 'RestaurantWorker', env: 'SEED_COOK_PASSWORD', titles: ['Cook'], nth: 0 },
+const ROLES = [
+  { role: 'Admin', titles: ['Manager'] },
+  { role: 'Manager', titles: ['Manager'] },
+  { role: 'RetailManager', titles: ['Manager'] },
+  { role: 'HRManager', titles: ['Manager'] },
+  { role: 'MaintenanceManager', titles: ['Manager'] },
+  { role: 'Cashier', titles: ['Shop Associate'] },
+  { role: 'MaintenanceWorker', titles: ['Technician'] },
+  { role: 'RestaurantWorker', titles: ['Cook', 'Server'] },
 ];
+
+const plain = (t) => t.toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');
+const canonical = (first, id) => `${plain(first) || 'user'}${String(id).padStart(4, '0').slice(-4)}`;
+const newPassword = () => randomBytes(9).toString('base64url');
 
 const [[{ staffLogins }]] = await pool.query("SELECT COUNT(*) AS staffLogins FROM AppUser WHERE CustomerID IS NULL AND Role <> 'Customer'");
 if (staffLogins > 0 && process.env.FORCE_SEED !== '1') {
@@ -40,100 +39,73 @@ if (staffLogins > 0 && process.env.FORCE_SEED !== '1') {
 }
 
 const RESEED = process.env.RESEED === '1';
-const passwords = new Map(); // env name -> password, so accounts sharing a variable share a password (own key per account when reseeding)
+const shared = process.env.SEED_STAFF_PASSWORD || newPassword();
+const rows = []; // { username, role, who, password }
 
-for (const account of ACCOUNTS) {
-  let employee = null;
-  if (account.titles) {
-    const [found] = await pool.query(
-      `SELECT EmployeeID, FirstName, LastName FROM Employee
-        WHERE JobTitle IN (?) AND IsActive = 1 ORDER BY EmployeeID LIMIT 1 OFFSET ?`,
-      [account.titles, account.nth],
-    );
-    employee = found[0] ?? null;
-    if (!employee) console.log(`${account.username}: no active ${account.titles.join('/')} employee found, left unlinked`);
-  }
-  const employeeId = employee?.EmployeeID ?? null;
-  const who = employee ? ` -> ${employee.FirstName} ${employee.LastName} (employee #${employeeId})` : '';
-
-  const chosen = process.env[account.env];
-  const [existing] = await pool.query('SELECT UserID FROM AppUser WHERE Username = ?', [account.username]);
-
-  if (existing.length > 0 && !chosen && !RESEED) {
-    // Keep the password, but still attach the employee link.
-    if (employeeId) await pool.query('UPDATE AppUser SET EmployeeID = ? WHERE Username = ?', [employeeId, account.username]);
-    console.log(`${account.username}: already exists, password unchanged${who}`);
-    continue;
-  }
-
-  const key = RESEED ? account.username : account.env;
-  if (!passwords.has(key)) passwords.set(key, chosen || randomBytes(9).toString('base64url'));
-  const password = passwords.get(key);
-  const hash = await bcrypt.hash(password, 10);
-  await pool.query(
-    `INSERT INTO AppUser (Username, PasswordHash, Role, EmployeeID, IsActive)
-     VALUES (?, ?, ?, ?, 1) AS new
-     ON DUPLICATE KEY UPDATE PasswordHash = new.PasswordHash, Role = new.Role,
-                             EmployeeID = new.EmployeeID, IsActive = 1`,
-    [account.username, hash, account.role, employeeId],
+// Staff logins that are named after their employee.
+const loadNamed = async () => {
+  const [staff] = await pool.query(
+    `SELECT u.UserID, u.Username, u.Role, u.IsActive, e.EmployeeID, e.FirstName, e.LastName, e.JobTitle
+       FROM AppUser u JOIN Employee e ON e.EmployeeID = u.EmployeeID
+      WHERE u.CustomerID IS NULL AND u.Role <> 'Customer' ORDER BY u.UserID`,
   );
-  console.log(`${account.username} (${account.role}): ${chosen ? 'password set from env' : 'password ' + password}${who}`);
-}
+  return staff.filter((s) => s.Username === canonical(s.FirstName, s.EmployeeID) || s.Username.startsWith(`${canonical(s.FirstName, s.EmployeeID)}.`));
+};
 
-// ---- named staff ----
-const NAMED_PLAN = [
-  { role: 'MaintenanceWorker', titles: ['Technician'], max: 3 },
-  { role: 'RestaurantWorker', titles: ['Cook', 'Server'], max: 3 },
-  { role: 'Cashier', titles: ['Shop Associate'], max: 2 },
-  { roles: ['Manager', 'RetailManager', 'HRManager', 'MaintenanceManager'], titles: ['Manager'], max: 4 },
-];
-const named = [];
-const plain = (t) => t.toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');
-for (const plan of NAMED_PLAN) {
-  // `max` is the total number of accounts for these job titles, so a second run tops up and adds nothing new.
-  const [[{ have }]] = await pool.query(
-    `SELECT COUNT(*) AS have FROM AppUser u JOIN Employee e ON e.EmployeeID = u.EmployeeID
-      WHERE e.JobTitle IN (?) AND u.CustomerID IS NULL`,
-    [plan.titles],
-  );
-  if (have >= plan.max) continue;
-  const [people] = await pool.query(
-    `SELECT e.EmployeeID, e.FirstName, e.LastName, e.JobTitle FROM Employee e
-      WHERE e.JobTitle IN (?) AND e.IsActive = 1 AND e.HireDate <= CURDATE()
-        AND NOT EXISTS (SELECT 1 FROM AppUser u WHERE u.EmployeeID = e.EmployeeID)
-      ORDER BY e.EmployeeID LIMIT ?`,
-    [plan.titles, plan.max - have],
-  );
-  people.forEach((p, i) => named.push({ employee: p, role: plan.role ?? plan.roles[(have + i) % plan.roles.length] }));
-}
+// 1. Every role gets at least one active named login.
+let named = await loadNamed();
 const [taken] = await pool.query('SELECT Username FROM AppUser');
 const usernames = new Set(taken.map((r) => r.Username));
-const namedChosen = process.env.SEED_STAFF_PASSWORD;
-const namedShared = namedChosen || randomBytes(9).toString('base64url');
-for (const { employee, role } of named) {
-  let username = `${plain(employee.FirstName) || 'user'}${String(employee.EmployeeID).padStart(4, '0').slice(-4)}`;
-  if (usernames.has(username)) username += `.${employee.EmployeeID}`;
+for (const { role, titles } of ROLES) {
+  if (named.some((s) => s.Role === role && s.IsActive)) continue;
+  const [people] = await pool.query(
+    `SELECT e.EmployeeID, e.FirstName, e.LastName FROM Employee e
+      WHERE e.JobTitle IN (?) AND e.IsActive = 1 AND e.HireDate <= CURDATE()
+        AND NOT EXISTS (SELECT 1 FROM AppUser u WHERE u.EmployeeID = e.EmployeeID)
+      ORDER BY e.EmployeeID LIMIT 1`,
+    [titles],
+  );
+  const p = people[0];
+  if (!p) { console.log(`${role}: no free active ${titles.join('/')} employee found, no login made`); continue; }
+  let username = canonical(p.FirstName, p.EmployeeID);
+  if (usernames.has(username)) username += `.${p.EmployeeID}`;
   usernames.add(username);
-  const password = RESEED ? randomBytes(9).toString('base64url') : namedShared;
-  const hash = await bcrypt.hash(password, 10);
+  const password = RESEED ? newPassword() : shared;
   await pool.query(
     'INSERT INTO AppUser (Username, PasswordHash, Role, EmployeeID, IsActive) VALUES (?, ?, ?, ?, 1)',
-    [username, hash, role, employee.EmployeeID],
+    [username, await bcrypt.hash(password, 10), role, p.EmployeeID],
   );
-  console.log(`${username} (${role}): ${namedChosen && !RESEED ? 'password set from env' : 'password ' + password} -> ${employee.FirstName} ${employee.LastName} (employee #${employee.EmployeeID}, ${employee.JobTitle})`);
+  rows.push({ username, role, who: `${p.FirstName} ${p.LastName} (employee #${p.EmployeeID})`, password });
 }
-if (named.length === 0) console.log('named staff: nothing to add (every matching employee already has a login, or none found)');
-// Named accounts made on an earlier run keep their password and stay switched on.
-const [keepNamed] = await pool.query('SELECT Username FROM AppUser WHERE EmployeeID IS NOT NULL AND CustomerID IS NULL');
-const KEEP = [...new Set([...ACCOUNTS.map((a) => a.username), ...keepNamed.map((r) => r.Username)])];
 
+// 2. RESEED: new password for every named login, switch off everything else.
+named = await loadNamed();
 if (RESEED) {
+  const done = new Set(rows.map((r) => r.username));
+  for (const s of named) {
+    if (!s.IsActive || done.has(s.Username)) continue;
+    const password = newPassword();
+    await pool.query('UPDATE AppUser SET PasswordHash = ? WHERE UserID = ?', [await bcrypt.hash(password, 10), s.UserID]);
+    rows.push({ username: s.Username, role: s.Role, who: `${s.FirstName} ${s.LastName} (employee #${s.EmployeeID})`, password });
+  }
+  const keep = [...named.map((s) => s.Username), ...rows.map((r) => r.username)];
   const [off] = await pool.query(
-    'UPDATE AppUser SET IsActive = 0 WHERE CustomerID IS NULL AND IsActive = 1 AND Username NOT IN (?)',
-    [KEEP],
+    'UPDATE AppUser SET IsActive = 0 WHERE CustomerID IS NULL AND Role <> \'Customer\' AND IsActive = 1 AND Username NOT IN (?)',
+    [keep],
   );
-  console.log(`Switched off ${off.affectedRows} other staff login(s).`);
-  console.log('Save the passwords above now. They are not stored anywhere else.');
+  console.log(`Switched off ${off.affectedRows} other staff login(s) (role-named or not named after their employee).`);
 }
+
+// 3. Output.
+rows.sort((a, b) => ROLES.findIndex((r) => r.role === a.role) - ROLES.findIndex((r) => r.role === b.role) || a.username.localeCompare(b.username));
+console.log('\nusername | role | employee | password');
+for (const r of rows) console.log(`${r.username} | ${r.role} | ${r.who} | ${r.password}`);
+if (rows.length === 0) console.log('(no new or changed logins; existing logins keep their passwords)');
+console.log('\nOne login per role to test the portals:');
+for (const { role } of ROLES) {
+  const r = rows.find((x) => x.role === role);
+  console.log(`  ${role.padEnd(20)} ${r ? `${r.username}  ${r.password}` : '(see the table above, or no password printed this run)'}`);
+}
+if (RESEED) console.log('\nSave the passwords above now. They are not stored anywhere else.');
 
 await pool.end();

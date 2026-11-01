@@ -45,11 +45,11 @@ export default function MemberLogin() {
         <ErrorBanner message={error} />
         <label>
           Username
-          <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus required />
+          <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="off" autoCapitalize="none" spellCheck={false} autoFocus required />
         </label>
         <label>
           Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
         </label>
         <button type="submit" className="auth-submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
         {USE_MOCK && <p className="muted auth-note">Demo mode: sign in as customer with password &quot;password&quot;.</p>}
