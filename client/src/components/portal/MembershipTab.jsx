@@ -1,12 +1,12 @@
 import { formatDate, money } from '../../utils/portalFormat.js'
-import { buildStats, SAMPLE_TILES } from '../../utils/membershipStats.js'
+import { buildStats, PREVIEW_TILES } from '../../utils/membershipStats.js'
 import CancelMembership from './CancelMembership.jsx'
 import MembershipBuy from './MembershipBuy.jsx'
 
 const Tile = ({ t }) => (
   <article className="pt-stat">
     <span className="pt-stat-icon" aria-hidden="true">{t.icon}</span>
-    <p className="pt-stat-label">{t.label}{t.sample && <span className="pt-sample" title="Placeholder until the park records this per member">Sample</span>}</p>
+    <p className="pt-stat-label">{t.label}</p>
     <p className="pt-stat-value">{t.value}</p>
     <p className="pt-stat-note">{t.note}</p>
   </article>
@@ -16,7 +16,7 @@ const Tile = ({ t }) => (
 //   member:     a stats page (term progress, level, stat tiles, perks, benefits).
 //   not member: a "get one now" pitch with a blurred preview of the stats and the tier picker.
 // A member also gets the cancellation request card at the bottom (components/portal/CancelMembership.jsx).
-// Real numbers come from buildStats(); tiles marked Sample are placeholders (see utils/membershipStats.js).
+// Every number comes from the member's own membership and tickets (buildStats()). Nothing here is sample data.
 export default function MembershipTab({ membership, perks, tiers, tickets, dayPassPrice, onBuy, buying, messages }) {
   if (!membership) {
     return (
@@ -26,7 +26,7 @@ export default function MembershipTab({ membership, perks, tiers, tickets, dayPa
           <h2 className="pt-pitch-title">Unlock your own park stats</h2>
           <p className="pt-pitch-sub">Join and we will track every ride, every streak and every minute you skip in a queue. Plus admission built in, live wait times and welcome perks.</p>
           <div className="pt-preview" aria-hidden="true">
-            {SAMPLE_TILES.slice(0, 3).map((t) => <Tile key={t.key} t={{ ...t, sample: false }} />)}
+            {PREVIEW_TILES.map((t) => <Tile key={t.key} t={t} />)}
             <span className="pt-lock">🔒</span>
           </div>
         </section>
@@ -39,7 +39,7 @@ export default function MembershipTab({ membership, perks, tiers, tickets, dayPa
   }
 
   const stats = buildStats({ membership, tickets, dayPassPrice })
-  const tiles = [...stats.real, ...stats.sample.map((t) => ({ ...t, sample: true }))]
+  const tiles = stats.real
 
   return (
     <>
@@ -50,17 +50,12 @@ export default function MembershipTab({ membership, perks, tiers, tickets, dayPa
             <h2 className="pt-hero-title">{membership.tier} member <span className="pt-pill">Active</span></h2>
             <p className="pt-hero-sub">Since {formatDate(membership.startDate)} · valid through {formatDate(membership.endDate)} · {money(membership.annualPrice)}/yr{membership.autoRenew ? ' · renews automatically' : ''}</p>
           </div>
-          <div className="pt-level" title="Placeholder level">
-            <span className="pt-level-name">{stats.level.name}</span>
-            <span className="pt-sample">Sample</span>
-          </div>
         </div>
         <div className="pt-meter" role="img" aria-label={`${stats.termPct}% of your membership year used`}>
           <span style={{ width: `${stats.termPct}%` }} />
         </div>
         <div className="pt-meter-labels">
           <span>{stats.termPct}% of your year</span>
-          <span>{stats.level.pct}% to {stats.level.next}</span>
         </div>
       </section>
 
