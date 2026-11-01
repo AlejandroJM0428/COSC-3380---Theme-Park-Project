@@ -34,6 +34,8 @@ export default function HomePage() {
         </div>
       )}
 
+
+
       <Explorer rides={site?.rides} venues={site?.venues} />
 
       <section className="pub-section pub-duo" aria-label="Memberships and planning">

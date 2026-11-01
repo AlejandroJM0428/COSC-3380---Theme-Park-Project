@@ -249,3 +249,606 @@
   .pub-premier, .pub-games { grid-template-columns: 1fr; }
   .pub-zone-name { font-size: 26px; }
 }
+
+
+/* THUNDER VALLEY - Vibrant Homepage Hero */
+
+.pub-hero {
+  min-height: 620px;
+  padding: 65px 0;
+  background-color: #1848a8;
+}
+
+.pub-hero::before {
+  background: linear-gradient(
+    100deg,
+    rgba(8, 25, 75, 0.78) 0%,
+    rgba(15, 65, 130, 0.35) 55%,
+    rgba(0, 0, 0, 0.12) 100%
+  );
+}
+
+.pub-hero h1 {
+  font-size: clamp(3rem, 6vw, 5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  color: #ffffff;
+  text-shadow: 3px 4px 0 #e63946;
+}
+
+.pub-hero-copy p {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.pub .pub-hero-link {
+  display: inline-block;
+  background: #00C8F8;
+  color: #14213D;
+  padding: 15px 28px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 6px 0 #009AC4;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pub .pub-hero-link:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 9px 0 #009AC4;
+}
+
+@media (max-width: 560px) {
+  .pub-hero {
+    min-height: 0;
+    padding: 45px 0;
+  }
+
+  .pub-hero h1 {
+    font-size: 2.7rem;
+  }
+}
+
+
+
+
+/* THUNDER VALLEY - Electric Blue Rides Explorer */
+
+#explore .pub-h2 {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 900;
+  color: #14213D;
+  margin-bottom: 26px;
+}
+
+/* Ride category buttons */
+#explore .pub-tabs-row {
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+#explore .pub-pill {
+  background: #FFFFFF;
+  color: #14213D;
+  border: 2px solid #3B82F6;
+  border-radius: 50px;
+  padding: 13px 22px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 #2459B8;
+  transition: transform 0.2s, background 0.2s;
+}
+
+#explore .pub-pill:hover {
+  background: #EAF5FF;
+  transform: translateY(-3px);
+}
+
+#explore .pub-pill[aria-pressed="true"] {
+  background: #3B82F6;
+  color: #FFFFFF;
+  border-color: #3B82F6;
+  box-shadow: 0 4px 0 #2459B8;
+}
+
+/* Large featured attraction image */
+#explore .pub-feature {
+  border-radius: 24px;
+  min-height: 400px;
+  box-shadow: 0 12px 30px rgba(20, 33, 61, 0.16);
+  border: 4px solid #00C8F8;
+}
+
+#explore .pub-feature-body h3 {
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-weight: 900;
+}
+
+#explore .pub-feature-link {
+  display: inline-block;
+  background: #00C8F8;
+  color: #14213D;
+  padding: 12px 20px;
+  border-radius: 50px;
+  border: none;
+  font-weight: 900;
+  text-decoration: none;
+  margin-top: 10px;
+}
+
+/* Ride selection cards */
+#explore .pub-chip {
+  background: #FFFFFF;
+  border: 2px solid #DCE5F0;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 5px 12px rgba(20, 33, 61, 0.06);
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+#explore .pub-chip:hover {
+  transform: translateY(-4px);
+  border-color: #3B82F6;
+}
+
+#explore .pub-chip[aria-pressed="true"] {
+  background: #EAF5FF;
+  border-color: #3B82F6;
+  box-shadow: inset 0 0 0 1px #3B82F6;
+}
+
+#explore .pub-chip strong {
+  font-weight: 900;
+  color: #14213D;
+}
+
+#explore .pub-chip-more {
+  color: #2448B8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #explore .pub-pill,
+  #explore .pub-chip {
+    transition: none;
+  }
+}
+
+
+
+
+/* THUNDER VALLEY - Electric Blue Membership Panel */
+
+.pub-duo > .pub-panel:first-child {
+  background: #FFFFFF;
+  border: 3px solid #3B82F6;
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(20, 33, 61, 0.10);
+}
+
+.pub-duo > .pub-panel:first-child .pub-eyebrow {
+  color: #3B82F6;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.pub-duo > .pub-panel:first-child .pub-panel-title {
+  color: #14213D;
+  font-size: 1.9rem;
+  font-weight: 900;
+}
+
+.pub-duo > .pub-panel:first-child .pub-segment {
+  background: #EAF5FF;
+  border-radius: 50px;
+  padding: 6px;
+}
+
+.pub-duo > .pub-panel:first-child .pub-segment button {
+  color: #14213D;
+  font-weight: 800;
+  transition: background 0.2s, color 0.2s;
+}
+
+.pub-duo > .pub-panel:first-child .pub-segment button[aria-pressed="true"] {
+  background: #3B82F6;
+  color: #FFFFFF;
+}
+
+.pub-duo > .pub-panel:first-child .pub-panel-price strong {
+  color: #3B82F6;
+  font-size: 2.8rem;
+  font-weight: 900;
+}
+
+.pub-duo > .pub-panel:first-child .pub-checks li::before {
+  color: #20B97B;
+}
+
+.pub-duo > .pub-panel:first-child .pub-link {
+  color: #2459B8;
+  font-weight: 900;
+}
+
+@media (max-width: 560px) {
+  .pub-duo > .pub-panel:first-child {
+    padding: 22px;
+  }
+}
+
+
+
+
+/* THUNDER VALLEY - Electric Blue Plan Your Day Panel */
+
+.pub-duo > .pub-panel:last-child {
+  background: #FFFFFF;
+  border: 3px solid #00C8F8;
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(20, 33, 61, 0.10);
+}
+
+.pub-duo > .pub-panel:last-child .pub-eyebrow {
+  color: #3B82F6;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.pub-duo > .pub-panel:last-child .pub-panel-title {
+  color: #14213D;
+  font-size: 1.9rem;
+  font-weight: 900;
+}
+
+.pub-duo > .pub-panel:last-child .pub-segment {
+  background: #EAF5FF;
+  border-radius: 50px;
+  padding: 6px;
+}
+
+.pub-duo > .pub-panel:last-child .pub-segment button {
+  color: #14213D;
+  font-weight: 800;
+  transition: background 0.2s, color 0.2s;
+}
+
+.pub-duo > .pub-panel:last-child .pub-segment button[aria-pressed="true"] {
+  background: #3B82F6;
+  color: #FFFFFF;
+}
+
+.pub-duo > .pub-panel:last-child .pub-panel-answer {
+  color: #14213D;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.pub-duo > .pub-panel:last-child .pub-link {
+  color: #2459B8;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.pub-duo > .pub-panel:last-child .pub-link:hover {
+  color: #E63946;
+  text-decoration: underline;
+}
+
+@media (max-width: 560px) {
+  .pub-duo > .pub-panel:last-child {
+    padding: 22px;
+  }
+}
+
+
+
+/* THUNDER VALLEY - Bright Blue Navigation */
+
+.pub-header {
+  background: #3B82F6;
+  border-bottom: 3px solid #00C8F8;
+  box-shadow: 0 4px 15px rgba(20, 33, 61, 0.18);
+}
+
+.pub-wordmark,
+.pub-nav a,
+.pub-signin {
+  color: #FFFFFF;
+}
+
+.pub-nav a:hover,
+.pub-nav a.active {
+  color: #14213D;
+  border-bottom-color: #00C8F8;
+}
+
+.pub .pub-buy {
+  background: #E63946;
+  color: #FFFFFF;
+  box-shadow: 0 4px 0 #B71C2B;
+}
+
+.pub a.pub-buy {
+  color: #FFFFFF;
+}
+
+@media (max-width: 900px) {
+  .pub-nav {
+    background: #3B82F6;
+  }
+
+  .pub-menu-button {
+    color: #FFFFFF;
+    border-color: #FFFFFF;
+  }
+}
+
+
+/* THUNDER VALLEY - Electric Blue Hero Button */
+
+.pub .pub-hero-link {
+  background: #00C8F8;
+  color: #14213D;
+  border: none;
+  box-shadow: 0 6px 0 #009AC4;
+}
+
+.pub .pub-hero-link:hover {
+  background: #48DDFF;
+  box-shadow: 0 9px 0 #009AC4;
+}
+
+
+/* THUNDER VALLEY - Electric Blue Rides Section */
+
+#explore .pub-pill {
+  border-color: #3B82F6;
+  box-shadow: 0 4px 0 #2459B8;
+}
+
+#explore .pub-pill:hover {
+  background: #EAF5FF;
+}
+
+#explore .pub-pill[aria-pressed="true"] {
+  background: #3B82F6;
+  color: #FFFFFF;
+  border-color: #3B82F6;
+  box-shadow: 0 4px 0 #2459B8;
+}
+
+#explore .pub-feature {
+  border-color: #00C8F8;
+}
+
+#explore .pub-feature-link {
+  background: #00C8F8;
+  color: #14213D;
+}
+
+#explore .pub-chip:hover,
+#explore .pub-chip[aria-pressed="true"] {
+  border-color: #3B82F6;
+}
+
+#explore .pub-chip[aria-pressed="true"] {
+  background: #EAF5FF;
+  box-shadow: inset 0 0 0 1px #3B82F6;
+}
+
+
+/* THUNDER VALLEY - Electric Blue Memberships */
+
+.pub-duo > .pub-panel:first-child {
+  border-color: #3B82F6;
+}
+
+.pub-duo > .pub-panel:first-child .pub-eyebrow {
+  color: #3B82F6;
+}
+
+.pub-duo > .pub-panel:first-child .pub-segment {
+  background: #EAF5FF;
+}
+
+.pub-duo > .pub-panel:first-child .pub-segment button[aria-pressed="true"] {
+  background: #3B82F6;
+  color: #FFFFFF;
+}
+
+.pub-duo > .pub-panel:first-child .pub-panel-price strong {
+  color: #3B82F6;
+}
+
+.pub-duo > .pub-panel:first-child .pub-link {
+  color: #2459B8;
+}
+
+
+/* THUNDER VALLEY - Electric Blue Plan Your Day */
+
+.pub-duo > .pub-panel:last-child {
+  border-color: #00C8F8;
+}
+
+.pub-duo > .pub-panel:last-child .pub-eyebrow {
+  color: #3B82F6;
+}
+
+.pub-duo > .pub-panel:last-child .pub-segment {
+  background: #EAF5FF;
+}
+
+.pub-duo > .pub-panel:last-child .pub-segment button[aria-pressed="true"] {
+  background: #3B82F6;
+  color: #FFFFFF;
+}
+
+.pub-duo > .pub-panel:last-child .pub-link {
+  color: #2459B8;
+}
+
+.pub-duo > .pub-panel:last-child .pub-link:hover {
+  color: #E63946;
+}
+
+
+
+
+/* THUNDER VALLEY - Colorful Homepage Background */
+
+.pub {
+  background: linear-gradient(
+    135deg,
+    #E3F0FF 0%,
+    #F0F7FF 40%,
+    #DDF7FF 75%,
+    #E3F0FF 100%
+  );
+}
+
+/* THUNDER VALLEY - Interactive Ride Cards */
+
+#explore .pub-chip {
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
+}
+
+#explore .pub-chip:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 22px rgba(59, 130, 246, 0.18);
+}
+
+#explore .pub-feature {
+  transition: transform 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+#explore .pub-feature:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 35px rgba(0, 200, 248, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #explore .pub-chip,
+  #explore .pub-feature {
+    transition: none;
+  }
+
+  #explore .pub-chip:hover,
+  #explore .pub-feature:hover {
+    transform: none;
+  }
+}
+
+
+/* THUNDER VALLEY - Interactive Homepage Panels */
+
+.pub-duo > .pub-panel {
+  transition: transform 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+.pub-duo > .pub-panel:first-child:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 35px rgba(59, 130, 246, 0.20);
+}
+
+.pub-duo > .pub-panel:last-child:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 35px rgba(0, 200, 248, 0.20);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-duo > .pub-panel {
+    transition: none;
+  }
+
+  .pub-duo > .pub-panel:hover {
+    transform: none;
+  }
+}
+
+
+/* THUNDER VALLEY - Cinematic Homepage Hero */
+
+.pub-hero {
+  min-height: 720px;
+  padding: 80px 0;
+  overflow: hidden;
+}
+
+.pub-hero::before {
+  background: linear-gradient(
+    90deg,
+    rgba(5, 15, 40, 0.90) 0%,
+    rgba(10, 35, 75, 0.70) 40%,
+    rgba(10, 35, 75, 0.20) 100%
+  );
+}
+
+.pub-hero-inner {
+  max-width: 1320px;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 70px;
+}
+
+.pub-hero-copy h1 {
+  font-size: clamp(3.5rem, 6.5vw, 6rem);
+  font-weight: 900;
+  line-height: 1.02;
+  max-width: 12ch;
+  letter-spacing: -0.05em;
+  text-shadow: 3px 4px 0 #E63946;
+}
+
+.pub-hero-copy p {
+  font-size: 1.3rem;
+  max-width: 440px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.pub .pub-hero-link {
+  padding: 18px 34px;
+  font-size: 1.1rem;
+  border-radius: 50px;
+  box-shadow: 0 7px 0 #009AC4;
+}
+
+.pub-pc {
+  border: 2px solid rgba(0, 200, 248, 0.45);
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 980px) {
+  .pub-hero {
+    min-height: auto;
+    padding: 65px 0;
+  }
+
+  .pub-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .pub-hero-copy h1 {
+    font-size: clamp(2.8rem, 8vw, 4.5rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .pub-hero {
+    padding: 45px 0;
+  }
+
+  .pub-hero-copy h1 {
+    font-size: 2.8rem;
+  }
+}
