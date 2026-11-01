@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import BrandImage from '../components/BrandImage.jsx'
 import LoadError from '../components/LoadError.jsx'
 import ParkMap from '../components/ParkMap.jsx'
@@ -51,14 +51,70 @@ const GAME_IMAGES = {
 }
 
 
+const VENUE_IMAGES = {
+  'Bay Fish Shack': '/images/bay-fish-shack.jpg',
+  'Canyon Grill': '/images/canyon-grill.jpg',
+  'Forest Pizza': '/images/forest-pizza.jpg',
+  'Main Street Diner': '/images/main-street-diner.jpg',
+  'Sweet Treats Cart': '/images/sweet-treats-cart.jpg',
+  'Canyon Outfitters': '/images/canyon-outfitters.jpg',
+  'Main Street Emporium': '/images/main-street-emporium.jpg',
+  "Pirate's Trading Post": '/images/pirates-trading-post.jpg',
+}
+
+
 // Public rides page (/rides): premier rides, entertainment, then a park map.
 // Deep links still work: ?zone=Thunder Canyon, or ?land=thrill|family|kids (that land's zones). Anything else selects nothing.
 // Open/Closed only: no wait times, no member data.
 export default function Rides() {
   const { site, loading, error, retry } = usePublicSite()
   const [params] = useSearchParams()
+  const location = useLocation()
   const [picked, setPicked] = useState(null)
-  const [rideCategory, setRideCategory] = useState('premier')
+  
+  const [rideCategory, setRideCategory] = useState(() => {
+    const land = params.get('land')
+    return ['thrill', 'family', 'kids'].includes(land)
+      ? land
+      : 'premier'
+  })
+
+  
+useEffect(() => {
+  const land = params.get('land')
+
+  setRideCategory(
+    ['thrill', 'family', 'kids'].includes(land)
+      ? land
+      : 'premier'
+  )
+}, [params])
+
+
+
+
+useEffect(() => {
+  const targetId = location.hash.slice(1)
+
+  if (targetId !== 'explore-rides' && targetId !== 'dining-shops') {
+    return
+  }
+
+  const scrollToSection = () => {
+    document.getElementById(targetId)?.scrollIntoView({
+      behavior: 'auto',
+      block: 'start',
+    })
+  }
+
+  const frame = requestAnimationFrame(scrollToSection)
+
+  return () => cancelAnimationFrame(frame)
+}, [location.hash, location.search, loading])
+
+
+
+
 
   const fromLink = useMemo(() => {
     const zone = params.get('zone')
@@ -126,7 +182,7 @@ const filteredRides = useMemo(() => {
       {loading && <p className="pub-empty">Loading…</p>}
 
       
-      <section aria-labelledby="pub-rides-title">
+      <section id="explore-rides" aria-labelledby="pub-rides-title">
         <h2 id="pub-rides-title" className="pub-h2">
           Explore Our Rides
         </h2>
@@ -245,6 +301,43 @@ const filteredRides = useMemo(() => {
           )}
         </section>
       )}
+
+      
+        <section id="dining-shops" aria-labelledby="pub-dining-title">
+          <h2 id="pub-dining-title" className="pub-h2 pub-h2-spaced">
+            Dining &amp; Shops
+          </h2>
+
+          <p className="pub-lede">
+            Take a break, enjoy delicious food, and discover unique souvenirs.
+          </p>
+
+          {venues.length > 0 ? (
+            <ul className="pub-games pub-games-enhanced">
+              {venues.map((venue) => (
+                <li key={venue.venueId} className="pub-game-card">
+                  <div className="pub-game-image">
+                    <img
+                      src={VENUE_IMAGES[venue.venueName] ?? '/images/dining-default.jpg'}
+                      alt={venue.venueName}
+                      loading="lazy"
+                    />
+                  </div>
+
+                  <div className="pub-game-content">
+                    <h3>{venue.venueName}</h3>
+                    <p className="pub-game-location">{venue.zoneName}</p>
+                    <div className="pub-game-bottom">
+                      <span>{venue.venueType}</span>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="pub-empty">No dining or shops listed yet.</p>
+          )}
+        </section>
 
 
       <section aria-labelledby="pub-map-title">
