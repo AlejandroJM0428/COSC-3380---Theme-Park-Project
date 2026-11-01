@@ -10,6 +10,27 @@ import { money, rideImage } from '../utils/portalFormat.js'
 const MAX_PREMIER = 4
 const MAX_GAMES = 6
 
+const RIDE_IMAGES = {
+  // Thrill Rides
+  'Canyon Cyclone': '/images/canyon-cyclone.jpg',
+  'Rapids Rampage': '/images/rapids-rampage.jpg',
+  'Thunder Run': '/images/thunder-run.jpg',
+
+  // Family Favorites
+  "Kraken's Lair": '/images/krakens-lair.jpg',
+  "Pirate's Plunge": '/images/pirates-plunge.jpg',
+  'Tidal Simulator': '/images/tidal-simulator.jpg',
+  'Enchanted Journey': '/images/enchanted-journey.jpg',
+  'Forest Express': '/images/forest-express.jpg',
+  "Wizard's Workshop": '/images/wizards-workshop.jpg',
+  'Heritage Railroad': '/images/heritage-railroad.jpg',
+  "Dragon's Nest": '/images/dragons-nest.jpg',
+  'Grand Carousel': '/images/grand-carousel.jpg',
+
+  // Kids Corner
+  'Mini Carousel': '/images/mini-carousel.jpg',
+}
+
 // Public rides page (/rides): premier rides, entertainment, then a park map.
 // Deep links still work: ?zone=Thunder Canyon, or ?land=thrill|family|kids (that land's zones). Anything else selects nothing.
 // Open/Closed only: no wait times, no member data.
@@ -71,7 +92,10 @@ export default function Rides() {
           <ul className="pub-premier">
             {premier.map((r) => (
               <li key={r.rideId}>
-                <BrandImage src={rideImage(r.zoneName)} className={`pub-premier-img ${r.state === 'Open' ? '' : 'is-closed'}`}>
+                <BrandImage
+                  src={RIDE_IMAGES[r.rideName] ?? rideImage(r.zoneName)}
+                  className={`pub-premier-img ${r.state === 'Open' ? '' : 'is-closed'}`}
+                >
                   <span className={`pub-badge ${r.state === 'Open' ? 'open' : 'closed'}`}>{r.state}</span>
                 </BrandImage>
                 <h3>{r.rideName}</h3>
