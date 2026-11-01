@@ -11,6 +11,7 @@
   --scarlet: #c8102e;     /* "Buy Tickets" only */
   --white: #ffffff;
   --scarlet-dark: #9e0d25; /* hover for the scarlet button */
+  --blue-mid: #2f6cc0;    /* between --blue-deep and --blue: the end of blue gradients under white text (5.2:1) */
 
   /* text and lines on white or paper */
   --ink-soft: #50617a;    /* secondary text: 6.3:1 on white */
@@ -19,6 +20,12 @@
   --wash: #eef3fa;        /* hover background */
   --on-navy: #d6e4f5;     /* text on navy: 12:1 */
   --on-navy-soft: #9fb6d3; /* small labels on navy: 7.6:1 */
+
+  /* status: text, fill and line for each message kind. Every text color is 5.8:1 or better on its own fill. */
+  --ok: #1b6a35;      --ok-bg: #e3f5e8;      --ok-line: #b6dcb3;
+  --warn: #6b5200;    --warn-bg: #fff3c4;    --warn-line: #f0e2b0;
+  --err: #8e3126;     --err-bg: #fff0ed;     --err-line: #edb8ab;
+  --neutral: #4c5b68; --neutral-bg: #eceff2;
 
   /* lands: a soft color for fills and tags, and a dark twin for text and borders (every dark twin is 6:1 or better on white) */
   --land-main-street: #d3c4ec;  --land-main-street-dark: #5b3f94;

@@ -37,10 +37,10 @@ export default function MemberLogin() {
   }
 
   // Wait until we know whether a session exists, so the form does not appear and then jump away.
-  if (!ready || alreadyMember) return <AuthShell title="Member sign in"><p className="muted auth-wait">One moment…</p></AuthShell>
+  if (!ready || alreadyMember) return <AuthShell title="Member sign in" heading="Welcome Back!"><p className="muted auth-wait">One moment…</p></AuthShell>
 
   return (
-    <AuthShell title="Member sign in">
+    <AuthShell title="Member sign in" heading="Welcome Back!" subtitle="Sign in to unlock your Beltway Park adventure.">
       <form onSubmit={handleSubmit}>
         <ErrorBanner message={error} />
         <label>

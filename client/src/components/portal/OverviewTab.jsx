@@ -47,7 +47,7 @@ export default function OverviewTab({ customer, membership, tiers, upcoming, rid
 
       <h2 className="pt-h2">Quick actions</h2>
       <div className="pt-actions">
-        <button type="button" className="pt-btn" onClick={() => onGo('tickets')}>Buy a ticket</button>
+        <button type="button" className="pt-btn pt-btn-buy" onClick={() => onGo('tickets')}>Buy a ticket</button>
         <button type="button" className="pt-btn pt-btn-ghost" onClick={() => onGo('rides')}>View ride board</button>
       </div>
     </>

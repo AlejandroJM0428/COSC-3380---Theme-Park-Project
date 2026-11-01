@@ -2,16 +2,14 @@ import { Link } from 'react-router-dom'
 import Wordmark from './Wordmark.jsx'
 import '../login.css'
 
-// The frame for the member sign in, member sign up and staff sign in pages.
-// variant="member" uses the public site look; variant="staff" uses the staff portal look.
+// The one card for member sign in, member sign up and staff sign in (look and rules are in login.css).
+// variant="member" is the white card under the blue awning; variant="staff" adds a navy header.
 // `role` tints the staff page (awning and button) once a portal is chosen.
-export default function AuthShell({ variant = 'member', role, title, children }) {
-  const isMemberLogin = variant === 'member' && title === 'Member sign in'
+// `title` names the page and picks the link under the card. `heading` is the big line in the card (defaults to the
+// title) and `subtitle` is an optional line under it.
+export default function AuthShell({ variant = 'member', role, title, heading, subtitle, children }) {
   return (
-    <div
-     className={`auth auth-${variant} ${isMemberLogin ? 'tv-member-login' : ''}`}
-     data-role={role || undefined}
-    >
+    <div className={`auth auth-${variant}`} data-role={role || undefined}>
       <div className={variant === 'staff' ? 'awning-wrap' : 'awning-wrap is-blue'} aria-hidden="true">
         <div className="awning" />
       </div>
@@ -19,14 +17,8 @@ export default function AuthShell({ variant = 'member', role, title, children })
         <section className="auth-card" aria-labelledby="auth-title">
           <header className="auth-head">
             <Wordmark tagline={false} light={variant === 'staff'} />
-            <h1 id="auth-title">
-              {isMemberLogin ? 'Welcome Back!' : title}
-            </h1>
-            {isMemberLogin && (
-              <p className="tv-login-subtitle">
-                  Sign in to unlock your Beltway Park adventure.
-              </p>
-             )}
+            <h1 id="auth-title">{heading || title}</h1>
+            {subtitle && <p className="auth-sub">{subtitle}</p>}
           </header>
           <div className="auth-body">{children}</div>
         </section>
