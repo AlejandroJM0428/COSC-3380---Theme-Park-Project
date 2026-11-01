@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { NAV_SECTIONS, PARK_SHORT, ROLE_INFO } from '../config/nav.js'
+import HelmetMark from './HelmetMark.jsx'
 
 // The shell: sidebar menu (filtered by role) + the page content on the right.
 // The staff portal uses the defaults. The admin portal passes base="/admin" and its own sections.
@@ -21,8 +22,11 @@ export default function Layout({ base = '/staff', sections = NAV_SECTIONS, brand
     <div className="app-shell" data-role={user.role}>
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-name">{PARK_SHORT}</span>
-          <span className="brand-sub">{brandSub}</span>
+          <HelmetMark size={40} onDark />
+          <span className="brand-text">
+            <span className="brand-name">{PARK_SHORT}</span>
+            <span className="brand-sub">{brandSub}</span>
+          </span>
         </div>
         <button
           type="button"

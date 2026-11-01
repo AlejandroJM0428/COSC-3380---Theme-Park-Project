@@ -18,7 +18,7 @@ export default function AuthShell({ variant = 'member', role, title, children })
       <main className="auth-main">
         <section className="auth-card" aria-labelledby="auth-title">
           <header className="auth-head">
-            <Wordmark tagline={false} />
+            <Wordmark tagline={false} light={variant === 'staff'} />
             <h1 id="auth-title">
               {isMemberLogin ? 'Welcome Back!' : title}
             </h1>

@@ -16,7 +16,8 @@
 }
 
 /* Plain-text wordmark (no logo yet) */
-.wordmark { display: block; line-height: 1.1; }
+.wordmark { display: flex; align-items: center; gap: 10px; line-height: 1.1; }
+.wordmark-text { display: block; min-width: 0; }
 .wordmark strong { display: block; font-family: var(--brand-font-display); font-size: 1.03rem; letter-spacing: -.03em; color: inherit; }
 .wordmark small { display: block; color: var(--brand-muted); font-size: .78rem; margin-top: 1px; }
 .wordmark-light small { color: inherit; opacity: .75; }

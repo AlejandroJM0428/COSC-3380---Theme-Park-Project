@@ -25,6 +25,9 @@ export default function PublicLayout() {
 
   return (
     <div className="pub" id="top">
+      <div className="awning-wrap is-blue" aria-hidden="true">
+        <div className="awning" />
+      </div>
       <NotificationBar variant="strip" />
 
       <header className="pub-header">

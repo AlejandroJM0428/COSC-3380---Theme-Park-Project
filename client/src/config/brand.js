@@ -3,7 +3,7 @@
 // Images: any path that is missing or fails to load falls back to a neutral gradient
 // (see components/BrandImage.jsx), so the layout still holds with no photos.
 // The tagline is also the homepage headline, so it is written once.
-const TAGLINE = 'Every Road Leads to Fun!'
+const TAGLINE = 'Thrills and Chills'
 
 export const BRAND = {
   name: 'Beltway Park',   // the same name as Park.ParkName in the database
