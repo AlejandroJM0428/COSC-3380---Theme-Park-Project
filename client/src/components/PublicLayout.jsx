@@ -28,7 +28,7 @@ export default function PublicLayout() {
       <header className="pub-header">
         <div className="pub-header-inner">
           <Link to="/" className="pub-wordmark" aria-label={`${BRAND.name} home`} onClick={close}>
-            <Wordmark tagline={false} />
+            <Wordmark tagline={false} est />
           </Link>
 
           <nav id="pub-nav" className={`pub-nav ${menuOpen ? 'open' : ''}`} aria-label="Main navigation">

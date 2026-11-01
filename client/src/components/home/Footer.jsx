@@ -11,7 +11,7 @@ export default function Footer() {
     <footer className="pub-footer">
       <div className="pub-footer-inner">
         <div className="pub-footer-brand">
-          <Wordmark tagline={false} light />
+          <Wordmark tagline={false} light est />
           <p>{BRAND.tagline}</p>
         </div>
 
@@ -40,7 +40,7 @@ export default function Footer() {
       </div>
 
       <div className="pub-footer-bottom">
-        <span>{BRAND.name} · Prototype</span>
+        <span>{BRAND.name} · Est. {BRAND.established} · Prototype</span>
         <a href="#top" onClick={(event) => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</a>
       </div>
     </footer>

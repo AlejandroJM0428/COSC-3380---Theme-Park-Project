@@ -105,19 +105,21 @@ export const TRIGGER_CATALOG = [
   },
   {
     name: 'trg_Shift_BI', table: 'Shift', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
-    rule: 'Needs an active employee. No overlapping shift and no clock-in before the hire date.',
+    rule: 'Needs an active employee. No overlapping shift, no clock-in before the hire date, and no more than 40 clocked hours in the shift\'s week (Monday to Sunday).',
     errors: [
       'Employee is inactive or does not exist',
       'Shift starts before the hire date',
       'Shift overlaps another shift for this employee',
+      'Employee would work more than 40 hours this week (Monday to Sunday)',
     ],
   },
   {
     name: 'trg_Shift_BU', table: 'Shift', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
-    rule: 'Changing the times or the employee gets the same overlap and hire date checks. A rating alone is always fine.',
+    rule: 'Changing the times or the employee gets the same overlap, hire date and 40-hour checks. A rating alone is always fine.',
     errors: [
       'Shift starts before the hire date',
       'Shift overlaps another shift for this employee',
+      'Employee would work more than 40 hours this week (Monday to Sunday)',
     ],
   },
   {
