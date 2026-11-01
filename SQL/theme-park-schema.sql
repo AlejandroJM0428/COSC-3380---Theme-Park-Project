@@ -296,10 +296,15 @@ CREATE TABLE Employee (
     HourlyPay    DECIMAL(6,2) NOT NULL,
     HoursPerWeek TINYINT UNSIGNED NOT NULL,
     IsActive     BOOL NOT NULL,
+    TerminationDate   DATE NULL,                                              -- the day the person left; NULL while they work here
+    TerminationReason ENUM('Quit','Fired','Seasonal end','Laid off') NULL,    -- why they left; NULL while they work here
     -- [CONSTRAINT] Pay positive; at most 40 hours per week.
+    -- [CONSTRAINT] A person who has left (IsActive = 0) has a leave date and a reason, and left after the hire date; an active person has neither.
     CONSTRAINT PK_Employee PRIMARY KEY (EmployeeID),
     CONSTRAINT CHK_Emp_Pay   CHECK (HourlyPay > 0),
-    CONSTRAINT CHK_Emp_Hours CHECK (HoursPerWeek <= 40)
+    CONSTRAINT CHK_Emp_Hours CHECK (HoursPerWeek <= 40),
+    CONSTRAINT CHK_Emp_Left  CHECK ((IsActive = 1 AND TerminationDate IS NULL AND TerminationReason IS NULL)
+                                 OR (IsActive = 0 AND TerminationDate IS NOT NULL AND TerminationReason IS NOT NULL AND TerminationDate > HireDate))
 ) ENGINE = InnoDB;
 
 -- [TABLE] EmployeeZone: junction, Employee to Zone.
