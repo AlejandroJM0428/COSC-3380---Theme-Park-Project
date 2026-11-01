@@ -542,6 +542,7 @@ export const USERS = {
     { key: 'Username', label: 'Username' },
     { key: 'Role', label: 'Role' },
     { key: 'EmployeeName', label: 'Employee', format: (v) => v || '—' },
+    { key: 'EmployeeID', label: 'Employee ID', format: (v) => v || '—' },
     { key: 'IsActive', label: 'Status', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
   ],
   fields: [

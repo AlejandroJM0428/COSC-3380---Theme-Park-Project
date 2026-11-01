@@ -113,7 +113,7 @@ route(
   requireRole(...CAN_USE)(async () => {
     const [employees] = await pool.query(
       `SELECT EmployeeID AS id, FirstName,
-              CONCAT(FirstName, ' ', LastName, ' - ', JobTitle, IF(IsActive = 1, '', ' (inactive)')) AS name
+              CONCAT(FirstName, ' ', LastName, ' (', EmployeeID, ') - ', JobTitle, IF(IsActive = 1, '', ' (inactive)')) AS name
          FROM Employee
         ORDER BY LastName, FirstName, EmployeeID
         LIMIT 1000`,
