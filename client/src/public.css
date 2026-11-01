@@ -852,3 +852,309 @@
     font-size: 2.8rem;
   }
 }
+
+
+/* Enhanced Entertainment Cards */
+
+.pub-games-enhanced {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.pub-games-enhanced .pub-game-card {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid #dce5f0;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.07);
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.pub-games-enhanced .pub-game-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}
+
+.pub-game-image {
+  height: 185px;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  overflow: hidden;
+}
+
+.pub-game-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pub-game-content {
+  padding: 16px;
+}
+
+.pub-game-content h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 7px;
+  color: #132344;
+}
+
+.pub-game-location {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 12px;
+}
+
+.pub-game-price {
+  display: inline-block;
+  padding: 7px 12px;
+  border-radius: 20px;
+  background: #e8f2ff;
+  color: #2454ba;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 800px) {
+  .pub-games-enhanced {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .pub-games-enhanced {
+    grid-template-columns: 1fr;
+  }
+}
+.pub-games-enhanced .pub-game-price {
+  color: #2454ba;
+}
+
+
+/* THUNDER VALLEY - Enhanced Premier Ride Cards */
+
+.pub-premier > li {
+  min-width: 0;
+  padding: 10px;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
+}
+
+.pub-premier > li:hover {
+  transform: translateY(-6px);
+  border-color: #3B82F6;
+  background: #FFFFFF;
+  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.16);
+}
+
+.pub-premier-img {
+  overflow: hidden;
+  border-radius: 14px;
+  transition: filter 0.25s ease;
+}
+
+.pub-premier > li:hover .pub-premier-img {
+  filter: brightness(1.07);
+}
+
+.pub-premier > li:hover .pub-premier-img.is-closed {
+  filter: grayscale(0.7);
+}
+
+.pub-premier h3 {
+  color: #14213D;
+  font-size: 1.15rem;
+  font-weight: 900;
+  margin-top: 12px;
+}
+
+.pub-premier .pub-badge.open {
+  background: #E3F9E9;
+  color: #16733A;
+  border: 1px solid #B4E8C4;
+}
+
+.pub-premier .pub-badge.closed {
+  background: #F1F3F5;
+  color: #64748B;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-premier > li,
+  .pub-premier-img {
+    transition: none;
+  }
+
+  .pub-premier > li:hover {
+    transform: none;
+  }
+}
+
+
+/* THUNDER VALLEY - Ride Category Filters */
+
+.pub-ride-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.pub-ride-filter {
+  padding: 12px 22px;
+  border: 2px solid #3B82F6;
+  border-radius: 50px;
+  background: #FFFFFF;
+  color: #14213D;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #2459B8;
+  transition: transform 0.2s ease,
+              background 0.2s ease,
+              box-shadow 0.2s ease;
+}
+
+.pub-ride-filter:hover {
+  background: #EAF5FF;
+  transform: translateY(-3px);
+}
+
+.pub-ride-filter.active {
+  background: #3B82F6;
+  color: #FFFFFF;
+  border-color: #3B82F6;
+}
+
+.pub-ride-filter:focus-visible {
+  outline: 3px solid #00C8F8;
+  outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .pub-ride-filters {
+    gap: 10px;
+  }
+
+  .pub-ride-filter {
+    padding: 10px 15px;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-ride-filter {
+    transition: none;
+  }
+
+  .pub-ride-filter:hover {
+    transform: none;
+  }
+}
+
+
+/* THUNDER VALLEY - Interactive Park Map */
+
+.pub-mapwrap {
+  gap: 24px;
+  align-items: start;
+}
+
+/* Map background */
+.pub-map-bg {
+  fill: #DDEAF7;
+}
+
+/* Walking paths */
+.pub-map-paths path {
+  stroke: #FFFFFF;
+  stroke-width: 12;
+}
+
+/* Park zones */
+.pub-zone {
+  cursor: pointer;
+  transition: opacity 0.25s ease;
+}
+
+.pub-zone rect {
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 3;
+  transition: stroke 0.25s ease,
+              stroke-width 0.25s ease,
+              filter 0.25s ease;
+}
+
+/* Hover effect */
+.pub-zone:hover rect {
+  stroke: #3B82F6;
+  stroke-width: 6;
+  filter: brightness(1.06);
+}
+
+/* Selected zone */
+.pub-zone.on rect {
+  stroke: #2459B8;
+  stroke-width: 7;
+  filter: drop-shadow(0 4px 6px rgba(36, 89, 184, 0.25));
+}
+
+/* Dim other zones when one is selected */
+.pub-zone.dim {
+  opacity: 0.5;
+}
+
+/* Zone labels */
+.pub-zone-name {
+  font-weight: 900;
+  fill: #14213D;
+}
+
+.pub-zone-count {
+  fill: #334155;
+  font-weight: 700;
+}
+
+/* Entrance label */
+.pub-map-entrance {
+  fill: #2459B8;
+  font-weight: 900;
+}
+
+/* Information panel */
+.pub-zonepanel {
+  border: 2px solid #DCE8F8;
+  border-radius: 20px;
+  padding: 26px;
+  background: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(20, 33, 61, 0.08);
+}
+
+.pub-zonepanel h3 {
+  color: #14213D;
+  font-weight: 900;
+}
+
+.pub-zonelist li {
+  transition: background 0.2s ease;
+}
+
+.pub-zonelist li:hover {
+  background: #F0F7FF;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-zone,
+  .pub-zone rect,
+  .pub-zonelist li {
+    transition: none;
+  }
+}

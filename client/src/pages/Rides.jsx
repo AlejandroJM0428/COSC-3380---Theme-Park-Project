@@ -10,6 +10,15 @@ import { money, rideImage } from '../utils/portalFormat.js'
 const MAX_PREMIER = 4
 const MAX_GAMES = 6
 
+
+const RIDE_CATEGORIES = [
+  { key: 'premier', label: 'Premier Rides' },
+  { key: 'thrill', label: 'Thrill Rides' },
+  { key: 'family', label: 'Family Favorites' },
+  { key: 'kids', label: 'Kids Corner' },
+]
+
+
 const RIDE_IMAGES = {
   // Thrill Rides
   'Canyon Cyclone': '/images/canyon-cyclone.jpg',
@@ -31,6 +40,17 @@ const RIDE_IMAGES = {
   'Mini Carousel': '/images/mini-carousel.jpg',
 }
 
+
+const GAME_IMAGES = {
+  'Dunk Tank': '/images/dunk-tank.jpg',
+  'Whack-a-Gator': '/images/whack-a-gator.jpg',
+  'Skee Ball': '/images/skee-ball.jpg',
+  'Basketball Shot': '/images/basketball-shot.jpg',
+  'Ring Toss': '/images/ring-toss.jpg',
+  'Balloon Pop': '/images/balloon-pop.jpg',
+}
+
+
 // Public rides page (/rides): premier rides, entertainment, then a park map.
 // Deep links still work: ?zone=Thunder Canyon, or ?land=thrill|family|kids (that land's zones). Anything else selects nothing.
 // Open/Closed only: no wait times, no member data.
@@ -38,6 +58,7 @@ export default function Rides() {
   const { site, loading, error, retry } = usePublicSite()
   const [params] = useSearchParams()
   const [picked, setPicked] = useState(null)
+  const [rideCategory, setRideCategory] = useState('premier')
 
   const fromLink = useMemo(() => {
     const zone = params.get('zone')
@@ -54,6 +75,24 @@ export default function Rides() {
     () => rides.filter((r) => r.expressEligible).sort((a, b) => (b.state === 'Open') - (a.state === 'Open')).slice(0, MAX_PREMIER),
     [rides],
   )
+
+  
+const filteredRides = useMemo(() => {
+  if (rideCategory === 'premier') {
+    return premier
+  }
+
+  const selectedLand = LANDS.find(
+    (land) => land.key === rideCategory
+  )
+
+  if (!selectedLand) return []
+
+  return rides.filter((ride) =>
+    selectedLand.zones.includes(ride.zoneName)
+  )
+}, [rideCategory, rides, premier])
+
 
   const counts = useMemo(() => {
     const out = {}
@@ -86,45 +125,139 @@ export default function Rides() {
       {error && <LoadError message={error} onRetry={retry} />}
       {loading && <p className="pub-empty">Loading…</p>}
 
-      {premier.length > 0 && (
-        <section aria-labelledby="pub-premier-title">
-          <h2 id="pub-premier-title" className="pub-h2">Premier rides</h2>
+      
+      <section aria-labelledby="pub-rides-title">
+        <h2 id="pub-rides-title" className="pub-h2">
+          Explore Our Rides
+        </h2>
+
+        <p className="pub-lede">
+          Discover exciting attractions for every kind of adventure.
+        </p>
+
+        <div className="pub-ride-filters" aria-label="Ride categories">
+          {RIDE_CATEGORIES.map((category) => (
+            <button
+              key={category.key}
+              type="button"
+              className={`pub-ride-filter ${
+                rideCategory === category.key ? 'active' : ''
+              }`}
+              aria-pressed={rideCategory === category.key}
+              onClick={() => setRideCategory(category.key)}
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
+
+        {filteredRides.length > 0 ? (
           <ul className="pub-premier">
-            {premier.map((r) => (
+            {filteredRides.map((r) => (
               <li key={r.rideId}>
                 <BrandImage
                   src={RIDE_IMAGES[r.rideName] ?? rideImage(r.zoneName)}
-                  className={`pub-premier-img ${r.state === 'Open' ? '' : 'is-closed'}`}
+                  className={`pub-premier-img ${
+                    r.state === 'Open' ? '' : 'is-closed'
+                  }`}
                 >
-                  <span className={`pub-badge ${r.state === 'Open' ? 'open' : 'closed'}`}>{r.state}</span>
+                  <span
+                    className={`pub-badge ${
+                      r.state === 'Open' ? 'open' : 'closed'
+                    }`}
+                  >
+                    {r.state}
+                  </span>
                 </BrandImage>
+
                 <h3>{r.rideName}</h3>
-                <p>{r.zoneName} · {r.rideType}{r.minHeightCm ? ` · Min ${r.minHeightCm} cm` : ''}</p>
-                <p className="pub-premier-tag">Express queue available</p>
+
+                <p>
+                  {r.zoneName} · {r.rideType}
+                  {r.minHeightCm ? ` · Min ${r.minHeightCm} cm` : ''}
+                </p>
+
+                {r.expressEligible && (
+                  <p className="pub-premier-tag">
+                    Express queue available
+                  </p>
+                )}
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        ) : (
+          <p className="pub-empty">
+            {loading
+              ? 'Loading rides...'
+              : 'No rides available in this category.'}
+          </p>
+        )}
+      </section>
 
+
+      
       {games.length > 0 && (
         <section aria-labelledby="pub-ent-title">
-          <h2 id="pub-ent-title" className="pub-h2 pub-h2-spaced">Entertainment</h2>
-          <ul className="pub-games">
+          <h2 id="pub-ent-title" className="pub-h2 pub-h2-spaced">
+            Entertainment
+          </h2>
+
+          <p className="pub-lede">
+            Step right up! Discover exciting midway games
+            and fun challenges for everyone.
+          </p>
+
+          <ul className="pub-games pub-games-enhanced">
             {games.slice(0, MAX_GAMES).map((g) => (
-              <li key={g.gameId}>
-                <strong>{g.gameName}</strong>
-                <span>{g.zoneName}</span>
-                <b>{money(g.playPrice)} per play</b>
+              <li key={g.gameId} className="pub-game-card">
+                <div className="pub-game-image">
+                  <img
+                    src={GAME_IMAGES[g.gameName] || '/images/game-default.jpg'}
+                    alt={g.gameName}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+
+                <div className="pub-game-content">
+                  <h3>{g.gameName}</h3>
+                  <p className="pub-game-location">
+                    {g.zoneName}
+                  </p>
+
+                  <div className="pub-game-bottom">
+                    <span className="pub-game-price">
+                      {money(g.playPrice)} per play
+                    </span>
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
-          {games.length > MAX_GAMES && <p className="pub-note">+{games.length - MAX_GAMES} more games around the park. Pick a zone on the map to see them.</p>}
+
+          {games.length > MAX_GAMES && (
+            <p className="pub-note">
+              +{games.length - MAX_GAMES} more games around
+              the park. Pick a zone on the map to see them.
+            </p>
+          )}
         </section>
       )}
 
+
       <section aria-labelledby="pub-map-title">
-        <h2 id="pub-map-title" className="pub-h2 pub-h2-spaced">Park map</h2>
+        
+        <h2 id="pub-map-title" className="pub-h2 pub-h2-spaced">
+          Explore Thunder Valley
+        </h2>
+
+        <p className="pub-lede">
+          Discover our five themed zones! Select an area on the map
+          to explore rides, games, dining, and attractions.
+        </p>
+
         <div className="pub-mapwrap">
           <ParkMap counts={counts} selected={selected} onSelect={toggleZone} />
 
