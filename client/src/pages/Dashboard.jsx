@@ -23,7 +23,7 @@ export default function Dashboard({ base = '/staff', sections: menu = NAV_SECTIO
   return (
     <div className="thunder-home">
       <div className="thunder-intro" id="park-dashboard">
-        <span className="thunder-section-label">Welcome back, {user.username}</span>
+        <span className="thunder-section-label">Welcome back, {user.name || 'there'}</span>
         <h2>{info.title}</h2>
         <p>{info.blurb}</p>
       </div>
@@ -52,11 +52,11 @@ export default function Dashboard({ base = '/staff', sections: menu = NAV_SECTIO
             style={{ '--section-accent': section.zone }}
           >
             <div className="thunder-section-heading">
-              <span className="thunder-section-number">
+              <span className="thunder-section-number shield">
                 {String(index + 1).padStart(2, '0')}
               </span>
               <div>
-                <h2>{section.title}</h2>
+                <h2 className="nameplate">{section.title}</h2>
                 <p>{items.length} {items.length === 1 ? 'page' : 'pages'} for your role</p>
               </div>
             </div>

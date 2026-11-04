@@ -105,19 +105,21 @@ export const TRIGGER_CATALOG = [
   },
   {
     name: 'trg_Shift_BI', table: 'Shift', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
-    rule: 'Needs an active employee. No overlapping shift and no clock-in before the hire date.',
+    rule: 'Needs an active employee. No overlapping shift, no clock-in before the hire date, and no more than 40 clocked hours in the shift\'s week (Monday to Sunday).',
     errors: [
       'Employee is inactive or does not exist',
       'Shift starts before the hire date',
       'Shift overlaps another shift for this employee',
+      'Employee would work more than 40 hours this week (Monday to Sunday)',
     ],
   },
   {
     name: 'trg_Shift_BU', table: 'Shift', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
-    rule: 'Changing the times or the employee gets the same overlap and hire date checks. A rating alone is always fine.',
+    rule: 'Changing the times or the employee gets the same overlap, hire date and 40-hour checks. A rating alone is always fine.',
     errors: [
       'Shift starts before the hire date',
       'Shift overlaps another shift for this employee',
+      'Employee would work more than 40 hours this week (Monday to Sunday)',
     ],
   },
   {
@@ -152,18 +154,18 @@ export const TRIGGER_CATALOG = [
   },
   {
     name: 'trg_RideLog_BU', table: 'RideLog', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
-    rule: 'Ride log entries are records and are never edited.',
-    errors: ['Ride log entries are records and cannot be edited'],
+    rule: 'An edited boarding gets the same checks as a new one (maintenance, weather, height, Express) when its ride, ticket, time or Express use changes. A changed wait time needs no check.',
+    errors: ['Ride is no longer in service', 'Ride was under maintenance', 'Weather has closed outdoor rides', 'Guest is below the ride height requirement', 'Ticket does not include Express', 'Ride is not Express eligible'],
   },
   {
     name: 'trg_GamePlay_BU', table: 'GamePlay', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
-    rule: 'Game plays are records and are never edited.',
-    errors: ['Game plays are records and cannot be edited'],
+    rule: 'An edited play needs a valid ticket and a game that is in service. The amount paid stays as it was unless the game changes, then it is copied from the new game.',
+    errors: ['Game was under maintenance', 'Game is no longer in service'],
   },
   {
     name: 'trg_Purchase_BU', table: 'Purchase', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
-    rule: 'Purchases are records and are never edited.',
-    errors: ['Purchases are records and cannot be edited'],
+    rule: 'An edited purchase needs a valid ticket and an item still sold at an open venue. The unit price stays as it was unless the item changes, then it is copied from the new item.',
+    errors: ['Item does not exist', 'Item is no longer sold', 'Venue was under maintenance'],
   },
   {
     name: 'trg_TicketRefund_BU', table: 'TicketRefund', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
@@ -217,9 +219,15 @@ export function describeTrigger(name) {
 }
 
 // Which trigger sent this message? Used so the browser can show "trigger fired" cards.
-// Exact match on the catalog's error list; the first entry wins when two triggers share a message.
-export function triggerForMessage(message) {
+// Exact match on the catalog's error list. An insert trigger and its edit trigger share the same messages,
+// so `where` ({ event: 'INSERT' | 'UPDATE' | 'DELETE', table }) says which statement failed. The trigger that
+// matches both event and table wins, then the one that matches the event, then the first one in the list.
+export function triggerForMessage(message, where = {}) {
   const text = String(message ?? '');
-  const t = TRIGGER_CATALOG.find((x) => x.errors?.includes(text));
+  const matches = TRIGGER_CATALOG.filter((x) => x.errors?.includes(text));
+  const t =
+    matches.find((x) => x.event === where.event && x.table === where.table) ||
+    matches.find((x) => x.event === where.event) ||
+    matches[0];
   return t ? describeTrigger(t.name) : null;
 }

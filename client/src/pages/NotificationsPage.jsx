@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
-import { createNotification, dismissNotification, listNotifications } from '../api/index.js'
+import { createNotification, dismissNotification, listNotifications, updateNotification } from '../api/index.js'
 import DataTable from '../components/DataTable.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 
 const BLANK = { severity: 'Info', title: '', message: '', expiresAt: '' }
 
-// Promos and notices. Staff add promos here and can dismiss any notice (dismiss = soft delete).
+// Promos and notices. Staff add and edit promos here and can dismiss any notice (dismiss = soft delete).
 export default function NotificationsPage() {
   const [rows, setRows] = useState(null)
   const [form, setForm] = useState(BLANK)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState(null)
 
   const load = useCallback(() => {
     listNotifications()
@@ -28,9 +29,16 @@ export default function NotificationsPage() {
     setNotice('')
     setSaving(true)
     try {
-      await createNotification({ ...form, expiresAt: form.expiresAt || null })
+      const body = { ...form, expiresAt: form.expiresAt || null }
+      if (editingId) {
+        await updateNotification(editingId, body)
+        setNotice('Promo updated.')
+      } else {
+        await createNotification(body)
+        setNotice('Promo added. It now shows on the homepage.')
+      }
       setForm(BLANK)
-      setNotice('Promo added. It now shows on the homepage.')
+      setEditingId(null)
       load()
     } catch (err) {
       setError(err.message)
@@ -39,12 +47,31 @@ export default function NotificationsPage() {
     }
   }
 
+  function startEdit(row) {
+    setError('')
+    setNotice('')
+    setEditingId(row.NotificationID)
+    setForm({
+      severity: row.Severity,
+      title: row.Title,
+      message: row.Message,
+      expiresAt: row.ExpiresAt ? String(row.ExpiresAt).slice(0, 16).replace('T', ' ') : '',
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setForm(BLANK)
+  }
+
   async function dismiss(row) {
     if (!window.confirm(`Dismiss "${row.Title}"? It will stop showing on the homepage.`)) return
     setError('')
     setNotice('')
     try {
       await dismissNotification(row.NotificationID)
+      if (editingId === row.NotificationID) cancelEdit()
       setNotice('Notice dismissed.')
       load()
     } catch (err) {
@@ -62,7 +89,7 @@ export default function NotificationsPage() {
       {notice && <p className="page-note">{notice}</p>}
 
       <form className="rm-form" onSubmit={submit}>
-        <h2>Add a promo</h2>
+        <h2>{editingId ? 'Edit promo' : 'Add a promo'}</h2>
         <div className="rm-grid">
           <label className="rm-field">
             Title
@@ -87,8 +114,13 @@ export default function NotificationsPage() {
         </div>
         <div>
           <button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : 'Add promo'}
+            {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add promo'}
           </button>
+          {editingId && (
+            <button type="button" onClick={cancelEdit} style={{ marginLeft: 8 }}>
+              Cancel
+            </button>
+          )}
         </div>
       </form>
 
@@ -104,9 +136,16 @@ export default function NotificationsPage() {
           />
           <p>
             {rows.map((r) => (
-              <button key={r.NotificationID} type="button" className="btn-danger" onClick={() => dismiss(r)} style={{ marginRight: 8, marginTop: 8 }}>
-                Dismiss: {r.Title}
-              </button>
+              <span key={r.NotificationID} style={{ marginRight: 12, marginTop: 8, display: 'inline-block' }}>
+                {r.Kind === 'Promo' && (
+                  <button type="button" onClick={() => startEdit(r)} style={{ marginRight: 4 }}>
+                    Edit: {r.Title}
+                  </button>
+                )}
+                <button type="button" className="btn-danger" onClick={() => dismiss(r)}>
+                  Dismiss: {r.Title}
+                </button>
+              </span>
             ))}
           </p>
         </>

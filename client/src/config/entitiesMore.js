@@ -70,7 +70,7 @@ export const CUSTOMERS = {
 export const MEMBERSHIPS = {
   title: 'Memberships',
   intro:
-    'Annual memberships. Pick the guest, the tier and the start date. The database sets the price from the tier list, and the membership ends one year later. If those dates overlap a membership this guest already has, MySQL rejects the save. A membership with tickets on it cannot be deleted.',
+    'Annual memberships. Pick the guest (they must already have an account), the tier and the start date. The database sets the price from the tier list, and the membership ends one year later. If those dates overlap a membership this guest already has, MySQL rejects the save. A membership with tickets on it cannot be deleted.',
   resource: 'memberships',
   idKey: 'MembershipID',
   noun: 'membership',
@@ -98,7 +98,7 @@ export const MEMBERSHIPS = {
     { key: 'IsCurrent', label: 'Status', format: (v) => (Number(v) ? 'Current' : 'Not current') },
   ],
   fields: [
-    { key: 'customerId', label: 'Guest', type: 'lookup', kind: 'customer', required: true },
+    { key: 'customerId', label: 'Guest (must have an account)', type: 'lookup', kind: 'customer', required: true, needsLogin: true },
     {
       key: 'tier',
       label: 'Tier',
@@ -134,19 +134,17 @@ export const MEMBERSHIPS = {
   describe: (row) => `membership #${row.MembershipID} (${row.CustomerName}, ${row.Tier})`,
 }
 
-// ---- Food & shop purchases: add only (permanent records) --------------------------------------------------
+// ---- Food & shop purchases: add / edit / delete --------------------------------------------------
 export const PURCHASES = {
   title: 'Food & Shop Purchases',
   intro:
-    'Revenue records for food, drinks and merchandise. Add what a guest bought on their ticket. The database fills in the price. The database does not allow edits: to fix a mistake, delete the entry and add it again.',
+    'Revenue records for food, drinks and merchandise. Add what a guest bought on their ticket, or correct an entry. The database fills in the price: it keeps the price the guest paid unless the item changes.',
   resource: 'purchases',
   idKey: 'PurchaseID',
   noun: 'purchase',
-  lockedNote:
-    'These rows are sales records and feed the revenue reports. They are permanent records, so the totals in the reports cannot be changed quietly after the fact. To fix a mistake, delete the entry and add it again.',
+  editRoles: ['Admin', 'RetailManager'], // the booth adds sales; the retail desk corrects or removes them
   deleteRoles: ['Admin', 'RetailManager'],
-  deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
-  canEditRow: () => false,
+  deleteNote: 'This removes the entry for good, and the revenue reports drop it. Add it again if it was a mistake.',
   columns: [
     { key: 'PurchaseID', label: 'Purchase #' },
     { key: 'PurchasedAt', label: 'When', format: shortDate },
@@ -174,7 +172,7 @@ export const PURCHASES = {
   blank: () => ({ ticketId: '', itemId: '', quantity: '1', purchasedAt: '' }),
   fromRecord: (rec) => ({
     ticketId: String(rec.TicketID),
-    itemId: '',
+    itemId: String(rec.ItemID),
     quantity: String(rec.Quantity),
     purchasedAt: toInput(rec.PurchasedAt),
   }),
@@ -187,19 +185,17 @@ export const PURCHASES = {
   describe: (row) => `purchase #${row.PurchaseID}`,
 }
 
-// ---- Game plays: add only (permanent records) -------------------------------------------------------------
+// ---- Game plays: add / edit / delete -------------------------------------------------------------
 export const GAME_PLAYS = {
   title: 'Game Plays',
   intro:
-    'Revenue records for midway games. Add a play on a guest\'s ticket. The database fills in the price and refuses games that are retired or under maintenance. The database does not allow edits: to fix a mistake, delete the play and add it again.',
+    'Revenue records for midway games. Add a play on a guest\'s ticket, or correct one. The database fills in the price and refuses games that are retired or under maintenance. It keeps the amount the guest paid unless the game changes.',
   resource: 'game-plays',
   idKey: 'GamePlayID',
   noun: 'game play',
-  lockedNote:
-    'These rows are sales records and feed the revenue reports. They are permanent records, so the totals in the reports cannot be changed quietly after the fact. To fix a mistake, delete the play and add it again.',
+  editRoles: ['Admin', 'RetailManager'], // the booth adds plays; the retail desk corrects or removes them
   deleteRoles: ['Admin', 'RetailManager'],
-  deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
-  canEditRow: () => false,
+  deleteNote: 'This removes the entry for good, and the revenue reports drop it. Add it again if it was a mistake.',
   columns: [
     { key: 'GamePlayID', label: 'Play #' },
     { key: 'PlayedAt', label: 'When', format: shortDate },
@@ -220,7 +216,7 @@ export const GAME_PLAYS = {
     { key: 'playedAt', label: 'Time (leave empty for now)', type: 'datetime' },
   ],
   blank: () => ({ ticketId: '', gameId: '', playedAt: '' }),
-  fromRecord: (rec) => ({ ticketId: String(rec.TicketID), gameId: '', playedAt: toInput(rec.PlayedAt) }),
+  fromRecord: (rec) => ({ ticketId: String(rec.TicketID), gameId: String(rec.GameID), playedAt: toInput(rec.PlayedAt) }),
   toPayload: (form) => ({
     ticketId: Number(form.ticketId),
     gameId: Number(form.gameId),
@@ -229,19 +225,16 @@ export const GAME_PLAYS = {
   describe: (row) => `game play #${row.GamePlayID}`,
 }
 
-// ---- Ride log: add only (permanent records) ---------------------------------------------------------------
+// ---- Ride log: add / edit / delete ---------------------------------------------------------------
 export const RIDE_LOG = {
   title: 'Ride Log',
   intro:
-    'Ride activity. A boarding records a guest getting on a ride. A wait reading records the posted wait time. The database refuses boardings on rides under maintenance, closed by weather, or above the guest\'s height. The database does not allow edits: to fix a mistake, delete the entry and add it again.',
+    'Ride activity. A boarding records a guest getting on a ride. A wait reading records the posted wait time. The database refuses boardings on rides under maintenance, closed by weather, or above the guest\'s height, and checks a corrected boarding the same way.',
   resource: 'ride-log',
   idKey: 'RideLogID',
   noun: 'ride log entry',
-  lockedNote:
-    'These rows are the permanent record of guest traffic and wait times, and the ride reports read them. They are permanent records, so the numbers in the reports cannot be changed quietly after the fact. To fix a mistake, delete the entry and add it again.',
   deleteRoles: ['Admin', 'Manager'],
-  deleteNote: 'This removes the entry for good. Add it again if it was a mistake.',
-  canEditRow: () => false,
+  deleteNote: 'This removes the entry for good, and the ride reports drop it. Add it again if it was a mistake.',
   filters: [
     {
       key: 'type',
@@ -511,41 +504,77 @@ export const FACILITIES = {
       : null,
 }
 
-// ---- App Users (Admin): add / edit / deactivate -----------------------------------------------------------
-// Staff logins only. Customer accounts come from member sign-up. The password is sent to the server,
-// hashed there, and never comes back. On edit, leave the password empty to keep the current one.
+// ---- App Users (Admin): everyone in one list, add / edit / deactivate staff ------------------------------
+// Shows staff logins, member accounts and guests (customer records with no login). Starts grouped by role.
+// Only staff rows can be edited or deactivated here; members and guests are managed on the Customers page.
+// The password is sent to the server, hashed there, and never comes back. On edit, leave it empty to keep the current one.
+const STAFF_ROLE_LIST = ['Admin', 'Manager', 'Cashier', 'RetailManager', 'HRManager', 'MaintenanceManager', 'MaintenanceWorker', 'RestaurantWorker']
+const isStaffRow = (row) => row.UserID != null && row.Role !== 'Customer'
+
 export const USERS = {
   title: 'App Users',
   intro:
-    'Staff logins for this site. Add an account, change its role, set a new password, or deactivate it. A deactivated account cannot log in. You cannot deactivate yourself or change your own role.',
+    'Everyone in one place, grouped by role: staff logins, member accounts and guests (customer records with no login). Filter by role or search by name or username. Staff logins belong to an employee and are named after them (first name plus the last four digits of their ID); you can add one, change its role, set a new password, or deactivate it. Members and guests are view only here (members and guests show the newest 300; search to find others). You cannot deactivate yourself or change your own role.',
   resource: 'users',
   idKey: 'UserID',
+  rowKey: 'RowKey', // guests have no UserID, so rows are keyed by RowKey
+  // Starts as "Group by: Role": the people under a heading per role, in this order.
+  groupBy: {
+    key: 'Role',
+    label: 'Group by',
+    optionLabel: 'Role',
+    defaultOn: true,
+    order: ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker', 'Customer', 'Guest'],
+    labels: { Customer: 'Member accounts', Guest: 'Guests (no login)' },
+  },
   hideIds: true, // the page never shows user numbers
   noun: 'user',
   deleteRoles: ['Admin'],
   deleteLabel: 'Deactivate',
   deletePast: 'Deactivated',
   deleteNote: 'The account is kept and can be turned back on by editing it.',
-  canDeleteRow: (row) => Number(row.IsActive) === 1,
+  canEditRow: isStaffRow,
+  canDeleteRow: (row) => isStaffRow(row) && Number(row.IsActive) === 1,
   filters: [
+    {
+      key: 'role',
+      label: 'Role',
+      options: [
+        ['', 'All roles'],
+        ...STAFF_ROLE_LIST.map((r) => [r, r.replace(/([a-z])([A-Z])/g, '$1 $2')]),
+        ['Customer', 'Member accounts'],
+        ['Guest', 'Guests (no login)'],
+      ],
+    },
     {
       key: 'status',
       label: 'Show',
       options: [
-        ['', 'All accounts'],
-        ['active', 'Active accounts'],
-        ['inactive', 'Inactive accounts'],
+        ['', 'All'],
+        ['active', 'Active'],
+        ['inactive', 'Inactive'],
       ],
     },
+    { key: 'q', label: 'Search', type: 'search', placeholder: 'Name or username' },
   ],
   columns: [
-    { key: 'Username', label: 'Username' },
-    { key: 'Role', label: 'Role' },
-    { key: 'EmployeeName', label: 'Employee', format: (v) => v || '—' },
+    { key: 'PersonName', label: 'Name', format: (v) => v || '—' },
+    { key: 'Username', label: 'Username', format: (v) => v || '—' },
+    { key: 'Role', label: 'Role', format: (v) => (v === 'Customer' ? 'Member' : v === 'Guest' ? 'Guest' : v) },
+    { key: 'EmployeeID', label: 'Employee ID', format: (v) => v || '—' },
+    { key: 'CustomerID', label: 'Customer #', format: (v) => v || '—' },
     { key: 'IsActive', label: 'Status', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
   ],
   fields: [
-    { key: 'username', label: 'Username', type: 'text', required: true, maxLength: 50 },
+    {
+      key: 'employeeId',
+      label: 'Employee (every staff login belongs to one)',
+      type: 'select',
+      required: true,
+      options: [],
+      optionsFrom: (form, lookups) => (lookups?.employees ?? []).map((e) => [String(e.id), e.name]),
+    },
+    { key: 'username', label: 'Username (filled from the employee: first name and last four digits of their ID; never a role name)', type: 'text', required: true, maxLength: 50 },
     {
       key: 'role',
       label: 'Role',
@@ -554,16 +583,17 @@ export const USERS = {
       options: ['Admin', 'Manager', 'Cashier', 'RetailManager', 'HRManager', 'MaintenanceManager', 'MaintenanceWorker', 'RestaurantWorker'].map((r) => [r, r]),
     },
     { key: 'password', label: 'Password, at least 8 characters (empty keeps the current one)', type: 'password', maxLength: 72 },
-    {
-      key: 'employeeId',
-      label: 'Employee (optional)',
-      type: 'select',
-      options: [['', 'Not linked to an employee']],
-      optionsFrom: (form, lookups) => [['', 'Not linked to an employee'], ...(lookups?.employees ?? []).map((e) => [String(e.id), e.name])],
-    },
     { key: 'isActive', label: 'Status', type: 'select', options: [['yes', 'Active'], ['no', 'Inactive']] },
   ],
-  blank: () => ({ username: '', role: '', password: '', employeeId: '', isActive: 'yes' }),
+  blank: () => ({ username: '', suggested: '', role: '', password: '', employeeId: '', isActive: 'yes' }),
+  // Picking an employee fills the username with that person's suggested name. It never overwrites a name you typed.
+  onFieldChange: (key, value, form, lookups) => {
+    if (key !== 'employeeId') return null
+    const emp = (lookups?.employees ?? []).find((e) => String(e.id) === value)
+    if (!emp) return null
+    if (form.username === '' || form.username === form.suggested) return { username: emp.username, suggested: emp.username }
+    return null
+  },
   fromRecord: (rec) => ({
     username: rec.Username,
     role: rec.Role,

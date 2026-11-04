@@ -1,35 +1,99 @@
+
 import { Link } from 'react-router-dom'
 import LoadError from '../components/LoadError.jsx'
 import PlanTiles from '../components/home/PlanTiles.jsx'
 import usePublicSite from '../hooks/usePublicSite.js'
 
-// Placeholder "good to know" copy. Replace with real content later.
 const GOOD_TO_KNOW = [
-  { title: 'Parking', text: 'Parking details will be added here.' },
-  { title: 'Accessibility', text: 'Accessibility information will be added here.' },
-  { title: 'Lockers and first aid', text: 'Guest services details will be added here.' },
+  {
+    title: 'Parking',
+    icon: '🚗',
+    text: 'Parking information and arrival details are coming soon.',
+    color: 'blue',
+  },
+  {
+    title: 'Accessibility',
+    icon: '♿',
+    text: 'Accessibility and guest assistance information is coming soon.',
+    color: 'purple',
+  },
+  {
+    title: 'Lockers and First Aid',
+    icon: '🩹',
+    text: 'Locker locations and first aid information are coming soon.',
+    color: 'gold',
+  },
 ]
 
-// Public "plan your visit" page (/plan).
 export default function Plan() {
   const { site, error, retry } = usePublicSite()
 
   return (
-    <main className="pub-page pub-page-wide">
-      <h1 className="pub-h1">Plan your visit</h1>
-      <p className="pub-lede">Hours, height rules and how to get here.</p>
+    <main className="pub-page pub-page-wide pub-plan-page">
 
-      {error && <LoadError message={error} onRetry={retry} />}
-      <PlanTiles hours={site?.hours} rides={site?.rides} bare />
+      <div className="pub-plan-heading">
+        <span className="pub-plan-eyebrow">
+          YOUR ADVENTURE STARTS HERE
+        </span>
 
-      <h2 className="pub-h2 pub-h2-spaced">Good to know</h2>
-      <div className="pub-plan">
+        <h1 className="pub-h1">Plan Your Visit</h1>
+
+        <p className="pub-lede">
+          Everything you need to prepare for an unforgettable
+          day at Beltway Park!
+        </p>
+      </div>
+
+      {error && (
+        <LoadError message={error} onRetry={retry} />
+      )}
+
+      <PlanTiles
+        hours={site?.hours}
+        rides={site?.rides}
+        bare
+      />
+
+      <h2 className="pub-h2 pub-h2-spaced">
+        Good to Know
+      </h2>
+
+      <p className="pub-lede">
+        Helpful information to make your park experience
+        easier and more enjoyable.
+      </p>
+
+      <div className="pub-plan pub-plan-info">
         {GOOD_TO_KNOW.map((tile) => (
-          <article key={tile.title}><h3>{tile.title}</h3><p>{tile.text}</p></article>
+          <article
+            key={tile.title}
+            className={`pub-info-card pub-info-${tile.color}`}
+          >
+            <div className="pub-info-icon" aria-hidden="true">
+              {tile.icon}
+            </div>
+
+            <h3>{tile.title}</h3>
+
+            <p>{tile.text}</p>
+          </article>
         ))}
       </div>
 
-      <p className="pub-note"><Link to="/tickets" className="pub-link">Ready to go? Get tickets →</Link></p>
+      <div className="pub-plan-cta">
+        <div>
+          <h2>Ready for an Adventure?</h2>
+          <p>
+            Get your tickets and experience the excitement
+            of Beltway Park!
+          </p>
+        </div>
+
+        <Link to="/tickets" className="pub-buy pub-buy-lg">
+          Get Tickets →
+        </Link>
+      </div>
+
     </main>
   )
 }

@@ -14,11 +14,13 @@ const NAV = [
   { to: '/plan', label: 'Plan Your Visit' },
 ]
 
-// Layout for the public site: notices strip, one-row header, page, footer.
+// Layout for the public site: top banner, one-row header, page, footer.
+// Staff sign in lives in the footer only; the header has one "Member sign in" (or "Staff portal" once a staff member is signed in).
 export default function PublicLayout() {
   const { user } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const isCustomer = user?.role === 'Customer'
+  const isStaff = Boolean(user) && !isCustomer // staff and admins go to their own portal (/staff sends an admin on to /admin)
   const close = () => setMenuOpen(false)
 
   return (
@@ -28,16 +30,24 @@ export default function PublicLayout() {
       <header className="pub-header">
         <div className="pub-header-inner">
           <Link to="/" className="pub-wordmark" aria-label={`${BRAND.name} home`} onClick={close}>
-            <Wordmark tagline={false} />
+            <Wordmark tagline={false} est light />
           </Link>
 
           <nav id="pub-nav" className={`pub-nav ${menuOpen ? 'open' : ''}`} aria-label="Main navigation">
             {NAV.map((item) => <NavLink key={item.label} to={item.to} onClick={close}>{item.label}</NavLink>)}
-            <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin-mobile" onClick={close}>{isCustomer ? 'My account' : 'Sign in'}</Link>
+            {isStaff ? (
+              <Link to="/staff" className="pub-signin-mobile" onClick={close}>Staff portal</Link>
+            ) : (
+              <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin-mobile" onClick={close}>{isCustomer ? 'My account' : 'Member sign in'}</Link>
+            )}
           </nav>
 
           <div className="pub-actions">
-            <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin">{isCustomer ? 'My account' : 'Sign in'}</Link>
+            {isStaff ? (
+              <Link to="/staff" className="pub-signin">Staff portal</Link>
+            ) : (
+              <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin">{isCustomer ? 'My account' : 'Member sign in'}</Link>
+            )}
             <Link to="/tickets" className="pub-buy" onClick={close}>Buy Tickets</Link>
             <button type="button" className="pub-menu-button" aria-expanded={menuOpen} aria-controls="pub-nav" onClick={() => setMenuOpen((v) => !v)}>
               <span className="sr-only">{menuOpen ? 'Close menu' : 'Open menu'}</span>

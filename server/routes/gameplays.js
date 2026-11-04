@@ -4,18 +4,19 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, optDateTime, recordId } from '../validate.js';
 
-// Game plays (revenue): list, get, add, delete.
-// There is no PUT. MySQL no longer blocks a direct UPDATE, so the stored price stays as the insert trigger set it
-// only while nobody edits the row in SQL. The browser never sends the amount:
-// trg_GamePlay_BI copies it from Game.PlayPrice and refuses games that are retired or under maintenance.
+// Game plays (revenue): list, get, add, edit, delete.
+// The browser never sends the amount: trg_GamePlay_BI copies it from Game.PlayPrice and refuses games that are retired or
+// under maintenance. An edit goes through trg_GamePlay_BU, which re-checks what changed (ticket, time, game) and keeps
+// the amount the guest paid unless the game itself changes.
 
 // Role matrix (TA fixes plan): the retail desk and the ticket booth own these records. The operations manager has no access.
 const CAN_READ = ['Admin', 'RetailManager', 'Cashier'];
 const CAN_WRITE = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_EDIT = ['Admin', 'RetailManager']; // the booth adds plays; changing a finished one is the retail desk's call, like deleting one
 const CAN_DELETE = ['Admin', 'RetailManager'];
 
 const SELECT_PLAY = `
-  SELECT gp.GamePlayID, gp.TicketID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
+  SELECT gp.GamePlayID, gp.TicketID, gp.GameID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
          g.GameName, gp.AmountPaid, gp.PlayedAt
     FROM GamePlay gp
     JOIN Game g     ON g.GameID = gp.GameID
@@ -82,6 +83,26 @@ route(
     } catch (err) {
       throw friendlyDbError(err, { 1452: 'Ticket ID or game does not exist' });
     }
+  }),
+);
+
+// PUT changes a game play. An empty time keeps the time it already had. The database sets the amount (trg_GamePlay_BU).
+route(
+  'PUT',
+  '/api/game-plays/:id',
+  requireRole(...CAN_EDIT)(async (ctx) => {
+    const id = recordId(ctx, 'Game play');
+    await loadPlay(id); // 404 if missing
+    const p = parsePlay(ctx.body);
+    try {
+      await pool.query(
+        'UPDATE GamePlay SET GameID = ?, TicketID = ?, PlayedAt = COALESCE(?, PlayedAt) WHERE GamePlayID = ?',
+        [p.gameId, p.ticketId, p.playedAt, id],
+      );
+    } catch (err) {
+      throw friendlyDbError(err, { 1452: 'Ticket ID or game does not exist' });
+    }
+    return loadPlay(id);
   }),
 );
 

@@ -1,7 +1,6 @@
-/* Brand tokens for the public site and the portals. Change the look here.
-   (The staff/admin pages keep using the palette in index.css.) */
+/* Brand names for the public site and the portals. The values come from tokens.css; change the look there. */
 :root {
-  --brand-primary: #0b3d91;
+  --brand-primary: var(--blue-deep);
   --brand-primary-contrast: #ffffff;
   --brand-accent: #ffd566;
   --brand-accent-contrast: #0b2a66;
@@ -9,7 +8,7 @@
   --brand-muted: #667785;
   --brand-surface: #ffffff;
   --brand-surface-alt: #f2f5f8;
-  --brand-line: #d5dde5;
+  --brand-line: var(--rule);
   --brand-radius: 12px;
   --brand-font-display: var(--font-display, system-ui, sans-serif);
   /* shown behind any image that is missing */
@@ -17,7 +16,8 @@
 }
 
 /* Plain-text wordmark (no logo yet) */
-.wordmark { display: block; line-height: 1.1; }
+.wordmark { display: flex; align-items: center; gap: 10px; line-height: 1.1; }
+.wordmark-text { display: block; min-width: 0; }
 .wordmark strong { display: block; font-family: var(--brand-font-display); font-size: 1.03rem; letter-spacing: -.03em; color: inherit; }
 .wordmark small { display: block; color: var(--brand-muted); font-size: .78rem; margin-top: 1px; }
 .wordmark-light small { color: inherit; opacity: .75; }

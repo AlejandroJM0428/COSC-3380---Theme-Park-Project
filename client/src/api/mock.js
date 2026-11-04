@@ -2,11 +2,10 @@
 const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const USERS = {
-  admin: { username: 'admin', role: 'Admin' },
-  manager: { username: 'manager', role: 'Manager' },
-  cashier: { username: 'cashier', role: 'Cashier' },
-  customer: { username: 'customer', role: 'Customer' },
-  
+  avery0001: { username: 'avery0001', role: 'Admin', name: 'Avery Stone' },
+  blake0002: { username: 'blake0002', role: 'Manager', name: 'Blake Reed' },
+  casey0003: { username: 'casey0003', role: 'Cashier', name: 'Casey Lane' },
+  customer: { username: 'customer', role: 'Customer', name: 'Demo Customer' },
 }
 
 export async function login(username, password, audience) {
@@ -18,20 +17,11 @@ export async function login(username, password, audience) {
   return user
 }
 
-export async function listStaffAccounts() {
-  await delay(120)
-  return [
-    { username: 'admin', role: 'Admin', name: null, jobTitle: null },
-    { username: 'manager', role: 'Manager', name: null, jobTitle: null },
-    { username: 'cashier', role: 'Cashier', name: null, jobTitle: null },
-  ]
-}
-
-export async function register({ username }) {
+export async function register({ username, firstName = '', lastName = '' }) {
   await delay()
   const key = String(username).trim().toLowerCase()
   if (USERS[key]) throw new Error('That username is already taken')
-  USERS[key] = { username: String(username).trim(), role: 'Customer' }
+  USERS[key] = { username: String(username).trim(), role: 'Customer', name: `${firstName} ${lastName}`.trim() || 'Member' }
   return USERS[key]
 }
 
@@ -63,7 +53,7 @@ const reports = {
     { ZoneName: 'Adventure', RideName: 'Thunder Ridge', Boardings: 3134 },
     { ZoneName: 'Future', RideName: 'Galaxy Rush', Boardings: 2827 },
     { ZoneName: 'Waterfront', RideName: 'Splash Canyon', Boardings: 2442 },
-    { ZoneName: 'Fantasy', RideName: 'Dragon Flyer', Boardings: 1980 },
+    { ZoneName: 'Montrose', RideName: 'Chimney Rock', Boardings: 1980 },
     { ZoneName: 'Midway', RideName: 'Haunted Manor', Boardings: 1510 },
   ],
   'ride-traffic-by-month': [
@@ -113,7 +103,7 @@ const reports = {
   'item-sales': [
     { VenueName: 'Burger Barn', VenueType: 'Restaurant', Category: 'Entree', ItemName: 'Cheeseburger', SaleYear: 2026, SaleMonth: 7, Units: 320, Revenue: 2880 },
     { VenueName: 'Burger Barn', VenueType: 'Restaurant', Category: 'Drink', ItemName: 'Lemonade', SaleYear: 2026, SaleMonth: 7, Units: 410, Revenue: 1435 },
-    { VenueName: 'Sunny Gifts', VenueType: 'Gift Shop', Category: 'Toy', ItemName: 'Plush Dragon', SaleYear: 2026, SaleMonth: 7, Units: 45, Revenue: 899.55 },
+    { VenueName: 'Sunny Gifts', VenueType: 'Gift Shop', Category: 'Toy', ItemName: 'Plush Gator', SaleYear: 2026, SaleMonth: 7, Units: 45, Revenue: 899.55 },
     { VenueName: 'Sunny Gifts', VenueType: 'Gift Shop', Category: 'Candy', ItemName: 'Fudge Box', SaleYear: null, SaleMonth: null, Units: 0, Revenue: 0 },
   ],
   'revenue-by-source': [
@@ -138,36 +128,45 @@ export async function getReport(endpoint) {
   return rows.map((r) => ({ ...r })) // copy so pages can't mutate the originals
 }
 
+// A date a few days from now as YYYY-MM-DD, for the demo's sold-out dates.
+function mockDay(offset) {
+  const d = new Date()
+  d.setHours(12, 0, 0, 0)
+  d.setDate(d.getDate() + offset)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // Public site data (same shape as GET /api/public/site). No wait times, on purpose.
 export async function getPublicSite() {
   await delay()
   return {
     prices: { dayPass: 59, expressAddOn: 25 },
     hours: { open: '09:00', close: '22:00' },
+    soldOutDates: [mockDay(3), mockDay(4), mockDay(10)],
     tiers: [
       { tier: 'Basic', annualPrice: 69, anyDayAccess: false, includesExpress: false, benefits: ['Weekday admission', 'Standard queues included'] },
       { tier: 'Plus', annualPrice: 89, anyDayAccess: true, includesExpress: false, benefits: ['Any-day admission', 'Standard queues included'] },
       { tier: 'Premier', annualPrice: 179, anyDayAccess: true, includesExpress: true, benefits: ['Any-day admission', 'Express queues included'] },
     ],
     rides: [
-      { rideId: 3, rideName: 'Thunder Run', zoneName: 'Thunder Canyon', rideType: 'Coaster', minHeightCm: 122, expressEligible: true, state: 'Open' },
-      { rideId: 4, rideName: 'Canyon Cyclone', zoneName: 'Thunder Canyon', rideType: 'Coaster', minHeightCm: 132, expressEligible: true, state: 'Open' },
-      { rideId: 5, rideName: 'Rapids Rampage', zoneName: 'Thunder Canyon', rideType: 'Water Ride', minHeightCm: 107, expressEligible: true, state: 'Closed' },
-      { rideId: 1, rideName: 'Heritage Railroad', zoneName: 'Main Street', rideType: 'Train', minHeightCm: null, expressEligible: false, state: 'Open' },
-      { rideId: 2, rideName: 'Grand Carousel', zoneName: 'Main Street', rideType: 'Carousel', minHeightCm: null, expressEligible: false, state: 'Open' },
-      { rideId: 9, rideName: 'Enchanted Journey', zoneName: 'Fantasy Forest', rideType: 'Dark Ride', minHeightCm: null, expressEligible: true, state: 'Open' },
-      { rideId: 14, rideName: 'Little Dino Dash', zoneName: 'Kids Corner', rideType: 'Coaster', minHeightCm: 91, expressEligible: false, state: 'Open' },
-      { rideId: 15, rideName: 'Mini Carousel', zoneName: 'Kids Corner', rideType: 'Carousel', minHeightCm: null, expressEligible: false, state: 'Open' },
+      { rideId: 3, rideName: 'Kirby Drive Launch', zoneName: 'The Loop', rideType: 'Coaster', minHeightCm: 122, expressEligible: true, state: 'Open' },
+      { rideId: 4, rideName: 'Beltway 8 Orbit', zoneName: 'The Loop', rideType: 'Coaster', minHeightCm: 132, expressEligible: true, state: 'Open' },
+      { rideId: 5, rideName: 'Allen Parkway Splashdown', zoneName: 'The Loop', rideType: 'Water Ride', minHeightCm: 107, expressEligible: true, state: 'Closed' },
+      { rideId: 1, rideName: 'Main Street Streetcar', zoneName: 'Main Street', rideType: 'Train', minHeightCm: null, expressEligible: false, state: 'Open' },
+      { rideId: 2, rideName: 'Market Square Carousel', zoneName: 'Main Street', rideType: 'Carousel', minHeightCm: null, expressEligible: false, state: 'Open' },
+      { rideId: 9, rideName: 'Art Car Odyssey', zoneName: 'Montrose', rideType: 'Dark Ride', minHeightCm: null, expressEligible: true, state: 'Open' },
+      { rideId: 14, rideName: 'Armadillo Dash', zoneName: 'Hermann Park', rideType: 'Coaster', minHeightCm: 91, expressEligible: false, state: 'Open' },
+      { rideId: 15, rideName: 'Zoo Carousel', zoneName: 'Hermann Park', rideType: 'Carousel', minHeightCm: null, expressEligible: false, state: 'Open' },
     ],
     venues: [
-      { venueId: 6, venueName: 'Main Street Emporium', venueType: 'Gift Shop', serviceType: null, zoneName: 'Main Street' },
-      { venueId: 1, venueName: 'Main Street Diner', venueType: 'Restaurant', serviceType: 'Table Service', zoneName: 'Main Street' },
-      { venueId: 2, venueName: 'Canyon Grill', venueType: 'Restaurant', serviceType: 'Quick Service', zoneName: 'Thunder Canyon' },
+      { venueId: 6, venueName: 'Westheimer Emporium', venueType: 'Gift Shop', serviceType: null, zoneName: 'Main Street' },
+      { venueId: 1, venueName: 'Waugh Drive Diner', venueType: 'Restaurant', serviceType: 'Table Service', zoneName: 'Main Street' },
+      { venueId: 2, venueName: 'Richmond Strip BBQ', venueType: 'Restaurant', serviceType: 'Quick Service', zoneName: 'The Loop' },
     ],
     games: [
       { gameId: 1, gameName: 'Skee-Ball', playPrice: 2, zoneName: 'Main Street' },
-      { gameId: 2, gameName: 'Ring Toss', playPrice: 3, zoneName: 'Fantasy Forest' },
-      { gameId: 3, gameName: 'High Striker', playPrice: 4, zoneName: 'Thunder Canyon' },
+      { gameId: 2, gameName: 'Rodeo Ring Toss', playPrice: 3, zoneName: 'Montrose' },
+      { gameId: 3, gameName: 'High Striker', playPrice: 4, zoneName: 'The Loop' },
     ],
   }
 }

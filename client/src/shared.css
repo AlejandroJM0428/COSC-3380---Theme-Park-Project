@@ -1,0 +1,112 @@
+/* Shared pieces (phase 2): built once from tokens.css, used by every layout.
+   Opt-in class names, so nothing existing changes until a component uses one.
+     .awning-wrap.is-blue  the scalloped awning in Columbia blue (the staff portal sets its own color by role)
+     .nameplate            a street-sign heading
+     .shield               a highway-shield badge for numbers (Beltway 8, 610, "01")
+     .kpi                  a number card: big number on a color block, note beside it
+     .ticket-stub          a ticket in two parts (.ticket-stub-top, .ticket-stub-bottom) with notches and a tear line
+     .helmet               the park mark (components/HelmetMark.jsx); add .on-dark on a navy background
+     .btn + .btn-primary / .btn-quiet / .btn-buy   buttons (.btn-buy is the one scarlet button)
+     .field-label + .input   form fields
+     .table                a data table */
+
+/* Awning: index.css draws it from --role. This gives it a blue for screens with no role. */
+.awning-wrap.is-blue { --role: var(--blue); }
+
+/* Street-sign nameplate */
+.nameplate {
+  display: inline-block;
+  margin: 0;
+  padding: 7px 18px;
+  background: var(--navy);
+  color: #fff;
+  border-radius: var(--r-sm);
+  outline: 2px solid #fff;
+  outline-offset: -5px;
+  border-bottom: 3px solid var(--scarlet);
+  box-shadow: var(--shadow-1);
+  font-family: var(--font-display, system-ui, sans-serif);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Highway shield: a navy shield with a white rim and number */
+.shield {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.6em;
+  padding: 0.55em 0.5em 0.85em;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 900;
+  line-height: 1;
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%);
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+/* KPI card */
+.kpi { --kpi-color: var(--navy); display: grid; grid-template-columns: 1fr 1fr; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--shadow-1); }
+.kpi-main { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; padding: 18px 10px; background: var(--kpi-color); color: #fff; text-align: center; }
+.kpi-value { font-family: var(--font-display, system-ui, sans-serif); font-size: 1.9rem; font-weight: 800; line-height: 1.1; }
+.kpi-label { font-size: 0.85rem; }
+.kpi-note { display: flex; align-items: center; justify-content: center; padding: 8px; font-size: 0.85rem; color: var(--muted); text-align: center; }
+.kpi-a { --kpi-color: var(--navy); }
+.kpi-b { --kpi-color: var(--blue-deep); }
+.kpi-c { --kpi-color: var(--land-bayou-dark); }
+.kpi-d { --kpi-color: var(--land-main-street-dark); }
+
+/* Ticket stub: two parts with a notch on each side where they meet and a dashed tear line.
+   The shadow is a drop-shadow on the wrapper, because a mask on each part would clip a box-shadow. */
+.ticket-stub { --stub-notch: 11px; display: block; filter: drop-shadow(var(--shadow-2)); }
+.ticket-stub-top, .ticket-stub-bottom { background: var(--panel); color: var(--ink); }
+.ticket-stub-top {
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  -webkit-mask: radial-gradient(circle var(--stub-notch) at 0 100%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle var(--stub-notch) at 100% 100%, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle var(--stub-notch) at 0 100%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle var(--stub-notch) at 100% 100%, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+.ticket-stub-bottom {
+  position: relative;
+  border-radius: 0 0 var(--r-md) var(--r-md);
+  -webkit-mask: radial-gradient(circle var(--stub-notch) at 0 0, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle var(--stub-notch) at 100% 0, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle var(--stub-notch) at 0 0, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle var(--stub-notch) at 100% 0, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+.ticket-stub-bottom::before { content: ''; position: absolute; top: 0; left: var(--stub-notch); right: var(--stub-notch); border-top: 2px dashed var(--line); }
+
+@media (max-width: 820px) {
+  .kpi { grid-template-columns: 1fr; }
+}
+
+/* Helmet mark */
+.helmet { --h-shell: var(--white); --h-visor: var(--navy); --h-accent: var(--blue); --h-line: var(--navy); flex: none; display: block; }
+.helmet.on-dark { --h-line: var(--blue); }
+.helmet-shell { fill: var(--h-shell); stroke: var(--h-line); stroke-width: 2.5; }
+.helmet-visor { fill: var(--h-visor); }
+.helmet-accent { fill: var(--h-accent); }
+.helmet-shine { fill: none; stroke: var(--h-accent); stroke-width: 2.5; stroke-linecap: round; }
+
+/* Sidebar header: the mark beside the name */
+.sidebar .brand { display: flex; align-items: center; gap: 12px; }
+.sidebar .brand-text { display: flex; flex-direction: column; min-width: 0; }
+
+/* Buttons. .btn-buy is for "Buy Tickets" only. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: 40px; padding: 0 var(--space-4); border: 1px solid transparent; border-radius: var(--r-sm); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.btn-primary { background: var(--blue-deep); color: var(--white); }
+.btn-primary:hover:not(:disabled) { background: var(--navy); }
+.btn-quiet { background: var(--white); color: var(--blue-deep); border-color: var(--rule); }
+.btn-quiet:hover:not(:disabled) { background: var(--wash); }
+.btn-buy { background: var(--scarlet); color: var(--white); border-radius: var(--r-pill); }
+.btn-buy:hover:not(:disabled) { background: color-mix(in srgb, var(--scarlet) 85%, var(--navy)); }
+
+/* Form fields */
+.field-label { display: block; margin-bottom: var(--space-1); color: var(--navy); font-size: 0.9rem; font-weight: 700; }
+.input { width: 100%; min-height: 40px; padding: 0 var(--space-3); border: 1px solid var(--rule); border-radius: var(--r-sm); background: var(--white); color: var(--navy); font: inherit; }
+.input:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; border-color: var(--blue-deep); }
+
+/* Tables: navy header row, light row dividers, wash on hover. Wrap in a scrolling box on narrow screens. */
+.table { width: 100%; border-collapse: collapse; background: var(--white); border: 1px solid var(--rule); border-radius: var(--r-sm); }
+.table th { padding: var(--space-3) var(--space-4); background: var(--navy); color: var(--white); text-align: left; font-weight: 700; }
+.table td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--rule-soft); }
+.table tbody tr:hover td { background: var(--wash); }

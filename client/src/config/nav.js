@@ -16,8 +16,8 @@ export const ROLE_INFO = {
   RetailManager: { title: 'Retail desk', blurb: 'Revenue and sales, memberships and cancellation requests, attendance, ticket sales and refunds, guests and park notices.' },
   HRManager: { title: 'People desk', blurb: 'Employee performance, staff by zone and shift ratings.' },
   MaintenanceManager: { title: 'Maintenance desk', blurb: 'Repair jobs, repair costs and ride downtime.' },
-  MaintenanceWorker: { title: 'Maintenance crew', blurb: 'Your repair jobs and shifts.' },
-  RestaurantWorker: { title: 'Restaurant team', blurb: 'Your shifts and venue sales.' },
+  MaintenanceWorker: { title: 'Maintenance crew', blurb: 'Your repair jobs, shifts, hours, pay and ratings.' },
+  RestaurantWorker: { title: 'Restaurant team', blurb: 'Your shifts, hours, pay and ratings.' },
 }
 
 // Everyone who may enter the staff transaction portal (Customer is NOT one of them).

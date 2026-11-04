@@ -3,14 +3,14 @@ import { getMyWork } from '../api/index.js'
 import DataTable from '../components/DataTable.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const day = (s) => (s ? String(s).slice(0, 16) : '—')
 const money = (v) => (v === null || v === undefined ? '—' : `$${Number(v).toFixed(2)}`)
 
-// Employee portal: read-only view of the logged-in worker's own shifts, jobs or restaurant sales.
+// Employee portal: read-only view of the logged-in worker's own hours, pay, shifts, ratings and jobs. No revenue.
 export default function MyWork() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  const [tab, setTab] = useState('jobs')
 
   useEffect(() => {
     let alive = true
@@ -32,20 +32,36 @@ export default function MyWork() {
     Start: day(s.ClockIn),
     End: s.ClockOut ? day(s.ClockOut) : 'On shift',
     Hours: s.HoursWorked ?? '—',
+    Pay: s.Pay === null || s.Pay === undefined ? '—' : money(s.Pay),
     Rating: s.ShiftRating ?? '—',
     Notes: s.ShiftNotes ?? '—',
   }))
+
+  // Repair jobs and shifts are two separate histories, shown one at a time. Workers with no repair jobs (restaurant) only have shifts.
+  const hasJobs = Boolean(data.jobs)
+  const shown = hasJobs ? tab : 'shifts'
 
   return (
     <div>
       <h1>My work</h1>
       <p>
-        {data.employee.Name} · {data.employee.JobTitle} · Hired on: {data.employee.HireDate}
+        {data.employee.Name} · {data.employee.JobTitle} · Hired on: {data.employee.HireDate} · Hourly pay: {money(data.employee.HourlyPay)}
       </p>
 
-      {data.jobs && (
+      {hasJobs && (
+        <div className="mywork-tabs" role="tablist" aria-label="My work history">
+          <button type="button" role="tab" aria-selected={shown === 'jobs'} className={shown === 'jobs' ? 'active' : ''} onClick={() => setTab('jobs')}>
+            Repair job history
+          </button>
+          <button type="button" role="tab" aria-selected={shown === 'shifts'} className={shown === 'shifts' ? 'active' : ''} onClick={() => setTab('shifts')}>
+            Shift history
+          </button>
+        </div>
+      )}
+
+      {shown === 'jobs' ? (
         <>
-          <h2>My repair jobs</h2>
+          <h2>Repair job history</h2>
           <DataTable
             rows={data.jobs.map((j) => ({
               'Job #': j.MaintenanceID,
@@ -55,29 +71,15 @@ export default function MyWork() {
               Started: day(j.StartDate),
               Closed: j.EndDate ? day(j.EndDate) : 'Open',
               Outcome: j.Outcome ?? '—',
-              'Repair cost': money(j.RepairCost),
             }))}
           />
         </>
-      )}
-
-      {data.sales && (
+      ) : (
         <>
-          <h2>Restaurant sales (all restaurants)</h2>
-          <DataTable
-            rows={data.sales.map((s) => ({
-              Restaurant: s.VenueName,
-              Month: `${MONTHS[s.SaleMonth - 1]} ${s.SaleYear}`,
-              Orders: s.Orders,
-              Units: s.Units,
-              Revenue: money(s.Revenue),
-            }))}
-          />
+          <h2>Shift history</h2>
+          <DataTable rows={shifts} />
         </>
       )}
-
-      <h2>My recent shifts</h2>
-      <DataTable rows={shifts} />
     </div>
   )
 }

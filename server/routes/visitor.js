@@ -149,6 +149,7 @@ route('GET', '/api/visitor/dashboard', async (ctx) => {
   const out = {
     customer: null,
     membership: null,
+    membershipHistory: [],
     waitsVisible: false,
     perks: [],
     tiers: [],
@@ -161,47 +162,62 @@ route('GET', '/api/visitor/dashboard', async (ctx) => {
   if (session?.role === 'Customer' && session.CustomerID) {
     out.tiers = await loadTiers();
     const [[cust]] = await pool.query(
-      'SELECT CustomerID, FirstName, LastName FROM Customer WHERE CustomerID = ? AND IsActive = 1',
+      'SELECT CustomerID, FirstName, LastName, DOB, HeightCm FROM Customer WHERE CustomerID = ? AND IsActive = 1',
       [session.CustomerID],
     );
     if (!cust) throw new HttpError(404, 'Your customer profile could not be found');
-    out.customer = { customerId: cust.CustomerID, firstName: cust.FirstName, lastName: cust.LastName };
+    out.customer = { customerId: cust.CustomerID, firstName: cust.FirstName, lastName: cust.LastName, dob: cust.DOB, heightCm: cust.HeightCm };
 
-  const [[cust]] = await pool.query(
-    'SELECT CustomerID, FirstName, LastName, DOB, HeightCm FROM Customer WHERE CustomerID = ? AND IsActive = 1',
-    [session.CustomerID],
-  );
-  if (!cust) throw new HttpError(404, 'Your customer profile could not be found');
-  out.customer = { customerId: cust.CustomerID, firstName: cust.FirstName, lastName: cust.LastName, dob: cust.DOB, heightCm: cust.HeightCm };
-
-  const [[m]] = await pool.query(
-    `SELECT MembershipID, Tier, StartDate, EndDate, Price, AutoRenew, IncludesExpress, AnyDayAccess
-       FROM v_CustomerMemberships
-      WHERE CustomerID = ? AND IsActiveNow = 1
-      ORDER BY EndDate DESC LIMIT 1`,
-    [cust.CustomerID],
-  );
-  
-  if (m) {
-    out.membership = {
-      membershipId: m.MembershipID,
-      tier: m.Tier,
-      startDate: m.StartDate,
-      endDate: m.EndDate,
-      annualPrice: Number(m.Price),
-      autoRenew: Boolean(m.AutoRenew),
-      benefits: benefits(m),
-    };
-    const [membershipRows] = await pool.query(
-    `SELECT MembershipID, Tier, StartDate, EndDate,
-          Price, AutoRenew, IncludesExpress, AnyDayAccess
-      FROM Membership
-      WHERE CustomerID = ?
-      ORDER BY StartDate DESC`,
-      [cust.CustomerID]
+    const [[m]] = await pool.query(
+      `SELECT MembershipID, Tier, StartDate, EndDate, Price, AutoRenew, IncludesExpress, AnyDayAccess
+         FROM v_CustomerMemberships
+        WHERE CustomerID = ? AND IsActiveNow = 1
+        ORDER BY EndDate DESC LIMIT 1`,
+      [cust.CustomerID],
     );
-    out.membershipHistory = membershipRows.map((m) => ({membershipId: m.MembershipID,tier: m.Tier,startDate: m.StartDate,endDate: m.EndDate,annualPrice: Number(m.Price), autoRenew: Boolean(m.AutoRenew),includesExpress: Boolean(m.IncludesExpress),anyDayAccess: Boolean(m.AnyDayAccess),
-}));
+
+    if (m) {
+      out.membership = {
+        membershipId: m.MembershipID,
+        tier: m.Tier,
+        startDate: m.StartDate,
+        endDate: m.EndDate,
+        annualPrice: Number(m.Price),
+        autoRenew: Boolean(m.AutoRenew),
+        benefits: benefits(m),
+      };
+      out.perks = await loadPerks(m.MembershipID);
+      out.waitsVisible = true;
+    }
+
+    const [membershipRows] = await pool.query(
+      `SELECT MembershipID, Tier, StartDate, EndDate,
+              Price, AutoRenew, IncludesExpress, AnyDayAccess
+         FROM Membership
+        WHERE CustomerID = ?
+        ORDER BY StartDate DESC`,
+      [cust.CustomerID],
+    );
+    out.membershipHistory = membershipRows.map((row) => ({
+      membershipId: row.MembershipID,
+      tier: row.Tier,
+      startDate: row.StartDate,
+      endDate: row.EndDate,
+      annualPrice: Number(row.Price),
+      autoRenew: Boolean(row.AutoRenew),
+      includesExpress: Boolean(row.IncludesExpress),
+      anyDayAccess: Boolean(row.AnyDayAccess),
+    }));
+
+    const [ticketRows] = await pool.query(`${TICKETS_SQL} ORDER BY t.VisitDate DESC, t.TicketID DESC LIMIT 200`, [cust.CustomerID]);
+    out.tickets = ticketRows.map(ticketJson);
+  }
+
+  // Wait readings are read only when allowed.
+  const waits = new Map();
+  if (out.waitsVisible) {
+    const [waitRows] = await pool.query(RIDE_WAITS_SQL);
+    for (const w of waitRows) waits.set(w.RideID, w);
   }
 
   out.rides = rideRows.map((r) => {

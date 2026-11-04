@@ -3,6 +3,7 @@ import { route } from '../router.js';
 import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { createSession, getSession, destroySession } from '../session.js';
+import { lockedForSeconds, recordFailure, recordSuccess } from '../loginLimiter.js';
 
 // Compared against when the username does not exist, so both failures take similar time.
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
@@ -13,6 +14,20 @@ const BAD_LOGIN = 'Invalid username or password';
 // reveals what the other one is for. No audience (older callers, check.sh) keeps the old behaviour.
 const AUDIENCES = ['staff', 'member'];
 
+// The name shown in the top bar of every portal: the employee's name for staff, the member's own name for customers.
+// Never the username. Null only if the account has no employee or customer row (the pages then show a plain label).
+async function nameFor(employeeId, customerId) {
+  if (employeeId) {
+    const [rows] = await pool.query("SELECT CONCAT(FirstName, ' ', LastName) AS name FROM Employee WHERE EmployeeID = ?", [employeeId]);
+    if (rows[0]) return rows[0].name;
+  }
+  if (customerId) {
+    const [rows] = await pool.query("SELECT CONCAT(FirstName, ' ', LastName) AS name FROM Customer WHERE CustomerID = ?", [customerId]);
+    if (rows[0]) return rows[0].name;
+  }
+  return null;
+}
+
 route('POST', '/api/auth/login', async (ctx) => {
   const { username, password, audience } = ctx.body;
   if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
@@ -20,42 +35,30 @@ route('POST', '/api/auth/login', async (ctx) => {
   }
   if (audience !== undefined && !AUDIENCES.includes(audience)) throw new HttpError(400, 'Unknown sign in page');
 
+  // Too many recent failures for this username / address: refuse before touching the database or bcrypt.
+  const ip = ctx.req.socket?.remoteAddress ?? 'unknown';
+  const wait = lockedForSeconds(username, ip);
+  if (wait > 0) {
+    ctx.res.setHeader('Retry-After', String(wait));
+    throw new HttpError(429, `Too many failed sign-in attempts. Try again in ${Math.ceil(wait / 60)} minute(s).`);
+  }
+
   const [rows] = await pool.query(
     'SELECT UserID, Username, PasswordHash, Role, CustomerID, EmployeeID FROM AppUser WHERE Username = ? AND IsActive = 1',
     [username],
   );
   const user = rows[0];
   const ok = await bcrypt.compare(password, user ? user.PasswordHash : DUMMY_HASH);
-  if (!user || !ok) throw new HttpError(401, BAD_LOGIN);
-  const isCustomer = user.Role === 'Customer';
-  if ((audience === 'staff' && isCustomer) || (audience === 'member' && !isCustomer)) throw new HttpError(401, BAD_LOGIN);
+  const isCustomer = user?.Role === 'Customer';
+  const wrongPage = (audience === 'staff' && isCustomer) || (audience === 'member' && user && !isCustomer);
+  if (!user || !ok || wrongPage) {
+    recordFailure(username, ip);
+    throw new HttpError(401, BAD_LOGIN);
+  }
+  recordSuccess(username, ip);
 
   createSession(ctx.res, { userId: user.UserID, username: user.Username, role: user.Role, CustomerID: user.CustomerID, EmployeeID: user.EmployeeID });
-  return { username: user.Username, role: user.Role };
-});
-
-// The staff sign-in lists the active staff accounts so a person picks their portal and their name instead of
-// typing a username. Public on purpose (the password is still required). It sends no ids, no hashes and no
-// customers, only what the two selects show.
-const STAFF_ORDER = ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker'];
-
-route('GET', '/api/auth/staff', async () => {
-  const [rows] = await pool.query(
-    `SELECT u.Username, u.Role, e.FirstName, e.LastName, e.JobTitle
-       FROM AppUser u
-       LEFT JOIN Employee e ON e.EmployeeID = u.EmployeeID
-      WHERE u.IsActive = 1 AND u.Role <> 'Customer' AND u.CustomerID IS NULL
-      ORDER BY e.LastName IS NULL, e.LastName, e.FirstName, u.Username
-      LIMIT 500`,
-  );
-  const accounts = rows.map((r) => ({
-    username: r.Username,
-    role: r.Role,
-    name: r.FirstName ? `${r.FirstName} ${r.LastName}` : null,
-    jobTitle: r.JobTitle ?? null,
-  }));
-  accounts.sort((a, b) => STAFF_ORDER.indexOf(a.role) - STAFF_ORDER.indexOf(b.role));
-  return { accounts };
+  return { username: user.Username, role: user.Role, name: await nameFor(user.EmployeeID, user.CustomerID) };
 });
 
 // Member self sign-up. Always creates a Customer row + a 'Customer' AppUser, never a staff role.
@@ -124,7 +127,7 @@ route('POST', '/api/auth/register', async (ctx) => {
 
   createSession(ctx.res, { userId, username: r.username, role: 'Customer', CustomerID: customerId });
   ctx.status = 201;
-  return { username: r.username, role: 'Customer' };
+  return { username: r.username, role: 'Customer', name: `${r.firstName} ${r.lastName}` };
 });
 
 route('POST', '/api/auth/logout', async (ctx) => {
@@ -135,5 +138,5 @@ route('POST', '/api/auth/logout', async (ctx) => {
 route('GET', '/api/auth/me', async (ctx) => {
   const session = getSession(ctx.req);
   if (!session) throw new HttpError(401, 'Not logged in');
-  return { username: session.username, role: session.role };
+  return { username: session.username, role: session.role, name: await nameFor(session.EmployeeID, session.CustomerID) };
 });

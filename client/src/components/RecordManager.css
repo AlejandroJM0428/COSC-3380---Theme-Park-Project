@@ -5,7 +5,7 @@
 .rm-form h2 { margin: 0; font-size: 1.15rem; }
 .rm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .rm-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; min-width: 0; }
-.rm-field input, .rm-field select, .rm-filter select { font: inherit; padding: 7px 8px; border: 1.5px solid var(--line); border-radius: 4px; background: #fff; min-width: 0; }
+.rm-field input, .rm-field select, .rm-filter select, .rm-filter input { font: inherit; padding: 7px 8px; border: 1.5px solid var(--line); border-radius: 4px; background: #fff; min-width: 0; }
 .rm-wide { grid-column: 1 / -1; }
 
 .rm-check-group { border: 1.5px solid var(--line); border-radius: 4px; padding: 8px 10px; margin: 0; flex-direction: row; flex-wrap: wrap; gap: 6px 16px; }
@@ -16,6 +16,7 @@
 .rm-actions { white-space: nowrap; }
 .rm-actions button { padding: 4px 10px; margin-right: 6px; font-size: 0.85rem; }
 .rm-danger { color: var(--bad); border-color: var(--bad); }
+.rm-group th { text-align: left; background: #e8efed; color: #123c36; font-size: 0.95rem; padding: 8px 12px; border-top: 2px solid var(--line); }
 
 .corner-toast {
   position: fixed;

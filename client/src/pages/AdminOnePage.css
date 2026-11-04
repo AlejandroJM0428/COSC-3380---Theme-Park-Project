@@ -361,3 +361,54 @@
     max-width: 28ch;
   }
 }
+
+/* Staff portal tabs and menu items are links (not buttons): style them like the admin ones. */
+.onepage a.onepage-tab {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.onepage a.onepage-tab[aria-current='page'] {
+  color: var(--role, var(--plum));
+}
+
+.onepage-menu a {
+  display: block;
+  padding: 7px 10px;
+  border-radius: 4px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.onepage-menu a:hover {
+  background: var(--line);
+}
+
+.onepage-menu a[aria-current='page'] {
+  background: var(--ink);
+  color: #fff;
+}
+
+/* My Work: switch between the repair job history and the shift history. */
+.mywork-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 12px 0 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mywork-tabs button {
+  padding: 8px 14px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.mywork-tabs button.active {
+  border-bottom-color: var(--role, var(--plum));
+  color: var(--role, var(--plum));
+}

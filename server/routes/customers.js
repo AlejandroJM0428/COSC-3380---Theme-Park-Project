@@ -73,7 +73,7 @@ const SELECT_CUSTOMER_SEARCH = `
     FROM Customer c
     LEFT JOIN Membership m ON m.CustomerID = c.CustomerID AND CURDATE() BETWEEN m.StartDate AND m.EndDate`;
 
-// GET /api/customers/search?name=...&dob=YYYY-MM-DD (either or both). First 20 active customers that match.
+// GET /api/customers/search?name=...&dob=YYYY-MM-DD (either or both), plus hasLogin=1 for customers with an account. First 20 active customers that match.
 // Used by the "Find customer" box on the ticket forms. Workers are not in CAN_READ, so they get a 403.
 // Registered BEFORE /:id so "search" is not read as an id.
 route(
@@ -87,6 +87,8 @@ route(
 
     const where = ['c.IsActive = 1', 'c.ParentCustomerID IS NULL']; // dependents are not searchable by staff
     const args = [];
+    // hasLogin=1: only customers with a member account (the membership form uses this).
+    if (ctx.query.hasLogin === '1') where.push('EXISTS (SELECT 1 FROM AppUser a WHERE a.CustomerID = c.CustomerID)');
     if (name) {
       where.push("CONCAT(c.FirstName, ' ', c.LastName) LIKE ?");
       args.push(`%${name.replace(/[\\%_]/g, '\\$&')}%`); // % and _ typed by the user are matched literally

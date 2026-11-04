@@ -3,7 +3,38 @@ import { Link } from 'react-router-dom'
 import BrandImage from '../BrandImage.jsx'
 import { BRAND, LANDS } from '../../config/brand.js'
 
-const MAX_CHIPS = 8
+const MAX_CHIPS = 9
+
+const RIDE_IMAGES = {
+  // Thrill Rides
+  'Beltway 8 Orbit': '/images/canyon-cyclone.jpg',
+  'Allen Parkway Splashdown': '/images/rapids-rampage.jpg',
+  'Kirby Drive Launch': '/images/thunder-run.jpg',
+
+  // Family Favorites
+  "Gator Alley": '/images/krakens-lair.jpg',
+  "Bayou Plunge": '/images/pirates-plunge.jpg',
+  'Hurricane Simulator': '/images/tidal-simulator.jpg',
+  'Art Car Odyssey': '/images/enchanted-journey.jpg',
+  'Katy Flyer': '/images/forest-express.jpg',
+  "Fannin Street Funhouse": '/images/wizards-workshop.jpg',
+  'Main Street Streetcar': '/images/heritage-railroad.jpg',
+  "Chimney Rock": '/images/dragons-nest.jpg',
+  'Market Square Carousel': '/images/grand-carousel.jpg',
+
+  // kids corner
+  'Zoo Carousel': '/images/mini-carousel.jpg',
+
+    // Dining & Shops
+  'Crawfish Shack': '/images/bay-fish-shack.jpg',
+  'Richmond Strip BBQ': '/images/canyon-grill.jpg',
+  'Montrose Taco Stand': '/images/forest-pizza.jpg',
+  'Waugh Drive Diner': '/images/main-street-diner.jpg',
+  'Almeda Snowball Cart': '/images/sweet-treats-cart.jpg',
+  'Post Oak Outfitters': '/images/canyon-outfitters.jpg',
+  'Westheimer Emporium': '/images/main-street-emporium.jpg',
+  "Bayou Trading Post": '/images/pirates-trading-post.jpg',
+}
 
 const TABS = [
   ...LANDS.map((land) => ({ key: land.key, title: land.title, blurb: land.blurb, img: land.img })),
@@ -62,7 +93,11 @@ export default function Explorer({ rides = [], venues = [] }) {
       </div>
 
       <div className="pub-explore">
-        <BrandImage key={`${tab.key}-${picked?.id ?? 'none'}`} src={tab.img} className="pub-feature">
+        <BrandImage
+          key={`${tab.key}-${picked?.id ?? 'none'}`}
+          src={RIDE_IMAGES[picked?.name] ?? tab.img}
+          className="pub-feature"
+        >
           <div className="pub-feature-body">
             <p className="pub-eyebrow">{tab.title}</p>
             {picked ? (
@@ -80,7 +115,20 @@ export default function Explorer({ rides = [], venues = [] }) {
                 <p className="pub-feature-meta">Nothing listed here yet.</p>
               </>
             )}
-            <Link to={`/rides?land=${tab.key}`} className="pub-feature-link">See all in {tab.title} <span aria-hidden="true">→</span></Link>
+            
+              <Link
+                
+                  to={tab.key === 'dining'
+                    ? '/rides#dining-shops'
+                    : `/rides?land=${tab.key}#explore-rides`
+                  }
+
+                className="pub-feature-link"
+              >
+                See all in {tab.title}
+                <span aria-hidden="true">→</span>
+              </Link>
+
           </div>
         </BrandImage>
 
@@ -91,7 +139,21 @@ export default function Explorer({ rides = [], venues = [] }) {
               <small>{item.zone}</small>
             </button>
           ))}
-          {more > 0 && <Link to={`/rides?land=${tab.key}`} className="pub-chip pub-chip-more">+{more} more</Link>}
+          
+          {more > 0 && (
+            <Link
+              
+              to={tab.key === 'dining'
+                ? '/rides#dining-shops'
+                : `/rides?land=${tab.key}#explore-rides`
+              }
+
+              className="pub-chip pub-chip-more"
+            >
+              +{more} more
+            </Link>
+          )}
+
         </div>
       </div>
     </section>

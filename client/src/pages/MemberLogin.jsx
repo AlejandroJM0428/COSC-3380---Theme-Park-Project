@@ -37,19 +37,19 @@ export default function MemberLogin() {
   }
 
   // Wait until we know whether a session exists, so the form does not appear and then jump away.
-  if (!ready || alreadyMember) return <AuthShell title="Member sign in"><p className="muted auth-wait">One moment…</p></AuthShell>
+  if (!ready || alreadyMember) return <AuthShell title="Member sign in" heading="Welcome Back!"><p className="muted auth-wait">One moment…</p></AuthShell>
 
   return (
-    <AuthShell title="Member sign in">
+    <AuthShell title="Member sign in" heading="Welcome Back!" subtitle="Sign in to unlock your Beltway Park adventure.">
       <form onSubmit={handleSubmit}>
         <ErrorBanner message={error} />
         <label>
           Username
-          <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoCapitalize="none" spellCheck={false} autoFocus required />
+          <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="off" autoCapitalize="none" spellCheck={false} autoFocus required />
         </label>
         <label>
           Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
         </label>
         <button type="submit" className="auth-submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
         {USE_MOCK && <p className="muted auth-note">Demo mode: sign in as customer with password &quot;password&quot;.</p>}

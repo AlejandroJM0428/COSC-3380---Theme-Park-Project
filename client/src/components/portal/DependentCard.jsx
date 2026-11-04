@@ -131,7 +131,7 @@ export default function DependentCard({ dep, onChanged, messages }) {
           <p className="pt-sub">Age {dep.age} · {dep.heightCm} cm · born {formatDate(dep.dob)}</p>
         </div>
         <div className="pt-actions">
-          <button type="button" className="pt-btn pt-btn-sm" onClick={() => setBuyOpen((v) => !v)} aria-expanded={buyOpen}>{buyOpen ? 'Close' : 'Buy ticket'}</button>
+          <button type="button" className="pt-btn pt-btn-sm pt-btn-buy" onClick={() => setBuyOpen((v) => !v)} aria-expanded={buyOpen}>{buyOpen ? 'Close' : 'Buy ticket'}</button>
           <button type="button" className="pt-btn pt-btn-sm pt-btn-ghost" onClick={toggleEdit} aria-expanded={editing}>{editing ? 'Cancel edit' : 'Edit'}</button>
           <button type="button" className="pt-btn pt-btn-sm pt-btn-ghost" onClick={handleRemove} disabled={removing}>{removing ? 'Removing…' : 'Remove'}</button>
         </div>

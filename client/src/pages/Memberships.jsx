@@ -7,6 +7,14 @@ import { money } from '../utils/portalFormat.js'
 const YES = <span aria-label="Included">✓</span>
 const NO = <span aria-label="Not included" className="pub-no">–</span>
 
+
+const TIER_ICONS = {
+  Basic: '🎟️',
+  Plus: '⭐',
+  Premier: '👑',
+}
+
+
 // Public membership comparison (/memberships). Tiers come from the public site data.
 export default function Memberships() {
   const { site, loading, error, retry } = usePublicSite()
@@ -24,12 +32,36 @@ export default function Memberships() {
 
       {tiers.length > 0 && (
         <>
+          
           <div className="pub-tier-cards">
             {tiers.map((t) => (
-              <article key={t.tier} className="pub-tier-card">
-                <h2>{t.tier}</h2>
+              <article
+                key={t.tier}
+                className={`pub-tier-card pub-tier-${t.tier.toLowerCase()}`}
+              >
+                {t.tier === 'Plus' && (
+                  <span className="pub-tier-popular">
+                    ★ MOST POPULAR
+                  </span>
+                )}
+
+                
+                <h2 className="membership-tier-heading">
+                  <span aria-hidden="true">
+                    {TIER_ICONS[t.tier] ?? '🎟️'}
+                  </span>
+                  {t.tier}
+                </h2>
+
+
                 <p className="pub-tier-price"><strong>{money(t.annualPrice)}</strong><small>/yr</small></p>
-                <ul>{t.benefits.map((b) => <li key={b}>{b}</li>)}</ul>
+                
+                <ul className="membership-benefits">
+                  {t.benefits.map((b) => (
+                    <li key={b}>{b}</li>
+                  ))}
+                </ul>
+
                 {signedIn
                   ? <Link to="/member?tab=membership" className="pub-buy">My membership</Link>
                   : <Link to="/member/register" className="pub-buy">Join as {t.tier}</Link>}

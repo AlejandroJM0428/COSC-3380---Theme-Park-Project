@@ -47,7 +47,7 @@ export default function Register() {
   }
 
   return (
-    <AuthShell title="Create a member account">
+    <AuthShell title="Create a member account" subtitle="Join Beltway Park in a minute.">
       <form onSubmit={handleSubmit}>
         <ErrorBanner message={error} />
         <label>

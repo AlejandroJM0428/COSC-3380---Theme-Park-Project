@@ -11,6 +11,7 @@ export default function RecordManager({ entity }) {
   const { user } = useAuth()
   const canDelete = entity.deleteRoles.includes(user?.role)
   const canWrite = !entity.writeRoles || entity.writeRoles.includes(user?.role) // false = view only
+  const canEdit = canWrite && (!entity.editRoles || entity.editRoles.includes(user?.role)) // editRoles: only these roles get the Edit button (they must match the PUT route)
 
   const [filters, setFilters] = useState(() => Object.fromEntries((entity.filters ?? []).map((f) => [f.key, ''])))
   const [rows, setRows] = useState(null)
@@ -22,6 +23,7 @@ export default function RecordManager({ entity }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [toast, setToast] = useState(null)
+  const [grouped, setGrouped] = useState(Boolean(entity.groupBy?.defaultOn)) // entity.groupBy: show the rows under a heading per group (groupBy.defaultOn starts it on)
 
   useEffect(() => {
     let alive = true
@@ -127,7 +129,8 @@ export default function RecordManager({ entity }) {
     }
   }
 
-  const set = (key, value) => setForm((f) => ({ ...f, [key]: value }))
+  // An entity may add `onFieldChange(key, value, form, lookups)` to fill other fields when one changes (it returns the extra values, or null).
+  const set = (key, value) => setForm((f) => ({ ...f, [key]: value, ...(entity.onFieldChange?.(key, value, f, lookups) ?? {}) }))
 
   function renderField(field) {
     if (field.show && !field.show(form)) return null
@@ -166,6 +169,7 @@ export default function RecordManager({ entity }) {
             value={value}
             required={field.required}
             forCustomer={field.forCustomerKey ? form[field.forCustomerKey] : undefined}
+            needsLogin={field.needsLogin}
             onChange={(v) => set(field.key, v)}
           />
         </div>
@@ -211,6 +215,43 @@ export default function RecordManager({ entity }) {
     if (e.target.id === `f-${kindFieldKey}`) setForm((f) => ({ ...f, facilityId: '' }))
   }
 
+  // Grouped view: one heading row per group (for example per role), in the order the entity lists, with the group size.
+  function buildGroups(list) {
+    const by = new Map()
+    for (const row of list) {
+      const key = row[entity.groupBy.key] ?? ''
+      if (!by.has(key)) by.set(key, [])
+      by.get(key).push(row)
+    }
+    const order = entity.groupBy.order ?? []
+    const known = order.filter((k) => by.has(k))
+    const others = [...by.keys()].filter((k) => !order.includes(k)).sort()
+    return [...known, ...others].map((k) => ({ key: k, rows: by.get(k) }))
+  }
+  const groupName = (key) => entity.groupBy.labels?.[key] ?? String(key || 'Other').replace(/([a-z])([A-Z])/g, '$1 $2')
+
+  function renderRow(row) {
+    return (
+      <tr key={row[entity.rowKey ?? entity.idKey]}>
+        {entity.columns.map((c) => (
+          <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
+        ))}
+        <td className="rm-actions">
+          {canEdit && (entity.canEditRow?.(row) ?? true) && (
+            <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
+              Edit
+            </button>
+          )}
+          {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
+            <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null}>
+              {deleteLabel}
+            </button>
+          )}
+        </td>
+      </tr>
+    )
+  }
+
   return (
     <div className="rm">
       <h1>{entity.title}</h1>
@@ -234,15 +275,34 @@ export default function RecordManager({ entity }) {
         {(entity.filters ?? []).map((f) => (
           <label key={f.key} className="rm-filter">
             {f.label}
-            <select value={filters[f.key]} onChange={(e) => setFilters((cur) => ({ ...cur, [f.key]: e.target.value }))}>
-              {f.options.map(([v, label]) => (
-                <option key={v} value={v}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            {f.type === 'search' ? (
+              <input
+                type="search"
+                value={filters[f.key]}
+                placeholder={f.placeholder}
+                maxLength={50}
+                onChange={(e) => setFilters((cur) => ({ ...cur, [f.key]: e.target.value }))}
+              />
+            ) : (
+              <select value={filters[f.key]} onChange={(e) => setFilters((cur) => ({ ...cur, [f.key]: e.target.value }))}>
+                {f.options.map(([v, label]) => (
+                  <option key={v} value={v}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            )}
           </label>
         ))}
+        {entity.groupBy && (
+          <label className="rm-filter">
+            {entity.groupBy.label ?? 'Group by'}
+            <select value={grouped ? 'on' : ''} onChange={(e) => setGrouped(e.target.value === 'on')}>
+              <option value="">None</option>
+              <option value="on">{entity.groupBy.optionLabel ?? 'Group'}</option>
+            </select>
+          </label>
+        )}
       </div>
 
       {form && (
@@ -287,25 +347,16 @@ export default function RecordManager({ entity }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row[entity.idKey]}>
-                  {entity.columns.map((c) => (
-                    <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
-                  ))}
-                  <td className="rm-actions">
-                    {canWrite && (entity.canEditRow?.(row) ?? true) && (
-                      <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
-                        Edit
-                      </button>
-                    )}
-                    {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
-                      <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null}>
-                        {deleteLabel}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {entity.groupBy && grouped
+                ? buildGroups(rows).map((g) => [
+                    <tr key={`group-${g.key}`} className="rm-group">
+                      <th colSpan={entity.columns.length + 1}>
+                        {groupName(g.key)} ({g.rows.length})
+                      </th>
+                    </tr>,
+                    ...g.rows.map(renderRow),
+                  ])
+                : rows.map(renderRow)}
             </tbody>
           </table>
         </div>
