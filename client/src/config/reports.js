@@ -880,6 +880,7 @@ const ALL_REPORTS = [
         },
         tableRows: (rows) => markDays(rows).sort((a, b) => b.VisitDate.localeCompare(a.VisitDate)),
         columns: ['VisitDate', 'Weekday', 'ValidTickets', 'RefundedTickets', 'RefundRate', 'PctOfCapacity', 'TicketRevenue', 'Note'],
+        showPreOrdered: true, // days after today are listed as Pre-ordered (ticket count only, no revenue)
         rowClass: markOf,
       },
       {

@@ -125,14 +125,24 @@ function ReportBody({ report, csvName }) {
     [rows, selects, from, to, report],
   )
 
-  const kpis = report.kpis ? safely(() => report.kpis(filtered), []) : []
-  const insights = report.insights ? safely(() => report.insights(filtered), []) : []
+  // Days after today are Pre-ordered (tickets booked ahead). They stay out of every total, average and chart,
+  // and only a report with showPreOrdered lists them (at the top of the table, marked Pre-ordered).
+  const actual = useMemo(() => filtered.filter((r) => !Number(r.PreOrdered)), [filtered])
+  const preOrdered = useMemo(
+    () => filtered.filter((r) => Number(r.PreOrdered)).map((r) => ({ ...r, Note: 'Pre-ordered', _mark: undefined })),
+    [filtered],
+  )
+  const kpis = report.kpis ? safely(() => report.kpis(actual), []) : []
+  const insights = report.insights ? safely(() => report.insights(actual), []) : []
   const notes = [...insights, ...(report.notes ?? [])]
-  const chartRows = report.chartRows ? safely(() => report.chartRows(filtered), []) : filtered
+  const chartRows = report.chartRows ? safely(() => report.chartRows(actual), []) : actual
   const extra = report.extraChart
-  const extraRows = extra ? safely(() => extra.rows(filtered), []) : []
+  const extraRows = extra ? safely(() => extra.rows(actual), []) : []
   // tableRows lets a report show a summary (one row per month, venue, item...) instead of the raw rows.
-  const tableRows = report.tableRows ? safely(() => report.tableRows(filtered), []) : filtered
+  const baseRows = report.tableRows ? safely(() => report.tableRows(actual), []) : actual
+  const tableRows = report.showPreOrdered
+    ? [...[...preOrdered].sort((a, b) => String(b.VisitDate).localeCompare(String(a.VisitDate))), ...baseRows]
+    : baseRows
   const hasFilters = (report.filters?.length ?? 0) > 0 || Boolean(report.dateFilter)
   const filtersOn = Object.values(selects).some(Boolean) || from || to
 
@@ -210,7 +220,7 @@ function ReportBody({ report, csvName }) {
             </div>
           )}
 
-          {report.summary && <p className="summary">{safely(() => report.summary(filtered), '')}</p>}
+          {report.summary && <p className="summary">{safely(() => report.summary(actual), '')}</p>}
           <Chart chart={report.chart} rows={chartRows} />
           {extra && extraRows.length > 0 && (
             <>
