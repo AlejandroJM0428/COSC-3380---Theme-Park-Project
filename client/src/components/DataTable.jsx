@@ -6,9 +6,26 @@ const ROW_LIMIT = 100
 
 const isEmpty = (v) => v === null || v === undefined || v === ''
 
-function formatCell(value) {
+// Money columns get a dollar sign and two decimals. Matched by column name, so "ShareOfRevenue" (a percent) is excluded.
+const MONEY_COLUMN = /Revenue|Cost|Price|Spend|Sale|Total|AvgFood|AvgShop|AvgGames|AvgExtras/
+const NOT_MONEY = /Share|Rate$|Hours|Pct/
+// Whole-number identifiers and calendar parts stay plain: 2026 must not become 2,026.
+const PLAIN_NUMBER = /(^|[a-z])(Year|Month|Day|ID|Id|Key|Rank)$|^(Year|Month|Rank)$/
+
+const isMoneyColumn = (key) => MONEY_COLUMN.test(key) && !NOT_MONEY.test(key)
+
+function formatCell(value, key = '') {
   if (value === null || value === undefined) return '—'
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  // Money columns sometimes arrive as DECIMAL text ("1234.5"); turn those into numbers so they format too.
+  if (typeof value === 'string' && isMoneyColumn(key) && /^-?\d+(\.\d+)?$/.test(value)) value = Number(value)
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (isMoneyColumn(key)) {
+      return value.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    }
+    if (PLAIN_NUMBER.test(key)) return String(value)
+    return value.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  }
   return String(value)
 }
 
@@ -98,7 +115,7 @@ export default function DataTable({ rows, columns, rowClass }) {
               <tr key={i} className={rowClass ? markClass(rowClass(row)) : undefined}>
                 {cols.map((c) => (
                   <td key={c} className={numeric.has(c) ? 'dt-num' : undefined}>
-                    {formatCell(row[c])}
+                    {formatCell(row[c], c)}
                   </td>
                 ))}
               </tr>
