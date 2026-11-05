@@ -59,6 +59,13 @@ export default function RecordManager({ entity }) {
     setForm(entity.blank())
   }
 
+  function openAddLogin(row) {
+    setError('')
+    setNotice('')
+    setEditingId(null)
+    setForm(entity.addLoginForm(row, lookups))
+  }
+
   async function openEdit(row) {
     setError('')
     setNotice('')
@@ -237,6 +244,11 @@ export default function RecordManager({ entity }) {
           <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
         ))}
         <td className="rm-actions">
+          {canWrite && entity.canAddLoginRow?.(row) && (
+            <button type="button" onClick={() => openAddLogin(row)} disabled={form !== null}>
+              Add login
+            </button>
+          )}
           {canEdit && (entity.canEditRow?.(row) ?? true) && (
             <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
               Edit

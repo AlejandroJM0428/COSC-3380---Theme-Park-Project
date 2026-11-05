@@ -67,6 +67,7 @@ export default function AdminHome({ goTo }) {
   // The users list also holds member accounts and guests. Only real staff logins count as staff accounts.
   const staffUsers = users?.filter((u) => STAFF_ROLES.includes(u.Role))
   const activeUsers = staffUsers?.filter((u) => Number(u.IsActive) === 1)
+  const noLogin = users?.filter((u) => u.Role === 'NoLogin' && Number(u.IsActive) === 1)
   const activePlaces = places?.filter((p) => Number(p.IsActive) === 1)
   const rides = activePlaces?.filter((p) => p.Kind === 'Ride')
   const inMaintenance = rides?.filter((r) => r.RideStatus === 'Maintenance')
@@ -76,7 +77,7 @@ export default function AdminHome({ goTo }) {
       {error && <p className="muted">Some numbers are unavailable: {error}</p>}
 
       <div className="ah-kpis">
-        <Kpi tone="a" value={activeUsers?.length} label="Active staff accounts" note={staffUsers ? `${staffUsers.length - activeUsers.length} deactivated` : ''} />
+        <Kpi tone="a" value={activeUsers?.length} label="Active staff accounts" note={staffUsers ? `${staffUsers.length - activeUsers.length} deactivated · ${noLogin.length} active staff with no login` : ''} />
         <Kpi tone="b" value={rides?.length} label="Active rides" note={inMaintenance ? `${inMaintenance.length} in maintenance` : ''} />
         <Kpi tone="c" value={activePlaces?.filter((p) => p.Kind === 'Game').length} label="Games" note="active" />
         <Kpi tone="d" value={activePlaces?.filter((p) => p.Kind === 'Venue').length} label="Venues" note="active" />
