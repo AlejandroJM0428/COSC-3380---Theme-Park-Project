@@ -28,10 +28,15 @@ CREATE INDEX IX_Notification_Active ON Notification (IsActive, CreatedAt);
 
 -- [VIEW] v_ActiveNotifications: what the homepage shows, newest first.
 CREATE OR REPLACE VIEW v_ActiveNotifications AS
-SELECT NotificationID, Kind, Severity, Title, Message, CreatedAt, ExpiresAt
-  FROM Notification
- WHERE IsActive = 1 AND (ExpiresAt IS NULL OR ExpiresAt > NOW())
- ORDER BY CreatedAt DESC;
+SELECT n.NotificationID, n.Kind, n.Severity, n.Title, n.Message, n.CreatedAt, n.ExpiresAt
+  FROM Notification n
+ WHERE n.IsActive = 1 AND (n.ExpiresAt IS NULL OR n.ExpiresAt > NOW())
+   -- [RULE] A date that is sold out is not also "selling fast": hide the SellingFast notice while the SoldOut one is live.
+   AND NOT (n.Kind = 'SellingFast' AND EXISTS (
+         SELECT 1 FROM Notification s
+          WHERE s.Kind = 'SoldOut' AND s.IsActive = 1 AND (s.ExpiresAt IS NULL OR s.ExpiresAt > NOW())
+            AND s.DedupeKey = REPLACE(n.DedupeKey, 'SellingFast:', 'SoldOut:')))
+ ORDER BY n.CreatedAt DESC;
 
 -- Notifications for dates that are already sold out in the seed data (for example Sat Nov 28, 2026).
 INSERT IGNORE INTO Notification (Kind, Severity, Title, Message, ExpiresAt, DedupeKey)
@@ -45,6 +50,12 @@ SELECT 'SoldOut', 'Warning', 'Sold out',
            AND NOT EXISTS (SELECT 1 FROM TicketRefund r WHERE r.TicketID = t.TicketID)
          GROUP BY t.VisitDate
         HAVING COUNT(*) >= (SELECT MaxOccupancy FROM Park WHERE ParkID = 1)) x;
+
+-- Any "selling fast" notice for those same dates is stale.
+UPDATE Notification n
+  JOIN Notification s ON s.Kind = 'SoldOut' AND s.DedupeKey = REPLACE(n.DedupeKey, 'SellingFast:', 'SoldOut:')
+   SET n.IsActive = 0
+ WHERE n.Kind = 'SellingFast' AND n.IsActive = 1;
 
 -- Existing databases created before the Maintenance kind need the enum widened. Safe to repeat.
 ALTER TABLE Notification

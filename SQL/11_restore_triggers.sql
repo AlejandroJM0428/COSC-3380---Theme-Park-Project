@@ -202,6 +202,8 @@ BEGIN
                     CONCAT('Tickets for ', DATE_FORMAT(NEW.VisitDate, '%a %b %e, %Y'), ' are sold out.'),
                     CAST(NEW.VisitDate AS DATETIME) + INTERVAL 1 DAY - INTERVAL 1 SECOND,
                     CONCAT('SoldOut:', NEW.VisitDate));
+            -- A sold-out date is no longer "selling fast": switch that notice off so the two never show together.
+            UPDATE Notification SET IsActive = 0 WHERE DedupeKey = CONCAT('SellingFast:', NEW.VisitDate);
         END IF;
     END IF;
 END$$
