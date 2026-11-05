@@ -9,8 +9,28 @@ const QUERY_DIR = process.env.QUERY_DIR
   ? path.resolve(process.env.QUERY_DIR)
   : path.resolve(import.meta.dirname, '..', '..', 'SQL', 'queries');
 
+// Date defaults are worked out per request: the range starts at the first recorded data and ends today.
+// Nothing after today is ever reported (tickets booked ahead are Pre-ordered, not revenue), so an end date in the future is cut back to today.
 const START = { name: 'start', label: 'Start date', type: 'date', default: '2000-01-01' };
 const END = { name: 'end', label: 'End date', type: 'date', default: '2099-12-31' };
+
+async function dateDefaults() {
+  const [[row]] = await pool.query(
+    `SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS today,
+            DATE_FORMAT(LEAST(
+              COALESCE((SELECT MIN(VisitDate) FROM Ticket), '9999-12-31'),
+              COALESCE((SELECT MIN(StartDate) FROM Membership), '9999-12-31'),
+              COALESCE((SELECT DATE(MIN(PurchasedAt)) FROM Purchase), '9999-12-31'),
+              COALESCE((SELECT DATE(MIN(LoggedAt)) FROM RideLog), '9999-12-31'),
+              COALESCE((SELECT DATE(MIN(StartDate)) FROM Maintenance), '9999-12-31')
+            ), '%Y-%m-%d') AS first`,
+  );
+  return { today: row.today, first: row.first === '9999-12-31' ? row.today : row.first };
+}
+
+// The query's parameters with today's defaults filled in.
+const withDefaults = (params, d) =>
+  params.map((p) => (p === START ? { ...p, default: d.first } : p === END ? { ...p, default: d.today } : p));
 
 // Whitelist. `bind` lists, in order, which parameter fills each ? in the .sql file.
 const QUERIES = {
@@ -44,9 +64,10 @@ function readParam(def, raw) {
 route(
   'GET',
   '/api/queries',
-  requireRole('Admin')(async () =>
-    Object.entries(QUERIES).map(([id, q]) => ({ id, title: q.title, params: q.params })),
-  ),
+  requireRole('Admin')(async () => {
+    const d = await dateDefaults();
+    return Object.entries(QUERIES).map(([id, q]) => ({ id, title: q.title, params: withDefaults(q.params, d) }));
+  }),
 );
 
 route(
@@ -56,8 +77,10 @@ route(
     const q = Object.hasOwn(QUERIES, ctx.params.id) ? QUERIES[ctx.params.id] : null;
     if (!q) throw new HttpError(404, 'Unknown query');
 
+    const d = await dateDefaults();
     const values = {};
-    for (const def of q.params) values[def.name] = readParam(def, ctx.query[def.name]);
+    for (const def of withDefaults(q.params, d)) values[def.name] = readParam(def, ctx.query[def.name]);
+    if (values.end > d.today) values.end = d.today; // no future dates: those are Pre-orders, not results
 
     const sql = await fs.readFile(path.join(QUERY_DIR, q.file), 'utf8');
     const [rows] = await pool.query(

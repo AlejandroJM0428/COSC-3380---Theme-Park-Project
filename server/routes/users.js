@@ -93,7 +93,7 @@ export function parseUser(body, { isNew, currentUsername = null }) {
 // GET /api/users?status=active|inactive&role=...&q=... (all optional). Admin's one list of everyone:
 //   staff logins, member accounts (role Customer) and guests (customer records with no login, role Guest).
 // Guests and members are read only here. Member and guest lists show the newest 300 each; use q to find others.
-const LIST_ROLES = [...STAFF_ROLES, 'Customer', 'Guest'];
+const LIST_ROLES = [...STAFF_ROLES, 'Customer', 'Guest', 'NoLogin'];
 const PEOPLE_LIMIT = 300;
 
 route(
@@ -128,6 +128,22 @@ route(
         args,
       );
       rows.push(...staff);
+    }
+
+    // Employees who have no login yet (most ride operators, attendants, cooks...). Listed so every staff member shows up.
+    if (want('NoLogin')) {
+      const where = ['NOT EXISTS (SELECT 1 FROM AppUser x WHERE x.EmployeeID = e.EmployeeID)'];
+      const args = [];
+      if (flag !== null) { where.push('e.IsActive = ?'); args.push(flag); }
+      if (text) { where.push("CONCAT(e.FirstName, ' ', e.LastName) LIKE ?"); args.push(like); }
+      const [noLogin] = await pool.query(
+        `SELECT NULL AS UserID, CONCAT('e', e.EmployeeID) AS RowKey, NULL AS Username, 'NoLogin' AS Role, e.EmployeeID, NULL AS CustomerID,
+                CONCAT(e.FirstName, ' ', e.LastName) AS PersonName, e.IsActive, e.JobTitle
+           FROM Employee e
+          WHERE ${where.join(' AND ')} ORDER BY e.LastName, e.FirstName, e.EmployeeID LIMIT 500`,
+        args,
+      );
+      rows.push(...noLogin);
     }
 
     if (want('Customer')) {

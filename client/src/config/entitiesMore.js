@@ -514,7 +514,7 @@ const isStaffRow = (row) => row.UserID != null && row.Role !== 'Customer'
 export const USERS = {
   title: 'App Users',
   intro:
-    'Everyone in one place, grouped by role: staff logins, member accounts and guests (customer records with no login). Filter by role or search by name or username. Staff logins belong to an employee and are named after them (first name plus the last four digits of their ID); you can add one, change its role, set a new password, or deactivate it. Members and guests are view only here (members and guests show the newest 300; search to find others). You cannot deactivate yourself or change your own role.',
+    'Everyone in one place, grouped by role: staff logins, employees who do not have a login yet, member accounts and guests (customer records with no login). Filter by role or search by name or username. Staff logins belong to an employee and are named after them (first name plus the last four digits of their ID); you can add one, change its role, set a new password, or deactivate it. Members and guests are view only here (members and guests show the newest 300; search to find others). You cannot deactivate yourself or change your own role.',
   resource: 'users',
   idKey: 'UserID',
   rowKey: 'RowKey', // guests have no UserID, so rows are keyed by RowKey
@@ -524,8 +524,8 @@ export const USERS = {
     label: 'Group by',
     optionLabel: 'Role',
     defaultOn: true,
-    order: ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker', 'Customer', 'Guest'],
-    labels: { Customer: 'Member accounts', Guest: 'Guests (no login)' },
+    order: ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker', 'NoLogin', 'Customer', 'Guest'],
+    labels: { Customer: 'Member accounts', Guest: 'Guests (no login)', NoLogin: 'Staff without a login' },
   },
   hideIds: true, // the page never shows user numbers
   noun: 'user',
@@ -534,6 +534,12 @@ export const USERS = {
   deletePast: 'Deactivated',
   deleteNote: 'The account is kept and can be turned back on by editing it.',
   canEditRow: isStaffRow,
+  // Employees with no login get an "Add login" button that opens the form with that employee already chosen.
+  canAddLoginRow: (row) => row.Role === 'NoLogin',
+  addLoginForm: (row, lookups) => {
+    const emp = (lookups?.employees ?? []).find((e) => String(e.id) === String(row.EmployeeID))
+    return { username: emp?.username ?? '', suggested: emp?.username ?? '', role: '', password: '', employeeId: String(row.EmployeeID), isActive: 'yes' }
+  },
   canDeleteRow: (row) => isStaffRow(row) && Number(row.IsActive) === 1,
   filters: [
     {
@@ -542,6 +548,7 @@ export const USERS = {
       options: [
         ['', 'All roles'],
         ...STAFF_ROLE_LIST.map((r) => [r, r.replace(/([a-z])([A-Z])/g, '$1 $2')]),
+        ['NoLogin', 'Staff without a login'],
         ['Customer', 'Member accounts'],
         ['Guest', 'Guests (no login)'],
       ],
@@ -560,7 +567,7 @@ export const USERS = {
   columns: [
     { key: 'PersonName', label: 'Name', format: (v) => v || '—' },
     { key: 'Username', label: 'Username', format: (v) => v || '—' },
-    { key: 'Role', label: 'Role', format: (v) => (v === 'Customer' ? 'Member' : v === 'Guest' ? 'Guest' : v) },
+    { key: 'Role', label: 'Role', format: (v, row) => (v === 'Customer' ? 'Member' : v === 'Guest' ? 'Guest' : v === 'NoLogin' ? `${row?.JobTitle ?? 'Staff'} (no login)` : v) },
     { key: 'EmployeeID', label: 'Employee ID', format: (v) => v || '—' },
     { key: 'CustomerID', label: 'Customer #', format: (v) => v || '—' },
     { key: 'IsActive', label: 'Status', format: (v) => (Number(v) ? 'Active' : 'Inactive') },

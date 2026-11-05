@@ -18,16 +18,28 @@ const ANY_REPORT_ROLE = ['Admin', 'Manager', 'RetailManager', 'HRManager', 'Main
 // Whitelist: endpoint name (what client/src/config/reports.js asks for) -> view name and allowed roles.
 // SQL is never built from the URL: only a view name from this list is ever put in the query.
 const REPORTS = {
-  'customers-per-month': { view: 'v_CustomersPerMonth', roles: ATTENDANCE },
-  'daily-attendance': { view: 'v_DailyAttendance', roles: ATTENDANCE },
+  // Future-dated data rule: a visit date after today is only ever a PRE-ORDER (a ticket booked ahead).
+  //   preorder: keep those days, flag them PreOrdered = 1 and blank the revenue and fill figures (only the booking count stays).
+  //   dropFuture: leave days after today out completely (revenue, spending and customer counts only cover days that have happened).
+  //   sql: replaces SELECT * FROM view when the view itself cannot be told to skip future days.
+  'customers-per-month': {
+    view: 'v_CustomersPerMonth',
+    roles: ATTENDANCE,
+    sql: `SELECT YEAR(t.VisitDate) AS VisitYear, MONTH(t.VisitDate) AS VisitMonth, COUNT(DISTINCT t.CustomerID) AS Customers
+            FROM Ticket t
+           WHERE t.VisitDate <= CURDATE()
+             AND NOT EXISTS (SELECT 1 FROM TicketRefund r WHERE r.TicketID = t.TicketID)
+           GROUP BY YEAR(t.VisitDate), MONTH(t.VisitDate)`,
+  },
+  'daily-attendance': { view: 'v_DailyAttendance', roles: ATTENDANCE, preorder: 'VisitDate' },
   'maintenance-history': { view: 'v_MaintenanceHistory', roles: MAINTENANCE },
   'ride-traffic-by-month': { view: 'v_RideTrafficByMonth', roles: OPERATIONS }, // SQL/views_extra.sql
   'weather-impact': { view: 'v_WeatherImpact', roles: OPERATIONS },
   'ride-availability': { view: 'v_RideAvailability', roles: OPERATIONS },
   'zone-ride-traffic': { view: 'v_ZoneRideTraffic', roles: OPERATIONS },
   'wait-time-by-ride': { view: 'v_WaitTimeByRide', roles: OPERATIONS },
-  'revenue-by-source': { view: 'v_RevenueBySource', roles: RETAIL },
-  'visit-spending': { view: 'v_VisitSpending', roles: RETAIL },
+  'revenue-by-source': { view: 'v_RevenueBySource', roles: RETAIL, dropFuture: 'RevenueDate' },
+  'visit-spending': { view: 'v_VisitSpending', roles: RETAIL, dropFuture: 'VisitDate' },
   'membership-summary': { view: 'v_MembershipSummary', roles: RETAIL },
   'staff-by-zone': { view: 'v_StaffByZone', roles: HR },
   // New views from SQL/06_report_and_portal_views.sql
@@ -42,6 +54,18 @@ const REPORTS = {
   'ride-performance': { view: 'v_RidePerformance', roles: OPERATIONS },
 };
 
+// Rows dated after `today` are Pre-ordered (kept, but only the booking count) or dropped. See the REPORTS notes.
+export function applyFutureRule(rows, report, today) {
+  const key = report.preorder ?? report.dropFuture;
+  const isFuture = (r) => String(r[key]).slice(0, 10) > today;
+  if (report.dropFuture) return rows.filter((r) => !isFuture(r));
+  return rows.map((r) =>
+    isFuture(r)
+      ? { ...r, PreOrdered: 1, PctOfCapacity: null, TicketRevenue: null }
+      : { ...r, PreOrdered: 0 },
+  );
+}
+
 route(
   'GET',
   '/api/reports/:name',
@@ -50,8 +74,10 @@ route(
     if (!report) throw new HttpError(404, 'Unknown report');
     if (!report.roles.includes(ctx.session.role)) throw new HttpError(403, 'Your role cannot open this report');
     try {
-      const [rows] = await pool.query(`SELECT * FROM \`${report.view}\``);
-      return rows;
+      const [rows] = await pool.query(report.sql ?? `SELECT * FROM \`${report.view}\``);
+      if (!report.preorder && !report.dropFuture) return rows;
+      const [[{ today }]] = await pool.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS today");
+      return applyFutureRule(rows, report, today);
     } catch (err) {
       if (err.errno === 1146) throw new HttpError(404, 'This report is not available yet');
       throw err;
