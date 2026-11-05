@@ -109,10 +109,10 @@ Demo
 ----
 
 ### Homepage
-<!-- INSERT: Homepage -->
+![Beltway Park homepage with the header and notification bar](docs/screenshots/homepage.png)
 
 ### Admin portal
-<!-- INSERT: Admin portal -->
+![Admin portal home with data tables and reports](docs/screenshots/admin-portal.png)
 
 ### Member portal
-<!-- INSERT: Member portal -->
+![Member portal showing membership and ticket details](docs/screenshots/member-portal.png)
