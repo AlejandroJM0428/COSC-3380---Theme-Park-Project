@@ -4,6 +4,8 @@
 // Pages for guest activity (purchases, game plays, ride log) have no Edit button on purpose: the database
 // refuses edits to them with a trigger. Managers can Delete an entry, then add it again to correct a mistake.
 
+import { localDate } from '../utils/portalFormat.js'
+
 const toInput = (s) => (s ? s.replace(' ', 'T').slice(0, 16) : '')
 const shortDate = (s) => (s ? s.slice(0, 16) : '—')
 const money = (v) => (v === null || v === undefined ? '—' : `$${Number(v).toFixed(2)}`)
@@ -109,7 +111,7 @@ export const MEMBERSHIPS = {
     { key: 'startDate', label: 'Start date', type: 'date', required: true },
     { key: 'autoRenew', label: 'Auto-renew', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
   ],
-  blank: () => ({ customerId: '', tier: '', startDate: '', autoRenew: 'no' }),
+  blank: () => ({ customerId: '', tier: '', startDate: localDate(), autoRenew: 'no' }),
   fromRecord: (rec) => ({
     customerId: String(rec.CustomerID),
     tier: rec.Tier,
