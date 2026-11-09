@@ -1,0 +1,26 @@
+/* DateRangePicker: every class starts with drp- so nothing else is affected. */
+.drp { position: relative; display: inline-block; }
+.drp-button { padding: 8px 12px; border: 1px solid var(--line, #d5e1dd); border-radius: 6px; background: var(--panel, #fff); font: inherit; cursor: pointer; min-width: 14rem; text-align: left; }
+.drp-button[aria-expanded='true'] { border-color: var(--ink, #12302e); }
+.drp-pop { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; display: flex; gap: 14px; padding: 12px; background: var(--panel, #fff); border: 1px solid var(--line, #d5e1dd); border-radius: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); }
+.drp-presets { display: flex; flex-direction: column; gap: 4px; min-width: 8.5rem; }
+.drp-presets button { padding: 6px 10px; border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.drp-presets button:hover, .drp-presets button.is-on { background: var(--wash, #eef4f2); border-color: var(--line, #d5e1dd); font-weight: 700; }
+.drp-cal { width: 17.5rem; }
+.drp-nav { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 8px; }
+.drp-nav button { width: 2rem; height: 2rem; border: 1px solid var(--line, #d5e1dd); border-radius: 6px; background: var(--panel, #fff); font: inherit; cursor: pointer; }
+.drp-nav strong { flex: 1; text-align: center; }
+.drp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.drp-dow { text-align: center; font-size: 0.75rem; color: var(--muted, #4a6663); padding: 2px 0; }
+.drp-day { height: 2.2rem; border: 0; border-radius: 6px; background: transparent; font: inherit; cursor: pointer; }
+.drp-day:hover:not(:disabled) { background: var(--wash, #eef4f2); }
+.drp-day:disabled { opacity: 0.3; cursor: not-allowed; }
+.drp-day.in-range { background: color-mix(in srgb, var(--role, #5b3f9a) 18%, white); border-radius: 0; }
+.drp-day.is-start, .drp-day.is-end { background: var(--role, #5b3f9a); color: var(--on-role, #fff); font-weight: 700; border-radius: 6px; }
+.drp-day.is-today { outline: 1px dashed var(--ink, #12302e); outline-offset: -3px; }
+.drp-hint { margin: 8px 0 0; font-size: 0.8rem; color: var(--muted, #4a6663); }
+@media (max-width: 560px) {
+  .drp-pop { flex-direction: column; left: 0; right: auto; max-width: calc(100vw - 32px); }
+  .drp-presets { flex-direction: row; flex-wrap: wrap; }
+  .drp-cal { width: 100%; }
+}
