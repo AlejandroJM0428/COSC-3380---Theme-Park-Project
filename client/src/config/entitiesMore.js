@@ -161,19 +161,28 @@ export const PURCHASES = {
   fields: [
     { key: 'ticketId', label: 'Ticket', type: 'lookup', kind: 'ticket', required: true },
     {
+      key: 'itemFilter',
+      label: 'Show',
+      type: 'select',
+      wide: true,
+      optionsFrom: () => [['all', 'All items'], ['alcohol', 'Alcoholic drinks only']],
+    },
+    {
       key: 'itemId',
       label: 'Item',
       type: 'select',
       required: true,
       wide: true,
-      optionsFrom: (form, lookups) => (lookups?.items ?? []).map((x) => [String(x.id), x.name]),
+      optionsFrom: (form, lookups) =>
+        (lookups?.items ?? []).filter((x) => form.itemFilter !== 'alcohol' || Number(x.alcoholic) === 1).map((x) => [String(x.id), x.name]),
     },
     { key: 'quantity', label: 'Quantity', type: 'number', required: true, min: 1, step: '1' },
     { key: 'purchasedAt', label: 'Time (leave empty for now)', type: 'datetime' },
   ],
-  blank: () => ({ ticketId: '', itemId: '', quantity: '1', purchasedAt: '' }),
+  blank: () => ({ ticketId: '', itemFilter: 'all', itemId: '', quantity: '1', purchasedAt: '' }),
   fromRecord: (rec) => ({
     ticketId: String(rec.TicketID),
+    itemFilter: 'all',
     itemId: String(rec.ItemID),
     quantity: String(rec.Quantity),
     purchasedAt: toInput(rec.PurchasedAt),

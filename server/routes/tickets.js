@@ -18,7 +18,7 @@ const CAN_VOID = ['Admin', 'RetailManager'];
 const isId = (n) => Number.isInteger(n) && n > 0;
 
 const SELECT_TICKET = `
-  SELECT t.TicketID, t.CustomerID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
+  SELECT t.TicketID, t.CustomerID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName, c.DOB AS CustomerDOB,
          t.MembershipID, t.VisitDate, t.HasExpress, t.TicketPrice, t.PurchaseDate,
          (r.TicketID IS NOT NULL) AS IsVoided, r.RefundedAt, r.RefundReason
     FROM Ticket t

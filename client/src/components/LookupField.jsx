@@ -18,7 +18,10 @@ export function customerText(c) {
 }
 
 export function ticketText(t) {
-  const parts = [t.CustomerName, `visit ${dateOnly(t.VisitDate)}`, money(t.TicketPrice)]
+  const born = t.CustomerDOB ? new Date(`${dateOnly(t.CustomerDOB)}T00:00:00`) : null
+  const now = new Date()
+  const age = born ? now.getFullYear() - born.getFullYear() - (now < new Date(now.getFullYear(), born.getMonth(), born.getDate()) ? 1 : 0) : null
+  const parts = [t.CustomerName, age === null ? null : `age ${age}`, `visit ${dateOnly(t.VisitDate)}`, money(t.TicketPrice)]
   if (Number(t.HasExpress)) parts.push('Express')
   if (Number(t.IsVoided)) parts.push('refunded')
   return parts.filter(Boolean).join(' · ')
@@ -106,9 +109,14 @@ function CustomerSearch({ onPick, needsLogin }) {
   )
 }
 
+const todayLocal = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function TicketSearch({ onPick }) {
   const [name, setName] = useState('')
-  const [visit, setVisit] = useState('')
+  const [visit, setVisit] = useState(todayLocal)
   const [tickets, setTickets] = useState(null)
   const [error, setError] = useState('')
 
@@ -126,36 +134,41 @@ function TicketSearch({ onPick }) {
   const matches = (tickets ?? []).filter(
     (t) => (!needle || t.CustomerName.toLowerCase().includes(needle)) && (!visit || dateOnly(t.VisitDate) === visit),
   )
-  const searched = Boolean(needle || visit)
+
+  function choose(e) {
+    const t = matches.find((x) => String(x.TicketID) === e.target.value)
+    if (t) onPick(String(t.TicketID), ticketText(t))
+  }
 
   return (
     <div className="lf-box">
       <div className="lf-row">
         <label>
-          Guest name
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Maria Lopez" maxLength={60} />
+          Guest name (optional)
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="narrow the list, e.g. Maria" maxLength={60} />
         </label>
         <label>
           Visit date
           <input type="date" value={visit} onChange={(e) => setVisit(e.target.value)} />
         </label>
+        <button type="button" onClick={() => setVisit(todayLocal())}>Today</button>
+        <button type="button" onClick={() => setVisit('')}>All dates</button>
       </div>
       <ErrorBanner message={error} onClose={() => setError('')} />
       {tickets === null && !error && <p className="muted">Loading tickets…</p>}
-      {tickets && !searched && <p className="muted">Type a guest name or pick a visit date to find the ticket.</p>}
-      {tickets && searched && matches.length === 0 && <p className="muted">No active tickets match.</p>}
-      {tickets && searched && matches.length > 0 && (
-        <ul className="lf-results">
-          {matches.slice(0, 20).map((t) => (
-            <li key={t.TicketID}>
-              <button type="button" onClick={() => onPick(String(t.TicketID), ticketText(t))}>
-                {ticketText(t)}
-              </button>
-            </li>
+      {tickets && (
+        <select value="" onChange={choose} style={{ width: '100%' }} aria-label="Ticket">
+          <option value="">
+            {matches.length === 0 ? 'No active tickets match' : `— choose a ticket (${matches.length}, newest first) —`}
+          </option>
+          {matches.slice(0, 200).map((t) => (
+            <option key={t.TicketID} value={String(t.TicketID)}>
+              {ticketText(t)}
+            </option>
           ))}
-        </ul>
+        </select>
       )}
-      {matches.length > 20 && <p className="muted">Showing the first 20. Add more information to narrow down the results.</p>}
+      {matches.length > 200 && <p className="muted">Showing the newest 200. Type part of a name to narrow the list.</p>}
     </div>
   )
 }
