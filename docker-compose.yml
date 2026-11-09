@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     mem_limit: 512m
     environment:
+      TZ: America/Chicago # Chicago time: CURDATE() and NOW() must agree with the browser
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
     command:
       - --character-set-server=utf8mb4
@@ -56,6 +57,7 @@ services:
     ports:
       - "${APP_PORT:-3100}:3100"
     environment:
+      TZ: America/Chicago
       PORT: "3100"
       NODE_ENV: ${NODE_ENV:-development}
       DB_HOST: mysql

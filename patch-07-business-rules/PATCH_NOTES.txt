@@ -5,3 +5,5 @@ Files: SQL/migrations/25_business_rules.sql, 25_demo_business_rules.sql, server/
 After apply: run the migration, then the demo (commands are at the top of each SQL file), then rebuild the client.
 Member demo: Tickets tab, pick a date about a year out; buy a ticket for tomorrow and click refund.
 Admin demo: Daily records > Sell Ticket (far date); Daily records > Refunds (tomorrow's ticket, weather blank).
+
+Time zone fix: docker-compose.yml now sets TZ=America/Chicago on mysql and app. Without it the database ran on UTC and was a day ahead after about 6 pm Chicago time. Run: docker compose up -d (no rebuild, data kept).
