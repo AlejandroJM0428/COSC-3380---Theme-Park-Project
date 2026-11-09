@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import './DataTable.css'
 
-// Long reports show the first rows plus a "Show all" button, so a big view does not freeze the page.
+// Long tables show the first rows, then "Show N more" and "Show all" buttons, so a big view does not freeze the page.
+// `pageSize` is how many rows to show first and how many each "Show more" adds (reports pass 10; other pages keep 100).
 const ROW_LIMIT = 100
 
 const isEmpty = (v) => v === null || v === undefined || v === ''
@@ -52,9 +53,9 @@ const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-l
 // <DataTable rows={[...]} columns={['A','B']} rowClass={(row) => 'high' | 'low' | undefined} />   (columns optional: defaults to every key)
 // rowClass is optional: 'high' shades the row green and 'low' shades it red, so unusual rows stand out.
 // Click a column header to sort: first click ascending, second descending, third back to the original order.
-export default function DataTable({ rows, columns, rowClass }) {
+export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
-  const [showAll, setShowAll] = useState(false)
+  const [count, setCount] = useState(pageSize) // how many rows are showing
 
   const sorted = useMemo(() => {
     if (!sort || !rows) return rows
@@ -76,7 +77,8 @@ export default function DataTable({ rows, columns, rowClass }) {
     }),
   )
 
-  const visible = showAll ? sorted : sorted.slice(0, ROW_LIMIT)
+  const visible = sorted.slice(0, count)
+  const left = sorted.length - visible.length
 
   function toggleSort(key) {
     setSort((s) => {
@@ -123,12 +125,20 @@ export default function DataTable({ rows, columns, rowClass }) {
           </tbody>
         </table>
       </div>
-      {sorted.length > ROW_LIMIT && (
+      {sorted.length > pageSize && (
         <p className="dt-more muted">
           Showing {visible.length.toLocaleString('en-US')} of {sorted.length.toLocaleString('en-US')} rows
-          <button type="button" className="dt-toggle" onClick={() => setShowAll((v) => !v)}>
-            {showAll ? `Show first ${ROW_LIMIT}` : 'Show all'}
-          </button>
+          {left > 0 && (
+            <button type="button" className="dt-toggle" onClick={() => setCount((c) => c + pageSize)}>
+              Show {Math.min(pageSize, left).toLocaleString('en-US')} more
+            </button>
+          )}
+          {left > pageSize && (
+            <button type="button" className="dt-toggle" onClick={() => setCount(sorted.length)}>Show all</button>
+          )}
+          {count > pageSize && (
+            <button type="button" className="dt-toggle" onClick={() => setCount(pageSize)}>Show first {pageSize}</button>
+          )}
         </p>
       )}
     </>

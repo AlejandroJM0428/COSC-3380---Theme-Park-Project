@@ -38,7 +38,7 @@ export default function PublicLayout() {
             {isStaff ? (
               <Link to="/staff" className="pub-signin-mobile" onClick={close}>Staff portal</Link>
             ) : (
-              <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin-mobile" onClick={close}>{isCustomer ? 'My account' : 'Member sign in'}</Link>
+              <Link to={isCustomer ? '/member' : '/login'} className="pub-signin-mobile" onClick={close}>{isCustomer ? 'My account' : 'Sign in'}</Link>
             )}
           </nav>
 
@@ -46,7 +46,7 @@ export default function PublicLayout() {
             {isStaff ? (
               <Link to="/staff" className="pub-signin">Staff portal</Link>
             ) : (
-              <Link to={isCustomer ? '/member' : '/member/login'} className="pub-signin">{isCustomer ? 'My account' : 'Member sign in'}</Link>
+              <Link to={isCustomer ? '/member' : '/login'} className="pub-signin">{isCustomer ? 'My account' : 'Sign in'}</Link>
             )}
             <Link to="/tickets" className="pub-buy" onClick={close}>Buy Tickets</Link>
             <button type="button" className="pub-menu-button" aria-expanded={menuOpen} aria-controls="pub-nav" onClick={() => setMenuOpen((v) => !v)}>

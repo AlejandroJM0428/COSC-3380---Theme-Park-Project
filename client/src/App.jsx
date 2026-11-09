@@ -2,8 +2,7 @@ import './App.css'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import RequireAuth from './auth/RequireAuth.jsx'
 import Layout from './components/Layout.jsx'
-import MemberLogin from './pages/MemberLogin.jsx'
-import StaffLogin from './pages/StaffLogin.jsx'
+import SignIn from './pages/SignIn.jsx'
 import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import AdminOnePage from './pages/AdminOnePage.jsx'
@@ -61,16 +60,17 @@ export default function App() {
         <Route path="/plan" element={<Plan />} />
       </Route>
 
-      {/* 2. Member (customer) login + account */}
-      <Route path="/member/login" element={<MemberLogin />} />
+      {/* 2. The one sign-in page: members, staff and admins all sign in here and are sent to their own portal */}
+      <Route path="/login" element={<SignIn />} />
+      <Route path="/member/login" element={<Navigate to="/login" replace />} />
+      <Route path="/staff/login" element={<Navigate to="/login" replace />} />
+
+      {/* 3. Member sign up + account */}
       <Route path="/member/register" element={<Register />} />
-      <Route element={<RequireAuth roles={['Customer']} loginPath="/member/login" />}>
+      <Route element={<RequireAuth roles={['Customer']} />}>
         <Route path="/member" element={<MemberPortal />} />
       </Route>
 
-      {/* 3. Staff sign in (admins sign in here too and are sent to /admin) */}
-      <Route path="/staff/login" element={<StaffLogin />} />
-      <Route path="/login" element={<Navigate to="/staff/login" replace />} />
       <Route path="/visitor" element={<Navigate to="/" replace />} />
 
       <Route path="*" element={<NotFound />} />

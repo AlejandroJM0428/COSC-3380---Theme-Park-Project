@@ -1,0 +1,78 @@
+# One command: sudo docker compose up -d --build
+# Reads secrets from a root .env (copy .env.example). Never commit .env.
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=40
+      - --performance-schema=OFF
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Init scripts run once, on an empty data volume, in file-name order.
+      # Each file is mounted under its own name, so the number in the name is the load order (see SQL/README.md).
+      # 02_test_data.sql is generated and not in the zip: run `python3 SQL/tools/gen_test_data.py` before the first start.
+      # 15 to 20 were added after the first deploy: on an existing database they do NOT run again, apply them by hand once.
+      - ./SQL/schema/00_schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
+      - ./SQL/seed/01_park_and_reference.sql:/docker-entrypoint-initdb.d/01_park_and_reference.sql:ro
+      - ./SQL/seed/02_test_data.sql:/docker-entrypoint-initdb.d/02_test_data.sql:ro
+      - ./SQL/schema/03_customer_accounts.sql:/docker-entrypoint-initdb.d/03_customer_accounts.sql:ro
+      - ./SQL/schema/04_staff_roles_and_costs.sql:/docker-entrypoint-initdb.d/04_staff_roles_and_costs.sql:ro
+      - ./SQL/schema/05_notifications.sql:/docker-entrypoint-initdb.d/05_notifications.sql:ro
+      - ./SQL/views/06_report_and_portal_views.sql:/docker-entrypoint-initdb.d/06_report_and_portal_views.sql:ro
+      - ./SQL/seed/07_extra_maintenance_data.sql:/docker-entrypoint-initdb.d/07_extra_maintenance_data.sql:ro
+      - ./SQL/rules/08_simplify_triggers.sql:/docker-entrypoint-initdb.d/08_simplify_triggers.sql:ro
+      - ./SQL/rules/09_ride_maintenance_notice.sql:/docker-entrypoint-initdb.d/09_ride_maintenance_notice.sql:ro
+      - ./SQL/schema/10_admin_audit.sql:/docker-entrypoint-initdb.d/10_admin_audit.sql:ro
+      - ./SQL/rules/11_restore_triggers.sql:/docker-entrypoint-initdb.d/11_restore_triggers.sql:ro
+      - ./SQL/views/12_report_views.sql:/docker-entrypoint-initdb.d/12_report_views.sql:ro
+      - ./SQL/rules/13_notification_triggers.sql:/docker-entrypoint-initdb.d/13_notification_triggers.sql:ro
+      - ./SQL/rules/14_purchase_guards.sql:/docker-entrypoint-initdb.d/14_purchase_guards.sql:ro
+      - ./SQL/migrations/15_price_update.sql:/docker-entrypoint-initdb.d/15_price_update.sql:ro
+      - ./SQL/rules/16_dependents_cancellation.sql:/docker-entrypoint-initdb.d/16_dependents_cancellation.sql:ro
+      - ./SQL/rules/17_shift_hours_cap.sql:/docker-entrypoint-initdb.d/17_shift_hours_cap.sql:ro
+      - ./SQL/views/18_ride_traffic_by_month.sql:/docker-entrypoint-initdb.d/18_ride_traffic_by_month.sql:ro
+      - ./SQL/rules/19_editable_records.sql:/docker-entrypoint-initdb.d/19_editable_records.sql:ro
+      - ./SQL/schema/20_employee_termination.sql:/docker-entrypoint-initdb.d/20_employee_termination.sql:ro
+    # No "ports:" on purpose: MySQL is reachable only from the app container.
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+
+  app:
+    build: .
+    restart: unless-stopped
+    mem_limit: 256m
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-3100}:3100"
+    environment:
+      PORT: "3100"
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: theme_park
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_MANAGER_PASSWORD: ${SEED_MANAGER_PASSWORD:-}
+      SEED_CASHIER_PASSWORD: ${SEED_CASHIER_PASSWORD:-}
+      SEED_RETAIL_PASSWORD: ${SEED_RETAIL_PASSWORD:-}
+      SEED_HR_PASSWORD: ${SEED_HR_PASSWORD:-}
+      SEED_MAINTMGR_PASSWORD: ${SEED_MAINTMGR_PASSWORD:-}
+      SEED_TECH_PASSWORD: ${SEED_TECH_PASSWORD:-}
+      SEED_COOK_PASSWORD: ${SEED_COOK_PASSWORD:-}
+
+volumes:
+  mysql_data:

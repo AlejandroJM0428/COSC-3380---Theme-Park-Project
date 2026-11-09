@@ -4,7 +4,8 @@ import { getReport, listRecords } from '../../api'
 import './AdminHome.css'
 
 // The admin Home screen. Layout: four number cards, a wide chart with a side panel, then a row of three cards.
-// It only uses data the admin already has: staff accounts, rides, games and venues, and the Customers per Month report.
+// It only uses data the admin already has: staff accounts, rides, games and venues. The Customers per Month chart is a report,
+// so it loads only when the admin presses Load chart.
 // goTo(groupId, itemKey) opens an area of the workspace.
 
 const pad = (n) => String(n).padStart(2, '0')
@@ -41,28 +42,41 @@ export default function AdminHome({ goTo }) {
   const [users, setUsers] = useState(null)
   const [places, setPlaces] = useState(null)
   const [months, setMonths] = useState(null)
+  const [monthsBusy, setMonthsBusy] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     let alive = true
     // Starting inside .then() turns an immediate throw (mock mode) into a rejection the .catch below shows as a note.
     Promise.resolve()
-      .then(() => Promise.all([listRecords('users'), listRecords('facilities'), getReport('customers-per-month')]))
-      .then(([u, f, m]) => {
+      .then(() => Promise.all([listRecords('users'), listRecords('facilities')]))
+      .then(([u, f]) => {
         if (!alive) return
         setUsers(u)
         setPlaces(f)
-        setMonths(
-          m
-            .map((r) => ({ Month: `${r.VisitYear}-${pad(r.VisitMonth)}`, Customers: Number(r.Customers) }))
-            .sort((a, b) => a.Month.localeCompare(b.Month)),
-        )
       })
       .catch((err) => alive && setError(err.message))
     return () => {
       alive = false
     }
   }, [])
+
+  // A report: fetched only when the button is pressed.
+  function loadMonths() {
+    setMonthsBusy(true)
+    setError('')
+    Promise.resolve()
+      .then(() => getReport('customers-per-month'))
+      .then((m) =>
+        setMonths(
+          m
+            .map((r) => ({ Month: `${r.VisitYear}-${pad(r.VisitMonth)}`, Customers: Number(r.Customers) }))
+            .sort((a, b) => a.Month.localeCompare(b.Month)),
+        ),
+      )
+      .catch((err) => setError(err.message))
+      .finally(() => setMonthsBusy(false))
+  }
 
   // The users list also holds member accounts and guests. Only real staff logins count as staff accounts.
   const staffUsers = users?.filter((u) => STAFF_ROLES.includes(u.Role))
@@ -96,7 +110,10 @@ export default function AdminHome({ goTo }) {
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <p className="muted">{months ? 'No visits recorded yet.' : 'Loading…'}</p>
+            <>
+              <p className="muted">{months ? 'No visits recorded yet.' : 'This chart is a report: it loads when you ask for it.'}</p>
+              <button type="button" onClick={loadMonths} disabled={monthsBusy}>{monthsBusy ? 'Loading…' : months ? 'Load again' : 'Load chart'}</button>
+            </>
           )}
         </Card>
 

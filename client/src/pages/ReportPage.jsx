@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { getReport } from '../api/index.js'
 import { useAuth } from '../auth/context.js'
 import DataTable from '../components/DataTable.jsx'
+import DateRangePicker from '../components/DateRangePicker.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 import { REPORTS } from '../config/reports.js'
 import NotFound from './NotFound.jsx'
@@ -76,28 +77,33 @@ function downloadCsv(name, columns, rows) {
 // `report` is either a whole report or one entry of report.sections (both use the same settings, see config/reports.js).
 function ReportBody({ report, csvName }) {
   const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loaded, setLoaded] = useState(false) // nothing is fetched until the user presses Run report
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [selects, setSelects] = useState({}) // filter key -> chosen value ('' = all)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
-  useEffect(() => {
-    let cancelled = false // ignore a slow response if the user already switched tabs (this component is remounted per report and tab, so state starts fresh)
+  // Only the Run report button fetches. A newer press makes an older, slower answer be ignored. The component is remounted
+  // per report and tab, so a report you switch away from starts empty again and loads nothing until you press the button.
+  const latest = useRef(0)
+  function run() {
+    const mine = ++latest.current
+    setLoading(true)
+    setError('')
     getReport(report.endpoint)
       .then((data) => {
-        if (!cancelled) setRows(report.prepare ? report.prepare(data) : data)
+        if (mine !== latest.current) return
+        setRows(report.prepare ? report.prepare(data) : data)
+        setLoaded(true)
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message)
+        if (mine === latest.current) setError(err.message)
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (mine === latest.current) setLoading(false)
       })
-    return () => {
-      cancelled = true
-    }
-  }, [report])
+  }
 
   // Values for each drop-down, taken from the rows themselves.
   const options = useMemo(() => {
@@ -143,18 +149,28 @@ function ReportBody({ report, csvName }) {
   const tableRows = report.showPreOrdered
     ? [...[...preOrdered].sort((a, b) => String(b.VisitDate).localeCompare(String(a.VisitDate))), ...baseRows]
     : baseRows
-  const hasFilters = (report.filters?.length ?? 0) > 0 || Boolean(report.dateFilter)
+  const hasFilters = (report.filters?.length ?? 0) > 0
   const filtersOn = Object.values(selects).some(Boolean) || from || to
 
   return (
     <div>
       {report.sectionDescription && <p className="muted rp-section-desc">{report.sectionDescription}</p>}
       <ErrorBanner message={error} onClose={() => setError('')} />
-      {loading ? (
-        <p className="muted">Loading report…</p>
-      ) : (
+      <div className="rp-runbar">
+        {report.dateFilter && (
+          <div className="rp-datepick">
+            <span>{report.dateFilter.label}</span>
+            <DateRangePicker label={report.dateFilter.label} from={from} to={to} onChange={({ from: f, to: t }) => { setFrom(f); setTo(t) }} />
+          </div>
+        )}
+        <button type="button" className="btn-primary rp-run" onClick={run} disabled={loading}>
+          {loading ? 'Running…' : loaded ? 'Run again' : 'Run report'}
+        </button>
+        {!loaded && !loading && !error && <span className="muted">Press Run report to load the data.</span>}
+      </div>
+      {loaded && (
         <>
-          {hasFilters && (
+          {(hasFilters || filtersOn) && (
             <div className="rp-filters">
               {(report.filters ?? []).map((f) => (
                 <label key={f.key}>
@@ -169,18 +185,6 @@ function ReportBody({ report, csvName }) {
                   </select>
                 </label>
               ))}
-              {report.dateFilter && (
-                <>
-                  <label>
-                    <span>{report.dateFilter.label} from</span>
-                    <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-                  </label>
-                  <label>
-                    <span>to</span>
-                    <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-                  </label>
-                </>
-              )}
               {filtersOn && (
                 <button
                   type="button"
@@ -239,7 +243,7 @@ function ReportBody({ report, csvName }) {
               Download CSV
             </button>
           </div>
-          <DataTable key={csvName} rows={tableRows} columns={report.columns} rowClass={report.rowClass} />
+          <DataTable key={csvName} rows={tableRows} columns={report.columns} rowClass={report.rowClass} pageSize={10} />
         </>
       )}
     </div>

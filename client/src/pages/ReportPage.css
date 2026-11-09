@@ -1,5 +1,35 @@
 /* Styles for the report page only. Every class starts with rp- so nothing else on the site is affected. */
 
+.rp-runbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 4px;
+}
+
+.rp-datepick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--muted, #4a6663);
+}
+
+.rp-run {
+  padding: 9px 18px;
+  border: 1px solid var(--ink, #12302e);
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rp-run:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .rp-filters {
   display: flex;
   flex-wrap: wrap;
@@ -151,3 +181,9 @@
   margin: 14px 0 0;
   font-size: 1rem;
 }
+
+/* Run Queries page (QueryPage.jsx) reuses the report look for its click-first inputs */
+.qp-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted, #4a6663); }
+.qp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.qp-chips button { padding: 7px 12px; border: 1px solid var(--line, #d5e1dd); border-radius: 6px; background: var(--panel, #fff); font: inherit; cursor: pointer; }
+.qp-chips button[aria-pressed='true'] { background: var(--role, #5b3f9a); color: var(--on-role, #fff); border-color: var(--ink, #12302e); font-weight: 700; }

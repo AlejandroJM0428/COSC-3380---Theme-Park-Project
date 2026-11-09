@@ -49,7 +49,7 @@ export default function MemberPortal() {
 
   // logout/navigate change identity every render; keep them in a ref so the loaders stay stable.
   const exitRef = useRef(null)
-  useEffect(() => { exitRef.current = () => { logout(); navigate('/member/login', { replace: true }) } })
+  useEffect(() => { exitRef.current = () => { logout(); navigate('/login', { replace: true }) } })
 
   // The browser remembers who signed in, but the server forgets sessions when it restarts.
   // No customer back means the server does not see us as signed in, so ask for a fresh sign-in.

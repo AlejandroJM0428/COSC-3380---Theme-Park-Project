@@ -8,12 +8,10 @@ const USERS = {
   customer: { username: 'customer', role: 'Customer', name: 'Demo Customer' },
 }
 
-export async function login(username, password, audience) {
+export async function login(username, password) {
   await delay()
   const user = USERS[String(username).trim().toLowerCase()]
   if (!user || password !== 'password') throw new Error('Invalid username or password')
-  const isCustomer = user.role === 'Customer'
-  if ((audience === 'staff' && isCustomer) || (audience === 'member' && !isCustomer)) throw new Error('Invalid username or password')
   return user
 }
 

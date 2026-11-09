@@ -1,0 +1,10 @@
+Patch 04 notes: reports load only when you ask
+- client/src/pages/ReportPage.jsx: opening a report (or switching its tab) now fetches nothing. A "Run report" button loads the data;
+  after that it reads "Run again" and fetches fresh data. Filters, numbers, charts and the table appear after the first run.
+  A slow older answer can no longer overwrite a newer one.
+- client/src/components/admin/AdminHome.jsx: the "Customers per month" chart on the admin home is a report, so it now loads when you press
+  "Load chart". The staff and ride counts on that page are not reports and still load with the page.
+- client/src/pages/ReportPage.css: style for the Run button.
+- Not changed: the "Run Queries" page (it already runs only when you press Run), data-entry pages, the server.
+- Still to come: parameters (dates, drop-downs) chosen BEFORE running; they will be added in the next patches.
+No markdown files were added or changed.

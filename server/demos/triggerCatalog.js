@@ -1,6 +1,6 @@
 // The triggers for the COSC 3380 demo: six INSERT triggers and trg_Ride_AU_Notify from the schema,
-// plus the rules restored by SQL/11_restore_triggers.sql, the notice triggers in SQL/13_notification_triggers.sql, the purchase guards in SQL/14_purchase_guards.sql and the
-// dependent rules in SQL/16_dependents_cancellation.sql.
+// plus the rules restored by SQL/rules/11_restore_triggers.sql, the notice triggers in SQL/rules/13_notification_triggers.sql, the purchase guards in SQL/rules/14_purchase_guards.sql and the
+// dependent rules in SQL/rules/16_dependents_cancellation.sql.
 // The Triggers page matches this list to information_schema.TRIGGERS by name.
 
 export const TRIGGER_CATALOG = [
