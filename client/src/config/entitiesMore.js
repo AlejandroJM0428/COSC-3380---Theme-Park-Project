@@ -177,7 +177,7 @@ export const PURCHASES = {
         (lookups?.items ?? []).filter((x) => form.itemFilter !== 'alcohol' || Number(x.alcoholic) === 1).map((x) => [String(x.id), x.name]),
     },
     { key: 'quantity', label: 'Quantity', type: 'number', required: true, min: 1, step: '1' },
-    { key: 'purchasedAt', label: 'Time (leave empty for now)', type: 'datetime' },
+    { key: 'purchasedAt', label: 'When', type: 'whenNow' },
   ],
   blank: () => ({ ticketId: '', itemFilter: 'all', itemId: '', quantity: '1', purchasedAt: '' }),
   fromRecord: (rec) => ({
@@ -224,7 +224,7 @@ export const GAME_PLAYS = {
       required: true,
       optionsFrom: (form, lookups) => (lookups?.games ?? []).map((x) => [String(x.id), x.name]),
     },
-    { key: 'playedAt', label: 'Time (leave empty for now)', type: 'datetime' },
+    { key: 'playedAt', label: 'When', type: 'whenNow' },
   ],
   blank: () => ({ ticketId: '', gameId: '', playedAt: '' }),
   fromRecord: (rec) => ({ ticketId: String(rec.TicketID), gameId: String(rec.GameID), playedAt: toInput(rec.PlayedAt) }),
@@ -284,7 +284,7 @@ export const RIDE_LOG = {
     { key: 'ticketId', label: 'Ticket (for a boarding)', type: 'lookup', kind: 'ticket', show: (form) => form.eventType === 'Boarding' },
     { key: 'waitMinutes', label: 'Wait minutes (for a wait reading)', type: 'number', min: 0, step: '1' },
     { key: 'usedExpress', label: 'Used the Express line (boardings)', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
-    { key: 'loggedAt', label: 'Time (leave empty for now)', type: 'datetime' },
+    { key: 'loggedAt', label: 'When', type: 'whenNow' },
   ],
   blank: () => ({ eventType: 'Boarding', rideId: '', ticketId: '', waitMinutes: '', usedExpress: 'no', loggedAt: '' }),
   fromRecord: (rec) => ({

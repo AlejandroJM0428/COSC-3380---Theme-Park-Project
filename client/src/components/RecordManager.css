@@ -40,3 +40,8 @@
 }
 
 .rm-locked { margin: 8px 0; padding: 8px 12px; border-left: 4px solid var(--line); background: #f6f6f6; font-size: 0.9rem; }
+
+/* "Now" / "Pick a time" choice (type whenNow) */
+.rm-when { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rm-when button { font: inherit; padding: 7px 16px; border: 1.5px solid var(--line); border-radius: 4px; background: #fff; cursor: pointer; }
+.rm-when button.rm-when-on { background: #0c2340; border-color: #0c2340; color: #fff; }

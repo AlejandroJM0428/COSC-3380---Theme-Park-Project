@@ -182,6 +182,29 @@ export default function RecordManager({ entity }) {
         </div>
       )
     }
+    if (field.type === 'whenNow') {
+      // "Now" (empty, the server stamps the time) or a picked date and time. Opens on Now, so nobody touches the calendar.
+      const picked = (value ?? '') !== ''
+      const stamp = () => {
+        const d = new Date()
+        const p = (n) => String(n).padStart(2, '0')
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+      }
+      return (
+        <div key={field.key} className="rm-field rm-wide">
+          <span id={`${id}-label`}>{field.label}</span>
+          <div className="rm-when" role="group" aria-labelledby={`${id}-label`}>
+            <button type="button" className={picked ? '' : 'rm-when-on'} aria-pressed={!picked} onClick={() => set(field.key, '')}>
+              Now
+            </button>
+            <button type="button" className={picked ? 'rm-when-on' : ''} aria-pressed={picked} onClick={() => !picked && set(field.key, stamp())}>
+              Pick a time
+            </button>
+            {picked && <input id={id} type="datetime-local" value={value} onChange={(e) => set(field.key, e.target.value)} />}
+          </div>
+        </div>
+      )
+    }
     if (field.type === 'select') {
       input = (
         <select id={id} value={value} required={field.required} onChange={(e) => set(field.key, e.target.value)}>
