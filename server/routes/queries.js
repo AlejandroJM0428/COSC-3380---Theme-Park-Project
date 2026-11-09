@@ -4,6 +4,7 @@ import { route } from '../router.js';
 import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { makeEvidence, runSelect } from '../reportQuery.js';
 
 const QUERY_DIR = process.env.QUERY_DIR
   ? path.resolve(process.env.QUERY_DIR)
@@ -82,11 +83,10 @@ route(
     for (const def of withDefaults(q.params, d)) values[def.name] = readParam(def, ctx.query[def.name]);
     if (values.end > d.today) values.end = d.today; // no future dates: those are Pre-orders, not results
 
-    const sql = await fs.readFile(path.join(QUERY_DIR, q.file), 'utf8');
-    const [rows] = await pool.query(
-      sql,
-      q.bind.map((name) => values[name]),
-    );
-    return rows;
+    // Runs read only with a time limit. The SQL file is returned with the values filled in, so the page can show exactly what ran.
+    const sql = (await fs.readFile(path.join(QUERY_DIR, q.file), 'utf8')).trim();
+    const args = q.bind.map((name) => values[name]);
+    const { rows, ms } = await runSelect(sql, args);
+    return { rows, evidence: makeEvidence({ source: q.file, sql, params: args, rows, ms }) };
   }),
 );

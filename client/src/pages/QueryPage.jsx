@@ -3,6 +3,7 @@ import { listQueries, listRecords, runQuery } from '../api'
 import DataTable from '../components/DataTable.jsx'
 import DateRangePicker from '../components/DateRangePicker.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
+import ReportSql from '../components/ReportSql.jsx'
 import './ReportPage.css'
 
 export default function QueryPage() {
@@ -10,6 +11,7 @@ export default function QueryPage() {
   const [id, setId] = useState('')
   const [values, setValues] = useState({})
   const [rows, setRows] = useState(null)
+  const [evidence, setEvidence] = useState(null) // the SQL that ran and its proof
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [venues, setVenues] = useState([]) // for the venue drop-down (Q4); stays empty if the list cannot be loaded
@@ -33,6 +35,7 @@ export default function QueryPage() {
     setId(q.id)
     setValues(Object.fromEntries(q.params.map((p) => [p.name, p.default])))
     setRows(null)
+    setEvidence(null)
     setError('')
   }
 
@@ -42,8 +45,11 @@ export default function QueryPage() {
     setBusy(true)
     setError('')
     setRows(null)
+    setEvidence(null)
     try {
-      setRows(await runQuery(id, values))
+      const out = await runQuery(id, values)
+      setRows(out.rows)
+      setEvidence(out.evidence)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -114,9 +120,11 @@ export default function QueryPage() {
       {rows && rows.length > 0 && (
         <>
           <p className="summary">{rows.length} row(s) from the database.</p>
+          <ReportSql evidence={evidence} />
           <DataTable rows={rows} pageSize={10} />
         </>
       )}
+      {rows && rows.length === 0 && <ReportSql evidence={evidence} />}
     </div>
   )
 }

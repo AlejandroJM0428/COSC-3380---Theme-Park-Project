@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { getReport } from '../api/index.js'
+import { getReportParams, runReport } from '../api/index.js'
 import { useAuth } from '../auth/context.js'
 import DataTable from '../components/DataTable.jsx'
 import DateRangePicker from '../components/DateRangePicker.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
+import ReportParams, { emptySpec, isCustom, toRequest } from '../components/ReportParams.jsx'
+import ReportSql from '../components/ReportSql.jsx'
 import { REPORTS } from '../config/reports.js'
 import NotFound from './NotFound.jsx'
 import './ReportPage.css'
@@ -80,21 +82,67 @@ function ReportBody({ report, csvName }) {
   const [loaded, setLoaded] = useState(false) // nothing is fetched until the user presses Run report
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [selects, setSelects] = useState({}) // filter key -> chosen value ('' = all)
+  const [selects, setSelects] = useState({}) // filter key -> chosen value ('' = all); only for columns the database does not have (see localKeys)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [meta, setMeta] = useState(null) // the columns a person can choose parameters on; null in mock mode or if it cannot be loaded
+  const [spec, setSpec] = useState(() => emptySpec(null)) // parameters chosen before running (sent to the server)
+  const [evidence, setEvidence] = useState(null) // the SQL that ran, and its proof
+  const [ranCustom, setRanCustom] = useState(false) // the last run was a summary or a column choice
+  const [ranRequest, setRanRequest] = useState('')
+
+  // The list of columns is cheap (no report data is read), so it loads when the report opens.
+  // The report itself still loads only when Run report is pressed.
+  useEffect(() => {
+    let live = true
+    getReportParams(report.endpoint)
+      .then((m) => {
+        if (!live || !m) return
+        setMeta(m)
+        setSpec(emptySpec(m))
+      })
+      .catch(() => {}) // no parameter panel; the report still runs with the old behaviour
+    return () => {
+      live = false
+    }
+  }, [report.endpoint])
+
+  const columnNames = useMemo(() => new Set((meta?.columns ?? []).map((c) => c.name)), [meta])
+  const dateKey = report.dateFilter?.key
+  // The date picker next to Run report sends its range to the database when that column exists there.
+  const dateOnServer = Boolean(meta) && Boolean(dateKey) && meta.columns.some((c) => c.name === dateKey && c.kind === 'date')
+  const serverDate = dateOnServer ? spec.filters.find((f) => f.column === dateKey) : null
+  const pickFrom = dateOnServer ? (serverDate?.from ?? '') : from
+  const pickTo = dateOnServer ? (serverDate?.to ?? '') : to
+  // Drop-downs on columns the view does not have (the page works them out, for example Month) still work on the loaded rows.
+  const localKeys = useMemo(() => (report.filters ?? []).filter((f) => !columnNames.has(f.key)), [report, columnNames])
+
+  function pickDates({ from: f, to: t }) {
+    if (!dateOnServer) {
+      setFrom(f)
+      setTo(t)
+      return
+    }
+    const others = spec.filters.filter((x) => x.column !== dateKey)
+    setSpec({ ...spec, filters: f || t ? [...others, { column: dateKey, kind: 'date', from: f, to: t }] : others })
+  }
 
   // Only the Run report button fetches. A newer press makes an older, slower answer be ignored. The component is remounted
   // per report and tab, so a report you switch away from starts empty again and loads nothing until you press the button.
   const latest = useRef(0)
   function run() {
     const mine = ++latest.current
+    const request = meta ? toRequest(spec) : undefined
+    const custom = Boolean(meta) && isCustom(spec)
     setLoading(true)
     setError('')
-    getReport(report.endpoint)
-      .then((data) => {
+    runReport(report.endpoint, request)
+      .then(({ rows: data, evidence: proof }) => {
         if (mine !== latest.current) return
-        setRows(report.prepare ? report.prepare(data) : data)
+        setRows(report.prepare && !custom ? report.prepare(data) : data)
+        setEvidence(proof)
+        setRanCustom(custom)
+        setRanRequest(JSON.stringify(request ?? null))
         setLoaded(true)
       })
       .catch((err) => {
@@ -105,52 +153,67 @@ function ReportBody({ report, csvName }) {
       })
   }
 
+  const stale = loaded && meta && JSON.stringify(toRequest(spec)) !== ranRequest
+
   // Values for each drop-down, taken from the rows themselves.
   const options = useMemo(() => {
     const out = {}
-    for (const f of report.filters ?? []) {
+    for (const f of localKeys) {
       out[f.key] = [...new Set(rows.map((r) => r[f.key]).filter((v) => v !== null && v !== undefined))].map(String).sort()
     }
     return out
-  }, [rows, report])
+  }, [rows, localKeys])
 
+  const useLocal = !ranCustom // a summary has different columns, so the page-side filters do not apply to it
+  const localDate = useLocal && report.dateFilter && !dateOnServer
   const filtered = useMemo(
     () =>
-      rows.filter((r) => {
-        for (const f of report.filters ?? []) {
-          const chosen = selects[f.key]
-          if (chosen && String(r[f.key]) !== chosen) return false
-        }
-        if (report.dateFilter) {
-          const day = String(r[report.dateFilter.key]).slice(0, 10)
-          if (from && day < from) return false
-          if (to && day > to) return false
-        }
-        return true
-      }),
-    [rows, selects, from, to, report],
+      useLocal
+        ? rows.filter((r) => {
+            for (const f of localKeys) {
+              const chosen = selects[f.key]
+              if (chosen && String(r[f.key]) !== chosen) return false
+            }
+            if (localDate) {
+              const day = String(r[report.dateFilter.key]).slice(0, 10)
+              if (from && day < from) return false
+              if (to && day > to) return false
+            }
+            return true
+          })
+        : rows,
+    [rows, selects, from, to, report, localKeys, useLocal, localDate],
   )
 
   // Days after today are Pre-ordered (tickets booked ahead). They stay out of every total, average and chart,
   // and only a report with showPreOrdered lists them (at the top of the table, marked Pre-ordered).
-  const actual = useMemo(() => filtered.filter((r) => !Number(r.PreOrdered)), [filtered])
+  const actual = useMemo(() => (ranCustom ? filtered : filtered.filter((r) => !Number(r.PreOrdered))), [filtered, ranCustom])
   const preOrdered = useMemo(
-    () => filtered.filter((r) => Number(r.PreOrdered)).map((r) => ({ ...r, Note: 'Pre-ordered', _mark: undefined })),
-    [filtered],
+    () => (ranCustom ? [] : filtered.filter((r) => Number(r.PreOrdered)).map((r) => ({ ...r, Note: 'Pre-ordered', _mark: undefined }))),
+    [filtered, ranCustom],
   )
-  const kpis = report.kpis ? safely(() => report.kpis(actual), []) : []
-  const insights = report.insights ? safely(() => report.insights(actual), []) : []
-  const notes = [...insights, ...(report.notes ?? [])]
-  const chartRows = report.chartRows ? safely(() => report.chartRows(actual), []) : actual
-  const extra = report.extraChart
+  const kpis = !ranCustom && report.kpis ? safely(() => report.kpis(actual), []) : []
+  const insights = !ranCustom && report.insights ? safely(() => report.insights(actual), []) : []
+  const notes = ranCustom ? [] : [...insights, ...(report.notes ?? [])]
+  const chartRows = ranCustom ? [] : report.chartRows ? safely(() => report.chartRows(actual), []) : actual
+  const extra = ranCustom ? null : report.extraChart
   const extraRows = extra ? safely(() => extra.rows(actual), []) : []
   // tableRows lets a report show a summary (one row per month, venue, item...) instead of the raw rows.
-  const baseRows = report.tableRows ? safely(() => report.tableRows(actual), []) : actual
-  const tableRows = report.showPreOrdered
-    ? [...[...preOrdered].sort((a, b) => String(b.VisitDate).localeCompare(String(a.VisitDate))), ...baseRows]
-    : baseRows
-  const hasFilters = (report.filters?.length ?? 0) > 0
-  const filtersOn = Object.values(selects).some(Boolean) || from || to
+  const baseRows = !ranCustom && report.tableRows ? safely(() => report.tableRows(actual), []) : actual
+  const tableRows =
+    !ranCustom && report.showPreOrdered
+      ? [...[...preOrdered].sort((a, b) => String(b.VisitDate).localeCompare(String(a.VisitDate))), ...baseRows]
+      : baseRows
+  const hasFilters = localKeys.length > 0
+  const filtersOn = localKeys.some((f) => selects[f.key]) || (localDate && (from || to))
+
+  // Anything the page did to the rows after the SQL, so the "How this was calculated" box can say so.
+  const after = []
+  if (useLocal) {
+    for (const f of localKeys) if (selects[f.key]) after.push(`${f.label} = ${selects[f.key]}`)
+    if (localDate && (from || to)) after.push(`${report.dateFilter.label} ${from || '…'} to ${to || '…'}`)
+  }
+  if (!ranCustom && report.prepare) after.push('added calculated columns such as Month, and turned money text into numbers')
 
   return (
     <div>
@@ -160,19 +223,21 @@ function ReportBody({ report, csvName }) {
         {report.dateFilter && (
           <div className="rp-datepick">
             <span>{report.dateFilter.label}</span>
-            <DateRangePicker label={report.dateFilter.label} from={from} to={to} onChange={({ from: f, to: t }) => { setFrom(f); setTo(t) }} />
+            <DateRangePicker label={report.dateFilter.label} from={pickFrom} to={pickTo} onChange={pickDates} />
           </div>
         )}
         <button type="button" className="btn-primary rp-run" onClick={run} disabled={loading}>
           {loading ? 'Running…' : loaded ? 'Run again' : 'Run report'}
         </button>
-        {!loaded && !loading && !error && <span className="muted">Press Run report to load the data.</span>}
+        {!loaded && !loading && !error && <span className="muted">Choose parameters, then press Run report to load the data.</span>}
+        {stale && !loading && <span className="muted">Parameters changed. Press Run again to update.</span>}
       </div>
+      <ReportParams endpoint={report.endpoint} meta={meta} spec={spec} onChange={setSpec} hideColumn={dateOnServer ? dateKey : ''} />
       {loaded && (
         <>
           {(hasFilters || filtersOn) && (
             <div className="rp-filters">
-              {(report.filters ?? []).map((f) => (
+              {localKeys.map((f) => (
                 <label key={f.key}>
                   <span>{f.label}</span>
                   <select value={selects[f.key] ?? ''} onChange={(e) => setSelects((s) => ({ ...s, [f.key]: e.target.value }))}>
@@ -201,6 +266,8 @@ function ReportBody({ report, csvName }) {
             </div>
           )}
 
+          {ranCustom && <p className="muted">Custom result: a summary or a column choice, so the report&apos;s own charts and headline numbers are left out.</p>}
+
           {kpis.length > 0 && (
             <div className="rp-kpis">
               {kpis.map((k) => (
@@ -224,26 +291,27 @@ function ReportBody({ report, csvName }) {
             </div>
           )}
 
-          {report.summary && <p className="summary">{safely(() => report.summary(actual), '')}</p>}
-          <Chart chart={report.chart} rows={chartRows} />
+          {!ranCustom && report.summary && <p className="summary">{safely(() => report.summary(actual), '')}</p>}
+          {!ranCustom && <Chart chart={report.chart} rows={chartRows} />}
           {extra && extraRows.length > 0 && (
             <>
               <h3 className="rp-chart-title">{extra.title}</h3>
               <Chart chart={extra.chart} rows={extraRows} />
             </>
           )}
+          <ReportSql evidence={evidence} after={after} />
           <div className="rp-actions">
             <span className="muted">{tableRows.length.toLocaleString('en-US')} rows</span>
             <button
               type="button"
               className="rp-export"
               disabled={tableRows.length === 0}
-              onClick={() => downloadCsv(csvName, report.columns ?? Object.keys(tableRows[0]), tableRows)}
+              onClick={() => downloadCsv(csvName, (!ranCustom && report.columns) || Object.keys(tableRows[0]), tableRows)}
             >
               Download CSV
             </button>
           </div>
-          <DataTable key={csvName} rows={tableRows} columns={report.columns} rowClass={report.rowClass} pageSize={10} />
+          <DataTable key={csvName} rows={tableRows} columns={ranCustom ? undefined : report.columns} rowClass={ranCustom ? undefined : report.rowClass} pageSize={10} />
         </>
       )}
     </div>

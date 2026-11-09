@@ -28,6 +28,24 @@ export function getReport(endpoint) {
   return USE_MOCK ? mock.getReport(endpoint) : http(`/reports/${endpoint}`)
 }
 
+// Report parameters and proof (live database). In mock mode there is no server to filter or to show SQL, so the
+// report page falls back to the old behaviour: params is null and the filters work on the loaded rows.
+//   getReportParams -> { columns: [{ name, kind }], limits, defaultLimit, rules, futureColumn }   (no report data is read)
+//   getReportOptions -> { column, values: [..] | null }                                          (values of one text column)
+//   runReport -> { rows, evidence }                                                              (evidence = the SQL that ran, and proof)
+export function getReportParams(endpoint) {
+  return USE_MOCK ? Promise.resolve(null) : http(`/reports/${endpoint}/params`)
+}
+
+export function getReportOptions(endpoint, column) {
+  return http(`/reports/${endpoint}/options?${new URLSearchParams({ column })}`)
+}
+
+export async function runReport(endpoint, spec) {
+  if (USE_MOCK) return { rows: await mock.getReport(endpoint), evidence: null }
+  return http(`/reports/${endpoint}/run`, { method: 'POST', body: spec ?? {} })
+}
+
 // Live database only: these have no mock, because the point is to reach MySQL.
 function needLive() {
   if (USE_MOCK) {
