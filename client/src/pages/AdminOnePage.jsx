@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { ADMIN_NAV_SECTIONS, PARK_SHORT, ROLE_INFO } from '../config/nav.js'
 import AdminHome from '../components/admin/AdminHome.jsx'
-import SqlConsolePanel from '../components/admin/SqlConsolePanel.jsx'
 import CancellationsPage from './CancellationsPage.jsx'
 import MaintenancePage from './MaintenancePage.jsx'
 import NotificationsPage from './NotificationsPage.jsx'
@@ -17,12 +16,12 @@ import './AdminOnePage.css'
 
 // The one-page admin (no sidebar): one workspace instead of stacked sections.
 // A white header shows the park and who is signed in. Under it a tab bar picks the area:
-// Home, People & access, Park setup, Reports, Daily records, Database tools (SQL Console). Each area (except Home) opens a drop-down of its items,
+// Home, People & access, Park setup, Reports, Daily records. Each area (except Home) opens a drop-down of its items,
 // and the chosen item opens in place below. Home is the overview: number cards, a chart and a few lists.
 // The choice lives in the address as #group/item (for example #reports/revenue), so a refresh or a shared link returns to it.
 // The People, Park setup, Reports and Daily records lists are read from ADMIN_NAV_SECTIONS (config/nav.js),
 // so every item of the old admin menu has a place here and a new menu item shows up on its own.
-// Database tools holds one tool, the SQL Console (type a command, run it), so that tab opens it directly (no drop-down).
+// There is no Database tools area any more.
 
 // Same map as PAGE_COMPONENTS in App.jsx (key = the `path` in config/nav.js).
 const PAGES = {
@@ -43,8 +42,6 @@ const PAGES = {
 }
 
 const REPORT_PREFIX = '/reports/'
-const TOOLS = [{ key: 'console', label: 'SQL Console' }]
-
 // Menu entries this admin may open, as { key, label, note, group }.
 function entries(section, role) {
   return (section?.items ?? [])
@@ -75,19 +72,6 @@ function EntryView({ entry, kind }) {
   return Page ? <Page key={entry.key} /> : <Placeholder title={entry.label} />
 }
 
-// The database tools: only the SQL Console is left. The typed command lives here, so it survives a tab change.
-function ToolsBody() {
-  const [sql, setSql] = useState('SELECT COUNT(*) AS customers FROM Customer')
-  return (
-    <div>
-      <p className="muted">
-        Raw access to the database for admins only. Everything here is checked on the server, and every change is written to the audit log.
-      </p>
-      <SqlConsolePanel sql={sql} onSqlChange={setSql} />
-    </div>
-  )
-}
-
 export default function AdminOnePage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -104,7 +88,6 @@ export default function AdminOnePage() {
     { id: 'park', title: 'Park setup', zone: 'var(--lagoon)', kind: 'page', items: entries(byTitle('Park setup'), role) },
     { id: 'reports', title: 'Reports', zone: 'var(--sun)', kind: 'report', items: reportEntries },
     { id: 'daily', title: 'Daily records', zone: 'var(--coral)', kind: 'page', items: entries(byTitle('Daily records'), role) },
-    { id: 'tools', title: 'Database tools', zone: 'var(--ink)', kind: 'tool', items: TOOLS.map((t) => ({ ...t, group: 'Database tools' })) },
   ].filter((g) => g.items.length > 0)
 
   // What is on screen comes from the address. A missing or unknown part falls back to the first group or item.
@@ -221,14 +204,8 @@ export default function AdminOnePage() {
                       <h1 className="onepage-title">
                         {g.title} <span aria-hidden="true">›</span> {current.label}
                       </h1>
-                      {g.kind === 'tool' ? (
-                        <ToolsBody />
-                      ) : (
-                        <>
-                          {current.note && <p className="muted">{current.note}</p>}
-                          <EntryView entry={current} kind={g.kind} />
-                        </>
-                      )}
+                      {current.note && <p className="muted">{current.note}</p>}
+                      <EntryView entry={current} kind={g.kind} />
                     </>
                   )}
                 </section>
