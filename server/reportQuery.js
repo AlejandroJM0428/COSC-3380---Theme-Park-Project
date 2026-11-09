@@ -16,6 +16,7 @@ import { HttpError } from './errors.js';
 
 export const ROW_LIMITS = [100, 500, 1000, 5000];
 export const DEFAULT_LIMIT = 1000;
+export const SUGGEST_CAP = 500; // the name search box offers up to this many names in its drop-down
 
 const TIMEOUT_MS = 15000;
 const HIDDEN = /password|hash|secret/i;
@@ -133,16 +134,16 @@ export function fixedRules(report) {
 }
 
 // Distinct values of one text column, for the check-box list. null = too many to list.
-export async function columnOptions(name, report, column) {
+export async function columnOptions(name, report, column, cap = OPTION_CAP) {
   const meta = await describeSource(name, report);
   const col = meta.find((c) => c.name === column);
   if (!col || col.kind !== 'text') throw bad(`"${String(column).slice(0, 60)}" is not a text column of this report`);
-  const key = `${name}/${col.name}`;
+  const key = `${name}/${col.name}/${cap}`;
   const hit = optionCache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.values;
   const src = fromOf(report);
-  const { rows } = await runSelect(`SELECT DISTINCT ?? AS v FROM ${src.from} WHERE ?? IS NOT NULL ORDER BY ?? LIMIT ${OPTION_CAP + 1}`, [col.name, ...src.params, col.name, col.name]);
-  const values = rows.length > OPTION_CAP ? null : rows.map((r) => String(r.v));
+  const { rows } = await runSelect(`SELECT DISTINCT ?? AS v FROM ${src.from} WHERE ?? IS NOT NULL ORDER BY ?? LIMIT ${cap + 1}`, [col.name, ...src.params, col.name, col.name]);
+  const values = rows.length > cap ? null : rows.map((r) => String(r.v));
   optionCache.set(key, { at: Date.now(), values });
   return values;
 }

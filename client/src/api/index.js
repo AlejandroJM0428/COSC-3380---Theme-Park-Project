@@ -37,8 +37,9 @@ export function getReportParams(endpoint) {
   return USE_MOCK ? Promise.resolve(null) : http(`/reports/${endpoint}/params`)
 }
 
-export function getReportOptions(endpoint, column) {
-  return http(`/reports/${endpoint}/options?${new URLSearchParams({ column })}`)
+// all = true asks for up to 500 values (the name search drop-down) instead of the 60 the check-box list allows.
+export function getReportOptions(endpoint, column, all = false) {
+  return http(`/reports/${endpoint}/options?${new URLSearchParams(all ? { column, all: '1' } : { column })}`)
 }
 
 export async function runReport(endpoint, spec) {

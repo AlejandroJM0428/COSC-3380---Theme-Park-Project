@@ -62,7 +62,7 @@ const QUERIES = {
     roles: RETAIL,
     params: [
       { name: 'days', label: 'Expiring within', type: 'number', default: 30, choices: DAY_CHOICES },
-      { name: 'name', label: 'Guest name', type: 'text', default: '', placeholder: 'e.g. Garcia' },
+      { name: 'name', label: 'Guest name', type: 'text', default: '', placeholder: 'e.g. Garcia', suggest: 'guestNames' },
     ],
     bind: ['days', 'name', 'name'], // the name fills both LIKEs (last name, first name)
   },
@@ -75,6 +75,10 @@ async function withChoices(params) {
     if (p.choices === 'venues') {
       const [rows] = await pool.query('SELECT VenueID, VenueName FROM Venue ORDER BY VenueName');
       out.push({ ...p, choices: [{ value: 0, label: 'All venues' }, ...rows.map((r) => ({ value: r.VenueID, label: r.VenueName }))] });
+    } else if (p.suggest === 'guestNames') {
+      // Names for the search box's drop-down: guests with a membership, last names first.
+      const [rows] = await pool.query('SELECT DISTINCT c.LastName AS v FROM Customer c JOIN Membership m ON m.CustomerID = c.CustomerID ORDER BY c.LastName LIMIT 500');
+      out.push({ ...p, suggestions: rows.map((r) => r.v) });
     } else out.push(p);
   }
   return out;

@@ -3,7 +3,7 @@ import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { audit } from './admin.js';
-import { DEFAULT_LIMIT, ROW_LIMITS, columnOptions, describeSource, fixedRules, runReport } from '../reportQuery.js';
+import { DEFAULT_LIMIT, ROW_LIMITS, SUGGEST_CAP, columnOptions, describeSource, fixedRules, runReport } from '../reportQuery.js';
 
 // Who may open which report. Keep these lists in step with `roles` in client/src/config/reports.js.
 // The server is what actually enforces access; the client only hides what you cannot open.
@@ -125,7 +125,7 @@ route(
   '/api/reports/:name/options',
   requireRole(...ANY_REPORT_ROLE)(async (ctx) => {
     const { name, report } = reportFor(ctx);
-    return { column: ctx.query.column, values: await columnOptions(name, report, ctx.query.column) };
+    return { column: ctx.query.column, values: await columnOptions(name, report, ctx.query.column, ctx.query.all ? SUGGEST_CAP : undefined) };
   }),
 );
 

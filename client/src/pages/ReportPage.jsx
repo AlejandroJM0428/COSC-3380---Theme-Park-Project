@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { getReportParams, listQueries, runQuery, runReport } from '../api/index.js'
+import { getReportOptions, getReportParams, listQueries, runQuery, runReport } from '../api/index.js'
 import { useAuth } from '../auth/context.js'
 import DataTable from '../components/DataTable.jsx'
 import DateRangePicker from '../components/DateRangePicker.jsx'
@@ -88,15 +88,23 @@ function QueryInputs({ params, values, onChange, onEnter }) {
           <label key={p.name} className="rp-datepick">
             <span>{p.label}</span>
             {p.type === 'text' ? (
-              <input
-                type="search"
-                className="rp-search"
-                maxLength={60}
-                placeholder={p.placeholder ?? 'Type part of a name'}
-                value={values[p.name] ?? ''}
-                onChange={(e) => set(p.name, e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && onEnter?.()}
-              />
+              <>
+                <input
+                  type="search"
+                  className="rp-search"
+                  maxLength={60}
+                  list={`rp-names-${p.name}`}
+                  placeholder={p.placeholder ?? 'Type part of a name, or pick one'}
+                  value={values[p.name] ?? ''}
+                  onChange={(e) => set(p.name, e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && onEnter?.()}
+                />
+                <datalist id={`rp-names-${p.name}`}>
+                  {(p.suggestions ?? []).map((n) => (
+                    <option key={n} value={n} />
+                  ))}
+                </datalist>
+              </>
             ) : Array.isArray(p.choices) ? (
               <select value={values[p.name] ?? p.default} onChange={(e) => set(p.name, Number(e.target.value))}>
                 {p.choices.map((c) => (
@@ -152,6 +160,7 @@ function ReportBody({ report, csvName }) {
   const [qvals, setQvals] = useState({}) // parameter name -> chosen value
   const [searchText, setSearchText] = useState('') // the name search when the database cannot do it (mock mode); otherwise it lives in spec.filters
   const label = useMemo(() => makeLabeler(report.labels), [report.labels])
+  const [names, setNames] = useState([]) // the names offered in the search box's drop-down
 
   // The list of columns is cheap (no report data is read), so it loads when the report opens.
   // The report itself still loads only when Run report is pressed.
@@ -193,6 +202,20 @@ function ReportBody({ report, csvName }) {
   const searchKey = report.search?.key
   const searchOnServer = Boolean(meta) && Boolean(searchKey) && meta.columns.some((c) => c.name === searchKey && c.kind === 'text')
   const searchValue = searchOnServer ? (spec.filters.find((f) => f.column === searchKey)?.contains ?? '') : searchText
+  useEffect(() => {
+    if (!searchOnServer) return undefined
+    let live = true
+    getReportOptions(report.endpoint, searchKey, true)
+      .then((r) => live && setNames(r.values ?? []))
+      .catch(() => {}) // no drop-down; typing still works
+    return () => {
+      live = false
+    }
+  }, [report.endpoint, searchKey, searchOnServer])
+  const nameList = useMemo(() => {
+    const local = searchKey && !searchOnServer ? [...new Set(rows.map((r) => r[searchKey]).filter(Boolean))].sort() : names
+    return local
+  }, [names, rows, searchKey, searchOnServer])
   function typeSearch(text) {
     if (!searchOnServer) {
       setSearchText(text)
@@ -311,11 +334,17 @@ function ReportBody({ report, csvName }) {
               type="search"
               className="rp-search"
               maxLength={60}
-              placeholder={report.search.placeholder ?? 'Type part of a name'}
+              placeholder={report.search.placeholder ?? 'Type part of a name, or pick one'}
+              list={`rp-names-${csvName}`}
               value={searchValue}
               onChange={(e) => typeSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !loading && run()}
             />
+            <datalist id={`rp-names-${csvName}`}>
+              {nameList.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
           </label>
         )}
         {isQuery && queryDef && <QueryInputs params={queryDef.params} values={qvals} onChange={setQvals} onEnter={() => !loading && run()} />}
