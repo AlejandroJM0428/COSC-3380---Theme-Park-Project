@@ -8,7 +8,7 @@ const ROW_LIMIT = 100
 const isEmpty = (v) => v === null || v === undefined || v === ''
 
 // Money columns get a dollar sign and two decimals. Matched by column name, so "ShareOfRevenue" (a percent) is excluded.
-const MONEY_COLUMN = /Revenue|Cost|Price|Spend|Sale|Total|AvgFood|AvgShop|AvgGames|AvgExtras/
+const MONEY_COLUMN = /Revenue|Cost|Price|Spend|Sale|Total|Fees|AvgFood|AvgShop|AvgGames|AvgExtras/
 const NOT_MONEY = /Share|Rate$|Hours|Pct/
 // Whole-number identifiers and calendar parts stay plain: 2026 must not become 2,026.
 const PLAIN_NUMBER = /(^|[a-z])(Year|Month|Day|ID|Id|Key|Rank)$|^(Year|Month|Rank)$/

@@ -1,5 +1,6 @@
 // One entry per report. ReportPage reads this list, so adding a report = adding an entry here.
 //   key         URL part (/reports/<key>)
+//   query       optional: 'q1'..'q5' = run that SQL file from SQL/queries (server/routes/queries.js) instead of a view
 //   endpoint    which data to fetch (api/index.js -> GET /api/reports/<endpoint>)
 //   view        the database view behind it (for your own reference)
 //   title       short name shown in the menu
@@ -427,6 +428,48 @@ const ALL_REPORTS = [
         rowClass: markOf,
       },
       {
+        key: 'by-tier',
+        title: 'Revenue by tier',
+        sectionDescription: 'How much does each membership tier earn (fees, tickets and in-park spending), compared with day passes? Pick a date range. This tab runs Query 1.',
+        query: 'q1',
+        prepare: (rows) => toNumbers(rows, ['MembershipsSold', 'MembershipFees', 'Tickets', 'TicketRevenue', 'InParkSpending', 'TotalRevenue']),
+        kpis: (rows) => {
+          const all = total(rows, 'TotalRevenue')
+          const top = extreme(rows, 'TotalRevenue')
+          const day = rows.find((r) => r.Tier === 'Day Pass')
+          return [
+            { label: 'Total revenue', value: money(all) },
+            { label: 'Top earner', value: top ? top.row.Tier : '—', note: top ? `${money(top.v)} (${pct(top.v, all)}%)` : '' },
+            { label: 'Memberships sold', value: total(rows, 'MembershipsSold').toLocaleString('en-US') },
+            { label: 'Day-pass share', value: day ? `${pct(day.TotalRevenue, all)}%` : '—', note: 'of all revenue' },
+          ]
+        },
+        notes: [
+          'Total revenue = membership fees + ticket revenue + in-park spending (food, shop and games) on tickets of that tier. Day Pass covers visits with no membership.',
+          'Membership fees count on the day the membership starts. Refunded tickets are left out of ticket revenue and spending.',
+          'Green is the tier that earns the most.',
+        ],
+        chart: { type: 'bar', x: 'Tier', y: 'TotalRevenue', yLabel: 'Total revenue ($)' },
+        tableRows: (rows) => {
+          const all = total(rows, 'TotalRevenue')
+          const top = extreme(rows, 'TotalRevenue')
+          return rows.map((r) => ({
+            Tier: r.Tier,
+            MembershipsSold: r.MembershipsSold,
+            MembershipFees: r.MembershipFees,
+            Tickets: r.Tickets,
+            TicketRevenue: r.TicketRevenue,
+            InParkSpending: r.InParkSpending,
+            TotalRevenue: r.TotalRevenue,
+            ShareOfRevenue: `${pct(r.TotalRevenue, all)}%`,
+            Note: top && top.row === r && rows.length > 1 ? 'Top earner' : '',
+            _mark: top && top.row === r && rows.length > 1 ? 'high' : undefined,
+          }))
+        },
+        columns: ['Tier', 'MembershipsSold', 'MembershipFees', 'Tickets', 'TicketRevenue', 'InParkSpending', 'TotalRevenue', 'ShareOfRevenue', 'Note'],
+        rowClass: markOf,
+      },
+      {
         key: 'categories',
         title: 'By category',
         sectionDescription: 'Which kinds of food and merchandise earn the most?',
@@ -524,6 +567,38 @@ const ALL_REPORTS = [
           })
         },
         columns: ['Rank', 'ItemName', 'VenueName', 'Category', 'Units', 'Revenue', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'top-by-venue',
+        title: 'Top items by venue',
+        sectionDescription: 'What sells best at each restaurant and shop? Pick a venue and a date range. This tab runs Query 4 (the 50 best rows).',
+        query: 'q4',
+        prepare: (rows) => toNumbers(rows, ['UnitsSold', 'Revenue']),
+        filters: [
+          { key: 'VenueName', label: 'Venue' },
+          { key: 'Category', label: 'Category' },
+        ],
+        kpis: (rows) => {
+          const best = extreme(rows, 'Revenue')
+          return [
+            { label: 'Revenue shown', value: money(total(rows, 'Revenue')) },
+            { label: 'Top earning item', value: best ? best.row.ItemName : '—', note: best ? `${money(best.v)} at ${best.row.VenueName}` : '' },
+            { label: 'Units sold', value: total(rows, 'UnitsSold').toLocaleString('en-US') },
+          ]
+        },
+        notes: ['Items are listed by venue, best seller first. Green rows are the best seller at their venue.'],
+        chartRows: (rows) => groupSum(rows, ['ItemName'], ['Revenue']).sort((a, b) => b.Revenue - a.Revenue).slice(0, 10),
+        chart: { type: 'bar', x: 'ItemName', y: 'Revenue', yLabel: 'Top 10 items by revenue ($)', angle: true },
+        tableRows: (rows) => {
+          const seen = new Set()
+          return rows.map((r) => {
+            const first = !seen.has(r.VenueName)
+            seen.add(r.VenueName)
+            return { ...r, Note: first ? 'Best seller here' : '', _mark: first ? 'high' : undefined }
+          })
+        },
+        columns: ['VenueName', 'ItemName', 'Category', 'UnitsSold', 'Revenue', 'Note'],
         rowClass: markOf,
       },
       {
@@ -758,6 +833,32 @@ const ALL_REPORTS = [
             return { ...r, Note: low ? 'Most may lapse' : '', _mark: low ? 'low' : undefined }
           }),
         columns: ['EndsIn', 'Tier', 'Expiring', 'AutoRenew', 'NotAutoRenew', 'RevenueAtRiskEstimate', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'expiring-guests',
+        title: 'Guests expiring',
+        sectionDescription: 'Which guests have a membership ending soon, and are they set to renew? Pick how far ahead to look. This tab runs Query 5.',
+        query: 'q5',
+        prepare: (rows) => toNumbers(rows, ['DaysLeft']),
+        filters: [
+          { key: 'Tier', label: 'Tier' },
+          { key: 'AutoRenew', label: 'Auto-renew' },
+        ],
+        kpis: (rows) => {
+          const lapse = rows.filter((r) => r.AutoRenew === 'No')
+          return [
+            { label: 'Memberships ending', value: rows.length.toLocaleString('en-US') },
+            { label: 'Not on auto-renew', value: lapse.length.toLocaleString('en-US'), note: 'worth a reminder or offer' },
+            { label: 'Ending within 7 days', value: rows.filter((r) => r.DaysLeft <= 7).length.toLocaleString('en-US') },
+          ]
+        },
+        notes: ['Red rows are not on auto-renew, so they are likely to lapse unless the guest is contacted.'],
+        chartRows: (rows) => groupSum(rows, ['Tier'], []).map((g) => ({ Tier: g.Tier, Guests: g.Rows })),
+        chart: { type: 'bar', x: 'Tier', y: 'Guests', yLabel: 'Memberships ending' },
+        tableRows: (rows) =>
+          rows.map((r) => ({ ...r, Note: r.AutoRenew === 'No' ? 'May lapse' : '', _mark: r.AutoRenew === 'No' ? 'low' : undefined })),
+        columns: ['FirstName', 'LastName', 'Tier', 'EndDate', 'DaysLeft', 'AutoRenew', 'Note'],
         rowClass: markOf,
       },
       {
@@ -1258,6 +1359,33 @@ const ALL_REPORTS = [
         rowClass: markOf,
       },
       {
+        key: 'downtime',
+        title: 'Downtime per ride (date range)',
+        sectionDescription: 'How many hours was each ride under maintenance in the dates you pick? Jobs that overlap the range count only the hours inside it. This tab runs Query 3.',
+        query: 'q3',
+        prepare: (rows) => toNumbers(rows, ['Jobs', 'HoursDown']),
+        kpis: (rows) => {
+          const worst = extreme(rows, 'HoursDown')
+          return [
+            { label: 'Rides with maintenance', value: rows.length.toLocaleString('en-US') },
+            { label: 'Hours down', value: total(rows, 'HoursDown').toLocaleString('en-US') },
+            { label: 'Most hours down', value: worst ? worst.row.RideName : '—', note: worst ? `${worst.v.toLocaleString('en-US')} hours` : '' },
+          ]
+        },
+        notes: ['Hours are counted from the start of each job to its end (or to now if still open). Red rows were down at least twice as long as the average ride.'],
+        chartRows: (rows) => rows.slice(0, 12),
+        chart: { type: 'bar', x: 'RideName', y: 'HoursDown', yLabel: 'Hours down', angle: true },
+        tableRows: (rows) => {
+          const avg = rows.length ? total(rows, 'HoursDown') / rows.length : 0
+          return rows.map((r) => {
+            const long = rows.length >= 4 && avg > 0 && r.HoursDown >= avg * 2
+            return { ...r, AvgHoursPerJob: r.Jobs ? round2(r.HoursDown / r.Jobs) : null, Note: long ? 'Down twice as long as average' : '', _mark: long ? 'low' : undefined }
+          })
+        },
+        columns: ['RideName', 'Jobs', 'HoursDown', 'AvgHoursPerJob', 'Note'],
+        rowClass: markOf,
+      },
+      {
         key: 'lost-revenue',
         title: 'Lost revenue (estimate)',
         sectionDescription: 'ESTIMATE: what each ride\'s downtime may have cost in ticket money. Rides only.',
@@ -1410,6 +1538,38 @@ const ALL_REPORTS = [
           })
         },
         columns: ['Rank', 'RideName', 'Boardings', 'Note'],
+        rowClass: markOf,
+      },
+      {
+        key: 'busiest',
+        title: 'Busiest rides (date range)',
+        sectionDescription: 'Which ten rides carried the most guests in the dates you pick, and how many used Express? This tab runs Query 2.',
+        query: 'q2',
+        prepare: (rows) => toNumbers(rows, ['Boardings', 'ExpressBoardings']),
+        filters: [{ key: 'ZoneName', label: 'Zone' }],
+        kpis: (rows) => {
+          const top = extreme(rows, 'Boardings')
+          const all = total(rows, 'Boardings')
+          return [
+            { label: 'Boardings (top 10)', value: all.toLocaleString('en-US') },
+            { label: 'Busiest ride', value: top ? top.row.RideName : '—', note: top ? `${top.v.toLocaleString('en-US')} boardings` : '' },
+            { label: 'Express share', value: all ? `${pct(total(rows, 'ExpressBoardings'), all)}%` : '—', note: 'of these boardings' },
+          ]
+        },
+        notes: ['A boarding is one guest getting on a ride. Green rows are the three busiest rides.'],
+        chart: { type: 'bar', x: 'RideName', y: 'Boardings', y2: 'ExpressBoardings', yLabel: 'Boardings', y2Label: 'Express boardings', angle: true },
+        tableRows: (rows) =>
+          rows.map((r, i) => ({
+            Rank: i + 1,
+            RideName: r.RideName,
+            ZoneName: r.ZoneName,
+            Boardings: r.Boardings,
+            ExpressBoardings: r.ExpressBoardings,
+            ExpressShare: `${pct(r.ExpressBoardings, r.Boardings)}%`,
+            Note: i < 3 ? 'Most ridden' : '',
+            _mark: i < 3 ? 'high' : undefined,
+          })),
+        columns: ['Rank', 'RideName', 'ZoneName', 'Boardings', 'ExpressBoardings', 'ExpressShare', 'Note'],
         rowClass: markOf,
       },
       {

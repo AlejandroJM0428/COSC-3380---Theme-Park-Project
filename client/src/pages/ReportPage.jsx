@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { getReportParams, runReport } from '../api/index.js'
+import { getReportParams, listQueries, runQuery, runReport } from '../api/index.js'
 import { useAuth } from '../auth/context.js'
 import DataTable from '../components/DataTable.jsx'
 import DateRangePicker from '../components/DateRangePicker.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 import ReportParams, { emptySpec, isCustom, toRequest } from '../components/ReportParams.jsx'
-import ReportSql from '../components/ReportSql.jsx'
 import { REPORTS } from '../config/reports.js'
 import NotFound from './NotFound.jsx'
 import './ReportPage.css'
@@ -75,6 +74,46 @@ function downloadCsv(name, columns, rows) {
   URL.revokeObjectURL(url)
 }
 
+// The inputs for a query tab, drawn from the parameter list the server sends: the start and end dates become one
+// click-to-pick date range, a parameter with `choices` becomes a drop-down, and any other number is a number box.
+function QueryInputs({ params, values, onChange }) {
+  const set = (name, value) => onChange((v) => ({ ...v, [name]: value }))
+  const hasDates = params.some((p) => p.name === 'start') && params.some((p) => p.name === 'end')
+  return (
+    <>
+      {params
+        .filter((p) => p.type !== 'date')
+        .map((p) => (
+          <label key={p.name} className="rp-datepick">
+            <span>{p.label}</span>
+            {Array.isArray(p.choices) ? (
+              <select value={values[p.name] ?? p.default} onChange={(e) => set(p.name, Number(e.target.value))}>
+                {p.choices.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input type="number" min="0" value={values[p.name] ?? ''} onChange={(e) => set(p.name, e.target.value)} />
+            )}
+          </label>
+        ))}
+      {hasDates && (
+        <div className="rp-datepick">
+          <span>Dates</span>
+          <DateRangePicker
+            label="Dates"
+            from={values.start ?? ''}
+            to={values.end ?? ''}
+            onChange={({ from, to }) => onChange((v) => ({ ...v, start: from || params.find((p) => p.name === 'start').default, end: to || params.find((p) => p.name === 'end').default }))}
+          />
+        </div>
+      )}
+    </>
+  )
+}
+
 // The body of one report or one section: filters, headline numbers, notes, charts and table.
 // `report` is either a whole report or one entry of report.sections (both use the same settings, see config/reports.js).
 function ReportBody({ report, csvName }) {
@@ -87,14 +126,32 @@ function ReportBody({ report, csvName }) {
   const [to, setTo] = useState('')
   const [meta, setMeta] = useState(null) // the columns a person can choose parameters on; null in mock mode or if it cannot be loaded
   const [spec, setSpec] = useState(() => emptySpec(null)) // parameters chosen before running (sent to the server)
-  const [evidence, setEvidence] = useState(null) // the SQL that ran, and its proof
   const [ranCustom, setRanCustom] = useState(false) // the last run was a summary or a column choice
   const [ranRequest, setRanRequest] = useState('')
+  // A tab with `query: 'q1'` runs one of the SQL files in SQL/queries instead of a view. Its parameters come from the server.
+  const isQuery = Boolean(report.query)
+  const [queryDef, setQueryDef] = useState(null) // { id, title, params: [{ name, label, type, default, choices? }] }
+  const [qvals, setQvals] = useState({}) // parameter name -> chosen value
 
   // The list of columns is cheap (no report data is read), so it loads when the report opens.
   // The report itself still loads only when Run report is pressed.
   useEffect(() => {
     let live = true
+    if (isQuery) {
+      listQueries()
+        .then((list) => {
+          const def = list.find((q) => q.id === report.query)
+          if (!live || !def) return
+          setQueryDef(def)
+          setQvals(Object.fromEntries(def.params.map((p) => [p.name, p.default])))
+        })
+        .catch((err) => {
+          if (live) setError(err.message)
+        })
+      return () => {
+        live = false
+      }
+    }
     getReportParams(report.endpoint)
       .then((m) => {
         if (!live || !m) return
@@ -105,7 +162,7 @@ function ReportBody({ report, csvName }) {
     return () => {
       live = false
     }
-  }, [report.endpoint])
+  }, [report.endpoint, report.query, isQuery])
 
   const columnNames = useMemo(() => new Set((meta?.columns ?? []).map((c) => c.name)), [meta])
   const dateKey = report.dateFilter?.key
@@ -132,15 +189,14 @@ function ReportBody({ report, csvName }) {
   const latest = useRef(0)
   function run() {
     const mine = ++latest.current
-    const request = meta ? toRequest(spec) : undefined
-    const custom = Boolean(meta) && isCustom(spec)
+    const request = isQuery ? qvals : meta ? toRequest(spec) : undefined
+    const custom = !isQuery && Boolean(meta) && isCustom(spec)
     setLoading(true)
     setError('')
-    runReport(report.endpoint, request)
-      .then(({ rows: data, evidence: proof }) => {
+    ;(isQuery ? runQuery(report.query, qvals) : runReport(report.endpoint, request))
+      .then(({ rows: data }) => {
         if (mine !== latest.current) return
         setRows(report.prepare && !custom ? report.prepare(data) : data)
-        setEvidence(proof)
         setRanCustom(custom)
         setRanRequest(JSON.stringify(request ?? null))
         setLoaded(true)
@@ -153,7 +209,7 @@ function ReportBody({ report, csvName }) {
       })
   }
 
-  const stale = loaded && meta && JSON.stringify(toRequest(spec)) !== ranRequest
+  const stale = loaded && (isQuery ? JSON.stringify(qvals) !== ranRequest : Boolean(meta) && JSON.stringify(toRequest(spec)) !== ranRequest)
 
   // Values for each drop-down, taken from the rows themselves.
   const options = useMemo(() => {
@@ -207,19 +263,12 @@ function ReportBody({ report, csvName }) {
   const hasFilters = localKeys.length > 0
   const filtersOn = localKeys.some((f) => selects[f.key]) || (localDate && (from || to))
 
-  // Anything the page did to the rows after the SQL, so the "How this was calculated" box can say so.
-  const after = []
-  if (useLocal) {
-    for (const f of localKeys) if (selects[f.key]) after.push(`${f.label} = ${selects[f.key]}`)
-    if (localDate && (from || to)) after.push(`${report.dateFilter.label} ${from || '…'} to ${to || '…'}`)
-  }
-  if (!ranCustom && report.prepare) after.push('added calculated columns such as Month, and turned money text into numbers')
-
   return (
     <div>
       {report.sectionDescription && <p className="muted rp-section-desc">{report.sectionDescription}</p>}
       <ErrorBanner message={error} onClose={() => setError('')} />
       <div className="rp-runbar">
+        {isQuery && queryDef && <QueryInputs params={queryDef.params} values={qvals} onChange={setQvals} />}
         {report.dateFilter && (
           <div className="rp-datepick">
             <span>{report.dateFilter.label}</span>
@@ -232,7 +281,7 @@ function ReportBody({ report, csvName }) {
         {!loaded && !loading && !error && <span className="muted">Choose parameters, then press Run report to load the data.</span>}
         {stale && !loading && <span className="muted">Parameters changed. Press Run again to update.</span>}
       </div>
-      <ReportParams endpoint={report.endpoint} meta={meta} spec={spec} onChange={setSpec} hideColumn={dateOnServer ? dateKey : ''} />
+      {!isQuery && <ReportParams endpoint={report.endpoint} meta={meta} spec={spec} onChange={setSpec} hideColumn={dateOnServer ? dateKey : ''} />}
       {loaded && (
         <>
           {(hasFilters || filtersOn) && (
@@ -299,7 +348,6 @@ function ReportBody({ report, csvName }) {
               <Chart chart={extra.chart} rows={extraRows} />
             </>
           )}
-          <ReportSql evidence={evidence} after={after} />
           <div className="rp-actions">
             <span className="muted">{tableRows.length.toLocaleString('en-US')} rows</span>
             <button

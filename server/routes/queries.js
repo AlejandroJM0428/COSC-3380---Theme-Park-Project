@@ -5,6 +5,7 @@ import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { makeEvidence, runSelect } from '../reportQuery.js';
+import { audit } from './admin.js';
 
 const QUERY_DIR = process.env.QUERY_DIR
   ? path.resolve(process.env.QUERY_DIR)
@@ -33,24 +34,48 @@ async function dateDefaults() {
 const withDefaults = (params, d) =>
   params.map((p) => (p === START ? { ...p, default: d.first } : p === END ? { ...p, default: d.today } : p));
 
+// Who may run which query. The five queries are shown INSIDE the reports (as tabs), so each one uses the same
+// role lists as the report it sits in (server/routes/reports.js and client/src/config/reports.js).
+const RETAIL = ['Admin', 'RetailManager'];
+const OPERATIONS = ['Admin', 'Manager'];
+const MAINTENANCE = ['Admin', 'MaintenanceManager'];
+const ANY_REPORT_ROLE = ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager']; // gets past the door; the query's own list decides
+
+// A drop-down instead of a typed number: the page shows `label`, the query receives `value`.
+const DAY_CHOICES = [30, 60, 90, 180, 365].map((n) => ({ value: n, label: `${n} days` }));
+
 // Whitelist. `bind` lists, in order, which parameter fills each ? in the .sql file.
 const QUERIES = {
-  q1: { title: 'Q1 Revenue by membership tier', file: 'q1.sql', params: [START, END], bind: ['start', 'end', 'start', 'end'] },
-  q2: { title: 'Q2 Busiest rides', file: 'q2.sql', params: [START, END], bind: ['start', 'end'] },
-  q3: { title: 'Q3 Maintenance downtime per ride', file: 'q3.sql', params: [START, END], bind: ['start', 'end', 'end', 'start'] },
+  q1: { title: 'Q1 Revenue by membership tier', file: 'q1.sql', roles: RETAIL, params: [START, END], bind: ['start', 'end', 'start', 'end'] },
+  q2: { title: 'Q2 Busiest rides', file: 'q2.sql', roles: OPERATIONS, params: [START, END], bind: ['start', 'end'] },
+  q3: { title: 'Q3 Maintenance downtime per ride', file: 'q3.sql', roles: MAINTENANCE, params: [START, END], bind: ['start', 'end', 'end', 'start'] },
   q4: {
     title: 'Q4 Best-selling items per venue',
     file: 'q4.sql',
-    params: [{ name: 'venue', label: 'Venue ID (0 = all)', type: 'number', default: 0 }, START, END],
+    roles: RETAIL,
+    params: [{ name: 'venue', label: 'Venue', type: 'number', default: 0, choices: 'venues' }, START, END],
     bind: ['venue', 'venue', 'start', 'end'],
   },
   q5: {
     title: 'Q5 Memberships expiring soon',
     file: 'q5.sql',
-    params: [{ name: 'days', label: 'Days ahead', type: 'number', default: 30 }],
+    roles: RETAIL,
+    params: [{ name: 'days', label: 'Expiring within', type: 'number', default: 30, choices: DAY_CHOICES }],
     bind: ['days'],
   },
 };
+
+// Fills in `choices` for the drop-downs. 'venues' is read from the Venue table (0 = every venue).
+async function withChoices(params) {
+  const out = [];
+  for (const p of params) {
+    if (p.choices === 'venues') {
+      const [rows] = await pool.query('SELECT VenueID, VenueName FROM Venue ORDER BY VenueName');
+      out.push({ ...p, choices: [{ value: 0, label: 'All venues' }, ...rows.map((r) => ({ value: r.VenueID, label: r.VenueName }))] });
+    } else out.push(p);
+  }
+  return out;
+}
 
 function readParam(def, raw) {
   const value = raw === undefined || raw === '' ? String(def.default) : String(raw);
@@ -62,21 +87,24 @@ function readParam(def, raw) {
   return Number(value);
 }
 
+// The queries this role may run, with their parameters (and today's defaults) for the page to draw.
 route(
   'GET',
   '/api/queries',
-  requireRole('Admin')(async () => {
+  requireRole(...ANY_REPORT_ROLE)(async (ctx) => {
     const d = await dateDefaults();
-    return Object.entries(QUERIES).map(([id, q]) => ({ id, title: q.title, params: withDefaults(q.params, d) }));
+    const mine = Object.entries(QUERIES).filter(([, q]) => q.roles.includes(ctx.session.role));
+    return Promise.all(mine.map(async ([id, q]) => ({ id, title: q.title, params: await withChoices(withDefaults(q.params, d)) })));
   }),
 );
 
 route(
   'GET',
   '/api/queries/:id',
-  requireRole('Admin')(async (ctx) => {
+  requireRole(...ANY_REPORT_ROLE)(async (ctx) => {
     const q = Object.hasOwn(QUERIES, ctx.params.id) ? QUERIES[ctx.params.id] : null;
     if (!q) throw new HttpError(404, 'Unknown query');
+    if (!q.roles.includes(ctx.session.role)) throw new HttpError(403, 'Your role cannot open this report');
 
     const d = await dateDefaults();
     const values = {};
@@ -87,6 +115,12 @@ route(
     const sql = (await fs.readFile(path.join(QUERY_DIR, q.file), 'utf8')).trim();
     const args = q.bind.map((name) => values[name]);
     const { rows, ms } = await runSelect(sql, args);
-    return { rows, evidence: makeEvidence({ source: q.file, sql, params: args, rows, ms }) };
+    const evidence = makeEvidence({ source: q.file, sql, params: args, rows, ms });
+    // Same record as a report run (AdminAudit, action REPORT_RUN). A failed audit write never blocks the result.
+    await audit(ctx, 'REPORT_RUN', {
+      table: q.file,
+      detail: { query: ctx.params.id, rows: evidence.rowCount, ms: evidence.ms, hash: evidence.hash, values },
+    }).catch((err) => console.error('Query audit write failed:', err.message));
+    return { rows, evidence };
   }),
 );
