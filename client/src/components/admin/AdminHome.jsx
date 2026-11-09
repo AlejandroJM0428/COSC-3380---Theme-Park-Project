@@ -173,7 +173,7 @@ export default function AdminHome({ goTo }) {
           <ul className="ah-list">
             <li><button type="button" onClick={() => goTo('reports')}>Reports</button></li>
             <li><button type="button" onClick={() => goTo('daily')}>Daily records</button></li>
-            <li><button type="button" onClick={() => goTo('tools', 'triggers')}>Triggers</button></li>
+            <li><button type="button" onClick={() => goTo('tools', 'builder')}>SQL GUI</button></li>
           </ul>
         </Card>
       </div>

@@ -3,34 +3,26 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { ADMIN_NAV_SECTIONS, PARK_SHORT, ROLE_INFO } from '../config/nav.js'
 import AdminHome from '../components/admin/AdminHome.jsx'
-import BrowsePanel from '../components/admin/BrowsePanel.jsx'
 import BuilderPanel from '../components/admin/BuilderPanel.jsx'
-import DataPanel from '../components/admin/DataPanel.jsx'
-import RowEditorPanel from '../components/admin/RowEditorPanel.jsx'
-import SqlConsolePanel from '../components/admin/SqlConsolePanel.jsx'
-import TransactionsPanel from '../components/admin/TransactionsPanel.jsx'
 import CancellationsPage from './CancellationsPage.jsx'
 import MaintenancePage from './MaintenancePage.jsx'
 import NotificationsPage from './NotificationsPage.jsx'
 import Placeholder from './Placeholder.jsx'
-import QueryPage from './QueryPage.jsx'
 import ReportPage from './ReportPage.jsx'
 import SellTicket from './SellTicket.jsx'
 import ShiftRatingsPage from './ShiftRatingsPage.jsx'
 import TicketSalesPage from './TicketSalesPage.jsx'
-import TriggerList from './TriggerList.jsx'
 import { CustomersPage, FacilitiesPage, GamePlaysPage, MembershipsPage, PurchasesPage, RideLogPage, UsersPage, WeatherPage } from './DataEntryPages.jsx'
 import './AdminOnePage.css'
 
 // The one-page admin (no sidebar): one workspace instead of stacked sections.
 // A white header shows the park and who is signed in. Under it a tab bar picks the area:
-// Home, People & access, Park setup, Reports, Daily records, Database tools. Each area (except Home) opens a drop-down of its items,
+// Home, People & access, Park setup, Reports, Daily records, Database tools (SQL GUI). Each area (except Home) opens a drop-down of its items,
 // and the chosen item opens in place below. Home is the overview: number cards, a chart and a few lists.
 // The choice lives in the address as #group/item (for example #reports/revenue), so a refresh or a shared link returns to it.
 // The People, Park setup, Reports and Daily records lists are read from ADMIN_NAV_SECTIONS (config/nav.js),
 // so every item of the old admin menu has a place here and a new menu item shows up on its own.
-// The existing pages and panels are used as they are. Required Queries and Triggers open here too;
-// their addresses (/admin/queries and /admin/triggers) also work.
+// Database tools holds one tool, the SQL GUI, so that tab opens it directly (no drop-down).
 
 // Same map as PAGE_COMPONENTS in App.jsx (key = the `path` in config/nav.js).
 const PAGES = {
@@ -51,16 +43,7 @@ const PAGES = {
 }
 
 const REPORT_PREFIX = '/reports/'
-const TOOLS = [
-  { key: 'browse', label: 'Browse Table' },
-  { key: 'console', label: 'SQL Console' },
-  { key: 'builder', label: 'SQL GUI' },
-  { key: 'transactions', label: 'Transactions per ID' },
-  { key: 'rows', label: 'Row Editor' },
-  { key: 'queries', label: 'Required Queries' },
-  { key: 'triggers', label: 'Triggers' },
-  { key: 'importance', label: 'Data importance' },
-]
+const TOOLS = [{ key: 'builder', label: 'SQL GUI' }]
 
 // Menu entries this admin may open, as { key, label, note, group }.
 function entries(section, role) {
@@ -92,33 +75,14 @@ function EntryView({ entry, kind }) {
   return Page ? <Page key={entry.key} /> : <Placeholder title={entry.label} />
 }
 
-// The database tools. A tool stays mounted once opened, so switching tools does not lose what was typed.
-function ToolsBody({ tool, sql, onSqlChange, onUseInConsole }) {
-  const [seen, setSeen] = useState(() => new Set())
-  // Adjusting state while rendering (not in an effect): remember every tool that has been shown.
-  if (!seen.has(tool)) setSeen(new Set(seen).add(tool))
-
-  const body = {
-    browse: <BrowsePanel />,
-    console: <SqlConsolePanel sql={sql} onSqlChange={onSqlChange} />,
-    builder: <BuilderPanel onUseInConsole={onUseInConsole} />,
-    transactions: <TransactionsPanel />,
-    rows: <RowEditorPanel />,
-    queries: <QueryPage />,
-    triggers: <TriggerList />,
-    importance: <DataPanel />,
-  }
-
+// The database tools: only the SQL GUI is left.
+function ToolsBody() {
   return (
     <div>
       <p className="muted">
         Raw access to the database for admins only. Everything here is checked on the server, and every change is written to the audit log.
       </p>
-      {TOOLS.filter((t) => t.key === tool || seen.has(t.key)).map((t) => (
-        <div key={t.key} id={`tool-${t.key}`} hidden={tool !== t.key}>
-          {body[t.key]}
-        </div>
-      ))}
+      <BuilderPanel />
     </div>
   )
 }
@@ -152,8 +116,6 @@ export default function AdminOnePage() {
   const [visited, setVisited] = useState(() => new Set())
   if (group && !visited.has(group.id)) setVisited(new Set(visited).add(group.id))
 
-  const [sql, setSql] = useState('SELECT COUNT(*) AS customers FROM Customer')
-
   // The tab whose drop-down is open (an id from `groups`, or null). Esc or a click elsewhere closes it.
   const [menu, setMenu] = useState(null)
   const navRef = useRef(null)
@@ -179,11 +141,6 @@ export default function AdminOnePage() {
     setLastPick((p) => ({ ...p, [groupId]: key }))
     setMenu(null)
     navigate({ pathname: location.pathname, search: location.search, hash: `#${groupId}/${encodeURIComponent(key)}` }, { replace: true })
-  }
-
-  function useInConsole(text) {
-    setSql(text)
-    go('tools', 'console')
   }
 
   function handleLogout() {
@@ -264,7 +221,7 @@ export default function AdminOnePage() {
                         {g.title} <span aria-hidden="true">›</span> {current.label}
                       </h1>
                       {g.kind === 'tool' ? (
-                        <ToolsBody tool={current.key} sql={sql} onSqlChange={setSql} onUseInConsole={useInConsole} />
+                        <ToolsBody />
                       ) : (
                         <>
                           {current.note && <p className="muted">{current.note}</p>}

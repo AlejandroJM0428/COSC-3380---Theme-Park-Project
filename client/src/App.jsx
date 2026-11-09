@@ -7,8 +7,6 @@ import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import AdminOnePage from './pages/AdminOnePage.jsx'
 import ReportPage from './pages/ReportPage.jsx'
-import QueryPage from './pages/QueryPage.jsx'
-import TriggerList from './pages/TriggerList.jsx'
 import SellTicket from './pages/SellTicket.jsx'
 import MaintenancePage from './pages/MaintenancePage.jsx'
 import TicketSalesPage from './pages/TicketSalesPage.jsx'
@@ -82,10 +80,6 @@ export default function App() {
         {/* The older admin pages keep working at their own addresses (with the sidebar). */}
         <Route element={<Layout base="/admin" sections={ADMIN_NAV_SECTIONS} brandSub="Admin portal" />}>
           <Route path="reports/:key" element={<ReportPage />} />
-          {/* Not in any menu. Kept for the presentation: type the address to open them. */}
-          <Route path="queries" element={<QueryPage />} />
-          <Route path="triggers" element={<TriggerList />} />
-
           {FORM_PAGES.map((p) => {
             const Page = PAGE_COMPONENTS[p.path]
             return <Route key={p.path} path={p.path} element={Page ? <Page /> : <Placeholder title={p.label} />} />
