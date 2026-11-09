@@ -50,10 +50,11 @@ function compareValues(a, b) {
 
 const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-low' : undefined)
 
-// <DataTable rows={[...]} columns={['A','B']} rowClass={(row) => 'high' | 'low' | undefined} />   (columns optional: defaults to every key)
+// <DataTable rows={[...]} columns={['A','B']} rowClass={(row) => 'high' | 'low' | undefined} labelOf={(column) => 'Header text'} />   (columns optional: defaults to every key;
+// labelOf optional: reports pass their plain-label function, without it the header is the column name split into words)
 // rowClass is optional: 'high' shades the row green and 'low' shades it red, so unusual rows stand out.
 // Click a column header to sort: first click ascending, second descending, third back to the original order.
-export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT }) {
+export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT, labelOf }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
   const [count, setCount] = useState(pageSize) // how many rows are showing
 
@@ -102,7 +103,7 @@ export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMI
                     aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
                   >
                     <button type="button" className="dt-sort" onClick={() => toggleSort(c)} title="Click to sort">
-                      {headerLabel(c)}
+                      {labelOf ? labelOf(c) : headerLabel(c)}
                       <span className="dt-arrow" aria-hidden="true">
                         {active ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </span>

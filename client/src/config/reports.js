@@ -11,6 +11,13 @@
 //   hidden      true = kept here but not shown anywhere (none at the moment)
 //   prepare     optional: reshape the rows before showing them
 //   filters     optional: [{ key, label }] drop-downs built from the values in that column
+//   search      optional: { key, label, placeholder? } a search box next to Run report for the tab's main name column. It sends a
+//               "contains" filter on that column to the server (a bound LIKE). A tab that runs a SQL file (query: 'q5') has its
+//               own name parameter in server/routes/queries.js instead.
+//   featured    optional: ['Column', ...] up to three columns that start on the Search options panel as ready-to-use filters
+//               (default: the first columns listed in `filters` that the database has)
+//   labels      optional: { Column: 'Plain label' } how this tab names its columns in the panel, table headers, CSV and summaries.
+//               Shared labels (and an automatic "EmployeeName" -> "Employee name") live in config/labels.js.
 //   dateFilter  optional: { key, label } adds a from/to date range on that column
 //   kpis        optional: (rows) => [{ label, value, note? }] headline numbers, recalculated for the filtered rows
 //   chartRows   optional: (rows) => rows to plot (default: the filtered rows)
@@ -528,6 +535,9 @@ const ALL_REPORTS = [
             ...r,
             Month: r.SaleYear ? `${r.SaleYear}-${String(r.SaleMonth).padStart(2, '0')}` : 'Never sold',
           })),
+        search: { key: 'ItemName', label: 'Item name', placeholder: 'e.g. pizza' },
+        labels: { ItemName: 'Item name', VenueName: 'Venue', Units: 'Units sold', SaleYear: 'Sale year', SaleMonth: 'Sale month' },
+        featured: ['VenueName', 'Category'],
         filters: [
           { key: 'VenueName', label: 'Venue' },
           { key: 'Category', label: 'Category' },
@@ -1108,6 +1118,9 @@ const ALL_REPORTS = [
         endpoint: 'maintenance-history',
         view: 'v_MaintenanceHistory',
         prepare: prepJobs,
+        search: { key: 'FacilityName', label: 'Name of ride, game or venue', placeholder: 'e.g. Canyon' },
+        labels: { AvailabilityPct: 'Availability (%, estimate)', RepairCost: 'Repair cost' },
+        featured: ['FacilityKind', 'MaintType'],
         filters: [{ key: 'FacilityKind', label: 'Type' }],
         dateFilter: { key: 'StartDate', label: 'Started' },
         kpis: (rows) => {
@@ -1146,6 +1159,9 @@ const ALL_REPORTS = [
         endpoint: 'open-maintenance',
         view: 'v_OpenMaintenance',
         prepare: (rows) => toNumbers(rows, ['DaysOpen', 'CrewSize']),
+        search: { key: 'FacilityName', label: 'Name of ride, game or venue', placeholder: 'e.g. Canyon' },
+        labels: { StartDate: 'Started' },
+        featured: ['FacilityKind', 'MaintType'],
         filters: [{ key: 'FacilityKind', label: 'Type' }],
         kpis: (rows) => {
           const oldest = extreme(rows, 'DaysOpen')
@@ -1448,6 +1464,9 @@ const ALL_REPORTS = [
       toNumbers(rows, ['Shifts', 'RatedShifts', 'AvgRating', 'HoursWorked', 'JobTitleAvgRating']).sort(
         (a, b) => (b.AvgRating ?? -1) - (a.AvgRating ?? -1),
       ),
+    search: { key: 'EmployeeName', label: 'Employee name', placeholder: 'e.g. Garcia' },
+    labels: { EmployeeName: 'Employee name', JobTitleAvgRating: 'Job-title average rating' },
+    featured: ['JobTitle'],
     filters: [{ key: 'JobTitle', label: 'Job title' }],
     kpis: (rows) => {
       const best = extreme(rows, 'AvgRating')
@@ -1508,6 +1527,9 @@ const ALL_REPORTS = [
         endpoint: 'ride-traffic-by-month',
         view: 'v_RideTrafficByMonth',
         prepare: (rows) => toNumbers(withMonth('VisitYear', 'VisitMonth')(rows), ['Boardings']),
+        search: { key: 'RideName', label: 'Ride name', placeholder: 'e.g. Cyclone' },
+        labels: { RideName: 'Ride name', VisitYear: 'Year', VisitMonth: 'Month number' },
+        featured: [],
         filters: [{ key: 'Month', label: 'Month' }],
         kpis: (rows) => {
           const byRide = sumBy(rows, 'RideName', 'Boardings')

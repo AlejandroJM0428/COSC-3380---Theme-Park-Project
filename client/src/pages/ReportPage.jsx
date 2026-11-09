@@ -7,12 +7,13 @@ import DataTable from '../components/DataTable.jsx'
 import DateRangePicker from '../components/DateRangePicker.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 import ReportParams, { emptySpec, isCustom, toRequest } from '../components/ReportParams.jsx'
+import { makeLabeler } from '../config/labels.js'
 import { REPORTS } from '../config/reports.js'
 import NotFound from './NotFound.jsx'
 import './ReportPage.css'
 
 // chart = { type, x, y, y2?, yLabel?, y2Label?, angle? } (see config/reports.js)
-function Chart({ chart, rows }) {
+function Chart({ chart, rows, label }) {
   if (!chart || rows.length === 0) return null
   const Plot = chart.type === 'line' ? LineChart : BarChart
   const angled = Boolean(chart.angle)
@@ -28,13 +29,13 @@ function Chart({ chart, rows }) {
           {chart.y2 && <Legend verticalAlign="top" />}
           {chart.type === 'line' ? (
             <>
-              <Line type="monotone" dataKey={chart.y} name={chart.yLabel ?? chart.y} stroke="#f26b4f" strokeWidth={3} dot={false} />
-              {chart.y2 && <Line type="monotone" dataKey={chart.y2} name={chart.y2Label ?? chart.y2} stroke="#1c9aa8" strokeWidth={2} dot={false} />}
+              <Line type="monotone" dataKey={chart.y} name={chart.yLabel ?? label(chart.y)} stroke="#f26b4f" strokeWidth={3} dot={false} />
+              {chart.y2 && <Line type="monotone" dataKey={chart.y2} name={chart.y2Label ?? label(chart.y2)} stroke="#1c9aa8" strokeWidth={2} dot={false} />}
             </>
           ) : (
             <>
-              <Bar dataKey={chart.y} name={chart.yLabel ?? chart.y} fill="#1c9aa8" radius={[3, 3, 0, 0]} />
-              {chart.y2 && <Bar dataKey={chart.y2} name={chart.y2Label ?? chart.y2} fill="#f2b14f" radius={[3, 3, 0, 0]} />}
+              <Bar dataKey={chart.y} name={chart.yLabel ?? label(chart.y)} fill="#1c9aa8" radius={[3, 3, 0, 0]} />
+              {chart.y2 && <Bar dataKey={chart.y2} name={chart.y2Label ?? label(chart.y2)} fill="#f2b14f" radius={[3, 3, 0, 0]} />}
             </>
           )}
         </Plot>
@@ -61,8 +62,8 @@ function csvCell(v) {
 }
 
 // Download the rows as a .csv file (opens in Excel / LibreOffice Calc).
-function downloadCsv(name, columns, rows) {
-  const lines = [columns.map(csvCell).join(','), ...rows.map((r) => columns.map((c) => csvCell(r[c])).join(','))]
+function downloadCsv(name, columns, rows, label) {
+  const lines = [columns.map((c) => csvCell(label(c))).join(','), ...rows.map((r) => columns.map((c) => csvCell(r[c])).join(','))]
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -75,8 +76,8 @@ function downloadCsv(name, columns, rows) {
 }
 
 // The inputs for a query tab, drawn from the parameter list the server sends: the start and end dates become one
-// click-to-pick date range, a parameter with `choices` becomes a drop-down, and any other number is a number box.
-function QueryInputs({ params, values, onChange }) {
+// click-to-pick date range, a parameter with `choices` becomes a drop-down, a text parameter is a search box, and any other number is a number box.
+function QueryInputs({ params, values, onChange, onEnter }) {
   const set = (name, value) => onChange((v) => ({ ...v, [name]: value }))
   const hasDates = params.some((p) => p.name === 'start') && params.some((p) => p.name === 'end')
   return (
@@ -86,7 +87,17 @@ function QueryInputs({ params, values, onChange }) {
         .map((p) => (
           <label key={p.name} className="rp-datepick">
             <span>{p.label}</span>
-            {Array.isArray(p.choices) ? (
+            {p.type === 'text' ? (
+              <input
+                type="search"
+                className="rp-search"
+                maxLength={60}
+                placeholder={p.placeholder ?? 'Type part of a name'}
+                value={values[p.name] ?? ''}
+                onChange={(e) => set(p.name, e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && onEnter?.()}
+              />
+            ) : Array.isArray(p.choices) ? (
               <select value={values[p.name] ?? p.default} onChange={(e) => set(p.name, Number(e.target.value))}>
                 {p.choices.map((c) => (
                   <option key={c.value} value={c.value}>
@@ -116,6 +127,13 @@ function QueryInputs({ params, values, onChange }) {
 
 // The body of one report or one section: filters, headline numbers, notes, charts and table.
 // `report` is either a whole report or one entry of report.sections (both use the same settings, see config/reports.js).
+// Columns that start on the Search options panel as ready-to-use filters: the report's own choice (`featured`), otherwise the
+// first few columns it already offers as drop-downs. The date range and the name search box live next to Run report instead.
+function featuredColumns(report, meta) {
+  const wanted = report.featured ?? (report.filters ?? []).map((f) => f.key)
+  return wanted.filter((k) => k !== report.dateFilter?.key && k !== report.search?.key && meta.columns.some((c) => c.name === k)).slice(0, 3)
+}
+
 function ReportBody({ report, csvName }) {
   const [rows, setRows] = useState([])
   const [loaded, setLoaded] = useState(false) // nothing is fetched until the user presses Run report
@@ -132,6 +150,8 @@ function ReportBody({ report, csvName }) {
   const isQuery = Boolean(report.query)
   const [queryDef, setQueryDef] = useState(null) // { id, title, params: [{ name, label, type, default, choices? }] }
   const [qvals, setQvals] = useState({}) // parameter name -> chosen value
+  const [searchText, setSearchText] = useState('') // the name search when the database cannot do it (mock mode); otherwise it lives in spec.filters
+  const label = useMemo(() => makeLabeler(report.labels), [report.labels])
 
   // The list of columns is cheap (no report data is read), so it loads when the report opens.
   // The report itself still loads only when Run report is pressed.
@@ -156,18 +176,31 @@ function ReportBody({ report, csvName }) {
       .then((m) => {
         if (!live || !m) return
         setMeta(m)
-        setSpec(emptySpec(m))
+        setSpec(emptySpec(m, featuredColumns(report, m)))
       })
       .catch(() => {}) // no parameter panel; the report still runs with the old behaviour
     return () => {
       live = false
     }
-  }, [report.endpoint, report.query, isQuery])
+  }, [report, isQuery])
 
   const columnNames = useMemo(() => new Set((meta?.columns ?? []).map((c) => c.name)), [meta])
   const dateKey = report.dateFilter?.key
   // The date picker next to Run report sends its range to the database when that column exists there.
   const dateOnServer = Boolean(meta) && Boolean(dateKey) && meta.columns.some((c) => c.name === dateKey && c.kind === 'date')
+  // The name search box next to Run report. It is a "contains" filter on one text column, sent to the server like any other
+  // filter (a bound LIKE, never pasted into the SQL). Without a database (mock mode) the loaded rows are searched instead.
+  const searchKey = report.search?.key
+  const searchOnServer = Boolean(meta) && Boolean(searchKey) && meta.columns.some((c) => c.name === searchKey && c.kind === 'text')
+  const searchValue = searchOnServer ? (spec.filters.find((f) => f.column === searchKey)?.contains ?? '') : searchText
+  function typeSearch(text) {
+    if (!searchOnServer) {
+      setSearchText(text)
+      return
+    }
+    const others = spec.filters.filter((f) => f.column !== searchKey)
+    setSpec({ ...spec, filters: text ? [...others, { column: searchKey, kind: 'text', values: [], contains: text }] : others })
+  }
   const serverDate = dateOnServer ? spec.filters.find((f) => f.column === dateKey) : null
   const pickFrom = dateOnServer ? (serverDate?.from ?? '') : from
   const pickTo = dateOnServer ? (serverDate?.to ?? '') : to
@@ -235,10 +268,13 @@ function ReportBody({ report, csvName }) {
               if (from && day < from) return false
               if (to && day > to) return false
             }
+            if (searchKey && !searchOnServer && searchText.trim()) {
+              if (!String(r[searchKey] ?? '').toLowerCase().includes(searchText.trim().toLowerCase())) return false
+            }
             return true
           })
         : rows,
-    [rows, selects, from, to, report, localKeys, useLocal, localDate],
+    [rows, selects, from, to, report, localKeys, useLocal, localDate, searchKey, searchOnServer, searchText],
   )
 
   // Days after today are Pre-ordered (tickets booked ahead). They stay out of every total, average and chart,
@@ -261,14 +297,28 @@ function ReportBody({ report, csvName }) {
       ? [...[...preOrdered].sort((a, b) => String(b.VisitDate).localeCompare(String(a.VisitDate))), ...baseRows]
       : baseRows
   const hasFilters = localKeys.length > 0
-  const filtersOn = localKeys.some((f) => selects[f.key]) || (localDate && (from || to))
+  const filtersOn = localKeys.some((f) => selects[f.key]) || (localDate && (from || to)) || (!searchOnServer && searchKey && searchText.trim() !== '')
 
   return (
     <div>
       {report.sectionDescription && <p className="muted rp-section-desc">{report.sectionDescription}</p>}
       <ErrorBanner message={error} onClose={() => setError('')} />
       <div className="rp-runbar">
-        {isQuery && queryDef && <QueryInputs params={queryDef.params} values={qvals} onChange={setQvals} />}
+        {report.search && !isQuery && (
+          <label className="rp-datepick">
+            <span>{report.search.label}</span>
+            <input
+              type="search"
+              className="rp-search"
+              maxLength={60}
+              placeholder={report.search.placeholder ?? 'Type part of a name'}
+              value={searchValue}
+              onChange={(e) => typeSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !loading && run()}
+            />
+          </label>
+        )}
+        {isQuery && queryDef && <QueryInputs params={queryDef.params} values={qvals} onChange={setQvals} onEnter={() => !loading && run()} />}
         {report.dateFilter && (
           <div className="rp-datepick">
             <span>{report.dateFilter.label}</span>
@@ -278,10 +328,17 @@ function ReportBody({ report, csvName }) {
         <button type="button" className="btn-primary rp-run" onClick={run} disabled={loading}>
           {loading ? 'Running…' : loaded ? 'Run again' : 'Run report'}
         </button>
-        {!loaded && !loading && !error && <span className="muted">Choose parameters, then press Run report to load the data.</span>}
-        {stale && !loading && <span className="muted">Parameters changed. Press Run again to update.</span>}
+        {!loaded && !loading && !error && <span className="muted">Choose your search options, then press Run report to load the data.</span>}
+        {stale && !loading && <span className="muted">Search options changed. Press Run again to update.</span>}
       </div>
-      {!isQuery && <ReportParams endpoint={report.endpoint} meta={meta} spec={spec} onChange={setSpec} hideColumn={dateOnServer ? dateKey : ''} />}
+      {!isQuery && <ReportParams
+          endpoint={report.endpoint}
+          meta={meta}
+          spec={spec}
+          onChange={setSpec}
+          label={label}
+          hideColumn={[dateOnServer ? dateKey : '', searchOnServer ? searchKey : '']}
+        />}
       {loaded && (
         <>
           {(hasFilters || filtersOn) && (
@@ -307,6 +364,7 @@ function ReportBody({ report, csvName }) {
                     setSelects({})
                     setFrom('')
                     setTo('')
+                    setSearchText('')
                   }}
                 >
                   Clear filters
@@ -341,11 +399,11 @@ function ReportBody({ report, csvName }) {
           )}
 
           {!ranCustom && report.summary && <p className="summary">{safely(() => report.summary(actual), '')}</p>}
-          {!ranCustom && <Chart chart={report.chart} rows={chartRows} />}
+          {!ranCustom && <Chart chart={report.chart} rows={chartRows} label={label} />}
           {extra && extraRows.length > 0 && (
             <>
               <h3 className="rp-chart-title">{extra.title}</h3>
-              <Chart chart={extra.chart} rows={extraRows} />
+              <Chart chart={extra.chart} rows={extraRows} label={label} />
             </>
           )}
           <div className="rp-actions">
@@ -354,12 +412,12 @@ function ReportBody({ report, csvName }) {
               type="button"
               className="rp-export"
               disabled={tableRows.length === 0}
-              onClick={() => downloadCsv(csvName, (!ranCustom && report.columns) || Object.keys(tableRows[0]), tableRows)}
+              onClick={() => downloadCsv(csvName, (!ranCustom && report.columns) || Object.keys(tableRows[0]), tableRows, label)}
             >
               Download CSV
             </button>
           </div>
-          <DataTable key={csvName} rows={tableRows} columns={ranCustom ? undefined : report.columns} rowClass={ranCustom ? undefined : report.rowClass} pageSize={10} />
+          <DataTable key={csvName} rows={tableRows} columns={ranCustom ? undefined : report.columns} rowClass={ranCustom ? undefined : report.rowClass} pageSize={10} labelOf={label} />
         </>
       )}
     </div>

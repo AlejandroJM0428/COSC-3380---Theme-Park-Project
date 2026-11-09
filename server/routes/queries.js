@@ -60,8 +60,11 @@ const QUERIES = {
     title: 'Q5 Memberships expiring soon',
     file: 'q5.sql',
     roles: RETAIL,
-    params: [{ name: 'days', label: 'Expiring within', type: 'number', default: 30, choices: DAY_CHOICES }],
-    bind: ['days'],
+    params: [
+      { name: 'days', label: 'Expiring within', type: 'number', default: 30, choices: DAY_CHOICES },
+      { name: 'name', label: 'Guest name', type: 'text', default: '', placeholder: 'e.g. Garcia' },
+    ],
+    bind: ['days', 'name', 'name'], // the name fills both LIKEs (last name, first name)
   },
 };
 
@@ -77,8 +80,16 @@ async function withChoices(params) {
   return out;
 }
 
+const MAX_TEXT = 60;
+
 function readParam(def, raw) {
   const value = raw === undefined || raw === '' ? String(def.default) : String(raw);
+  if (def.type === 'text') {
+    // Part of a name. It is bound as a LIKE pattern (%text%), never pasted into the SQL; % and _ typed by the person match themselves.
+    const text = value.trim();
+    if (text.length > MAX_TEXT) throw new HttpError(400, `${def.label} must be ${MAX_TEXT} characters or fewer`);
+    return text;
+  }
   if (def.type === 'date') {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new HttpError(400, `${def.label} must look like 2026-07-31`);
     return value;
@@ -113,7 +124,8 @@ route(
 
     // Runs read only with a time limit. The SQL file is returned with the values filled in, so the page can show exactly what ran.
     const sql = (await fs.readFile(path.join(QUERY_DIR, q.file), 'utf8')).trim();
-    const args = q.bind.map((name) => values[name]);
+    const defs = new Map(q.params.map((p) => [p.name, p]));
+    const args = q.bind.map((name) => (defs.get(name)?.type === 'text' ? `%${values[name].replace(/[\\%_]/g, '\\$&')}%` : values[name]));
     const { rows, ms } = await runSelect(sql, args);
     const evidence = makeEvidence({ source: q.file, sql, params: args, rows, ms });
     // Same record as a report run (AdminAudit, action REPORT_RUN). A failed audit write never blocks the result.

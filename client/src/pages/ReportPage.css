@@ -16,6 +16,17 @@
   color: var(--muted, #4a6663);
 }
 
+.rp-search {
+  min-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule, #d5dde5);
+  border-radius: 6px;
+  background: var(--white, #fff);
+  color: var(--ink, #12302e);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
 .rp-run {
   padding: 9px 18px;
   border: 1px solid var(--ink, #12302e);

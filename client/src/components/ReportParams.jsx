@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
 import { getReportOptions } from '../api/index.js'
+import { makeLabeler } from '../config/labels.js'
 import DateRangePicker from './DateRangePicker.jsx'
 import './ReportParams.css'
 
-// The parameters of a report, chosen BEFORE pressing Run report and sent to the server, which builds the SQL.
+// The "Search options" panel of a report, chosen BEFORE pressing Run report and sent to the server, which builds the SQL.
 // Everything is a click: pick a column to filter on, then dates from the calendar, values from a list, yes/no buttons.
 // Typing is only for number limits and for searching a text column that has too many values to list.
+// The panel starts open with the report's key fields already on it (`featured`), and shows plain labels instead of column names.
 //
-//   <ReportParams endpoint meta spec onChange hideColumn />
+//   <ReportParams endpoint meta spec onChange hideColumn label />
 //   meta = { columns: [{ name, kind }], limits, defaultLimit }   (from GET /api/reports/:name/params)
 //   spec = the state kept by the report page (see emptySpec); toRequest(spec) turns it into the body sent to the server.
+//   hideColumn = a column name (or a list of them) that is controlled somewhere else on the page (the date picker, the name search box)
+//   label = (column name) => plain label, from makeLabeler in config/labels.js
 
 const FILTERABLE = ['date', 'number', 'flag', 'text']
 const FNS = [
@@ -20,8 +24,13 @@ const FNS = [
   ['max', 'Largest'],
 ]
 
-export const emptySpec = (meta) => ({
-  filters: [], // [{ column, kind, from, to | min, max | value | values, contains }]
+// `featured` = the columns to show as ready-to-use (still empty) filters when the panel first opens.
+export const emptySpec = (meta, featured = []) => ({
+  // [{ column, kind, from, to | min, max | value | values, contains }]
+  filters: (meta?.columns ?? [])
+    .filter((c) => featured.includes(c.name) && FILTERABLE.includes(c.kind))
+    .sort((a, b) => featured.indexOf(a.name) - featured.indexOf(b.name))
+    .map((c) => newFilter(c)),
   sort: '',
   dir: 'asc',
   limit: meta?.defaultLimit ?? 1000,
@@ -75,6 +84,14 @@ export function toRequest(spec) {
   return body
 }
 
+// A filter counts as "set" when it would be sent to the server (an empty one is dropped by toRequest).
+function isFilterSet(f) {
+  if (f.kind === 'date') return Boolean(f.from || f.to)
+  if (f.kind === 'number') return f.min !== '' || f.max !== ''
+  if (f.kind === 'flag') return f.value !== ''
+  return f.values.length > 0 || f.contains.trim() !== ''
+}
+
 function newFilter(col) {
   const base = { column: col.name, kind: col.kind }
   if (col.kind === 'date') return { ...base, from: '', to: '' }
@@ -84,7 +101,7 @@ function newFilter(col) {
 }
 
 // Text column: a list of values to click, or a search box when there are too many values to list.
-function TextControl({ endpoint, filter, onChange }) {
+function TextControl({ endpoint, filter, onChange, label }) {
   const [options, setOptions] = useState(undefined) // undefined = loading, null = too many, [..] = the list
   const [failed, setFailed] = useState('')
   useEffect(() => {
@@ -108,7 +125,7 @@ function TextControl({ endpoint, filter, onChange }) {
         maxLength={60}
         value={filter.contains}
         onChange={(e) => onChange({ ...filter, contains: e.target.value })}
-        aria-label={`${filter.column} contains`}
+        aria-label={`${label(filter.column)} contains`}
       />
     )
   }
@@ -124,19 +141,19 @@ function TextControl({ endpoint, filter, onChange }) {
   )
 }
 
-function FilterRow({ endpoint, filter, onChange, onRemove }) {
+function FilterRow({ endpoint, filter, onChange, onRemove, label }) {
   return (
     <div className="rpm-filter">
-      <span className="rpm-col">{filter.column}</span>
+      <span className="rpm-col">{label(filter.column)}</span>
       <div className="rpm-ctl">
         {filter.kind === 'date' && (
-          <DateRangePicker label={filter.column} from={filter.from} to={filter.to} onChange={({ from, to }) => onChange({ ...filter, from, to })} />
+          <DateRangePicker label={label(filter.column)} from={filter.from} to={filter.to} onChange={({ from, to }) => onChange({ ...filter, from, to })} />
         )}
         {filter.kind === 'number' && (
           <span className="rpm-range">
-            <input type="number" placeholder="Min" value={filter.min} onChange={(e) => onChange({ ...filter, min: e.target.value })} aria-label={`${filter.column} minimum`} />
+            <input type="number" placeholder="Min" value={filter.min} onChange={(e) => onChange({ ...filter, min: e.target.value })} aria-label={`${label(filter.column)} minimum`} />
             <span>to</span>
-            <input type="number" placeholder="Max" value={filter.max} onChange={(e) => onChange({ ...filter, max: e.target.value })} aria-label={`${filter.column} maximum`} />
+            <input type="number" placeholder="Max" value={filter.max} onChange={(e) => onChange({ ...filter, max: e.target.value })} aria-label={`${label(filter.column)} maximum`} />
           </span>
         )}
         {filter.kind === 'flag' && (
@@ -148,47 +165,50 @@ function FilterRow({ endpoint, filter, onChange, onRemove }) {
             ))}
           </div>
         )}
-        {filter.kind === 'text' && <TextControl endpoint={endpoint} filter={filter} onChange={onChange} />}
+        {filter.kind === 'text' && <TextControl endpoint={endpoint} filter={filter} onChange={onChange} label={label} />}
       </div>
-      <button type="button" className="rpm-x" onClick={onRemove} aria-label={`Remove the ${filter.column} filter`}>
+      <button type="button" className="rpm-x" onClick={onRemove} aria-label={`Remove the ${label(filter.column)} filter`}>
         ✕
       </button>
     </div>
   )
 }
 
-export default function ReportParams({ endpoint, meta, spec, onChange, hideColumn = '' }) {
+const defaultLabel = makeLabeler()
+
+export default function ReportParams({ endpoint, meta, spec, onChange, hideColumn = '', label = defaultLabel }) {
   if (!meta) return null
+  const hidden = new Set([hideColumn].flat().filter(Boolean))
   const set = (patch) => onChange({ ...spec, ...patch })
   const inFilters = new Set(spec.filters.map((f) => f.column))
-  const addable = meta.columns.filter((c) => FILTERABLE.includes(c.kind) && !inFilters.has(c.name) && c.name !== hideColumn)
-  const shown = spec.filters.filter((f) => f.column !== hideColumn)
+  const addable = meta.columns.filter((c) => FILTERABLE.includes(c.kind) && !inFilters.has(c.name) && !hidden.has(c.name))
+  const shown = spec.filters.filter((f) => !hidden.has(f.column))
   const numbers = meta.columns.filter((c) => c.kind === 'number' || c.kind === 'flag')
   const groupable = meta.columns.filter((c) => c.kind !== 'other')
   const groupKind = meta.columns.find((c) => c.name === spec.groupBy)?.kind
   const names = outputNames(spec, meta)
-  const activeCount = shown.length + (spec.groupBy ? 1 : 0) + (spec.columns.length ? 1 : 0)
+  const activeCount = shown.filter(isFilterSet).length + (spec.groupBy ? 1 : 0) + (spec.columns.length ? 1 : 0)
 
   const changeFilter = (i, next) => set({ filters: spec.filters.map((f, k) => (k === i ? next : f)) })
   const setMeasure = (i, patch) => set({ measures: spec.measures.map((m, k) => (k === i ? { ...m, ...patch } : m)) })
 
   return (
-    <details className="rpm" open={activeCount > 0 || undefined}>
+    <details className="rpm" open>
       <summary>
-        Parameters{activeCount > 0 ? ` (${activeCount} set)` : ''} <span className="muted">choose before you run</span>
+        Search options{activeCount > 0 ? ` (${activeCount} set)` : ''} <span className="muted">set these, then press Run report</span>
       </summary>
 
       <div className="rpm-section">
         <h4>Filters</h4>
         {shown.length === 0 && <p className="muted">No filters: every row is included.</p>}
         {spec.filters.map((f, i) =>
-          f.column === hideColumn ? null : (
-            <FilterRow key={f.column} endpoint={endpoint} filter={f} onChange={(next) => changeFilter(i, next)} onRemove={() => set({ filters: spec.filters.filter((_, k) => k !== i) })} />
+          hidden.has(f.column) ? null : (
+            <FilterRow key={f.column} endpoint={endpoint} label={label} filter={f} onChange={(next) => changeFilter(i, next)} onRemove={() => set({ filters: spec.filters.filter((_, k) => k !== i) })} />
           ),
         )}
         {addable.length > 0 && (
           <label className="rpm-add">
-            <span>Add a filter</span>
+            <span>Add another filter</span>
             <select
               value=""
               onChange={(e) => {
@@ -196,10 +216,10 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
                 if (col) set({ filters: [...spec.filters, newFilter(col)] })
               }}
             >
-              <option value="">Choose a column…</option>
+              <option value="">Choose what to filter on…</option>
               {addable.map((c) => (
                 <option key={c.name} value={c.name}>
-                  {c.name}
+                  {label(c.name)}
                 </option>
               ))}
             </select>
@@ -214,7 +234,7 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
             <option value="">Default order</option>
             {names.map((n) => (
               <option key={n} value={n}>
-                {n}
+                {label(n)}
               </option>
             ))}
           </select>
@@ -240,7 +260,7 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
       </div>
 
       <details className="rpm-more" open={spec.groupBy || spec.columns.length ? true : undefined}>
-        <summary>Summarize or choose columns</summary>
+        <summary>Summarize, or choose which columns to show</summary>
         <p className="muted">These replace the report&apos;s own charts and headline numbers with a plain table of what you ask for.</p>
         <div className="rpm-section rpm-row">
           <label>
@@ -252,7 +272,7 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
               <option value="">No grouping (list the rows)</option>
               {groupable.map((c) => (
                 <option key={c.name} value={c.name}>
-                  {c.name}
+                  {label(c.name)}
                 </option>
               ))}
             </select>
@@ -287,7 +307,7 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
                   <select value={m.column ?? ''} aria-label="Measure column" onChange={(e) => setMeasure(i, { column: e.target.value })}>
                     {numbers.map((c) => (
                       <option key={c.name} value={c.name}>
-                        {c.name}
+                        {label(c.name)}
                       </option>
                     ))}
                   </select>
@@ -318,7 +338,7 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
                   aria-pressed={spec.columns.includes(c.name)}
                   onClick={() => set({ columns: spec.columns.includes(c.name) ? spec.columns.filter((x) => x !== c.name) : [...spec.columns, c.name], sort: '' })}
                 >
-                  {c.name}
+                  {label(c.name)}
                 </button>
               ))}
             </div>
