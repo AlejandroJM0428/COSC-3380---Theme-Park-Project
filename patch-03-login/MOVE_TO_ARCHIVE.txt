@@ -1,2 +1,0 @@
-client/src/pages/StaffLogin.jsx
-client/src/pages/MemberLogin.jsx
