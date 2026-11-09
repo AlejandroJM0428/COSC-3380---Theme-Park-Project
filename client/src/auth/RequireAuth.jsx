@@ -2,10 +2,10 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './context.js'
 
 // Wrap routes with this. No `roles` = any logged-in user; with `roles` = only those roles.
-// `loginPath` is where to send people who are not signed in (staff and members have separate logins).
+// `loginPath` is where to send people who are not signed in (everyone uses the same sign-in page).
 // `redirects` sends a role to its own portal instead, e.g. { Admin: '/admin' } so an admin never lands in /staff.
 // `denyTo` sends a signed-in user whose role is not allowed to another page instead of showing a message.
-export default function RequireAuth({ roles, loginPath = '/staff/login', redirects, denyTo }) {
+export default function RequireAuth({ roles, loginPath = '/login', redirects, denyTo }) {
   const { user } = useAuth()
   const location = useLocation()
 

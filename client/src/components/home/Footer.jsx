@@ -28,13 +28,13 @@ export default function Footer() {
             {signedIn ? <Link to="/member">My account</Link> : ready && (
               <>
                 <Link to="/member/register">Join</Link>
-                <Link to="/member/login">Member sign in</Link>
+                <Link to="/login">Sign in</Link>
               </>
             )}
           </div>
           <div>
             <h2>Park team</h2>
-            <Link to="/staff/login">Staff sign in</Link>
+            <Link to="/login">Staff sign in</Link>
           </div>
         </nav>
       </div>

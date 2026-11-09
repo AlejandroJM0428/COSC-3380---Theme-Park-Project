@@ -33,7 +33,7 @@ const REPORTS = {
   },
   'daily-attendance': { view: 'v_DailyAttendance', roles: ATTENDANCE, preorder: 'VisitDate' },
   'maintenance-history': { view: 'v_MaintenanceHistory', roles: MAINTENANCE },
-  'ride-traffic-by-month': { view: 'v_RideTrafficByMonth', roles: OPERATIONS }, // SQL/views_extra.sql
+  'ride-traffic-by-month': { view: 'v_RideTrafficByMonth', roles: OPERATIONS }, // SQL/views/18_ride_traffic_by_month.sql
   'weather-impact': { view: 'v_WeatherImpact', roles: OPERATIONS },
   'ride-availability': { view: 'v_RideAvailability', roles: OPERATIONS },
   'zone-ride-traffic': { view: 'v_ZoneRideTraffic', roles: OPERATIONS },
@@ -42,12 +42,12 @@ const REPORTS = {
   'visit-spending': { view: 'v_VisitSpending', roles: RETAIL, dropFuture: 'VisitDate' },
   'membership-summary': { view: 'v_MembershipSummary', roles: RETAIL },
   'staff-by-zone': { view: 'v_StaffByZone', roles: HR },
-  // New views from SQL/06_report_and_portal_views.sql
+  // New views from SQL/views/06_report_and_portal_views.sql
   'maintenance-cost': { view: 'v_MaintenanceCostByFacility', roles: MAINTENANCE },
   'open-maintenance': { view: 'v_OpenMaintenance', roles: MAINTENANCE },
   'employee-performance': { view: 'v_EmployeePerformance', roles: HR },
   'retail-sales': { view: 'v_RetailSalesByVenue', roles: RETAIL },
-  // New view from SQL/12_report_views.sql
+  // New view from SQL/views/12_report_views.sql
   'item-sales': { view: 'v_ItemSales', roles: RETAIL },
   'membership-performance': { view: 'v_MembershipPerformance', roles: RETAIL },
   'repair-impact': { view: 'v_RepairImpactEstimate', roles: MAINTENANCE },

@@ -100,7 +100,7 @@ useEffect(() => {
 
           <div className="tv-ticket-actions">
             <Link
-              to="/member/login"
+              to="/login"
               className="tv-ticket-signin"
             >
               Sign In to Buy Tickets
