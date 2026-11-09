@@ -24,6 +24,20 @@ const BLOCKED_COPY = {
     title: 'Those details could not be saved',
     help: 'A dependent must be under 18 and the birth date cannot be in the future. Check the date of birth.',
   },
+  trg_Ticket_BI_Window: {
+    title: 'That date is too far away',
+    help: 'Tickets go on sale 180 days before the visit. Pick an earlier date.',
+    action: { label: 'Pick another date', tab: 'tickets' },
+  },
+  trg_Ticket_BU_Window: {
+    title: 'That date is too far away',
+    help: 'Tickets go on sale 180 days before the visit. Pick an earlier date.',
+  },
+  trg_TicketRefund_BI: {
+    title: 'Too late for a refund',
+    help: 'Refunds need at least 2 days notice before the visit. Weather closures are refunded automatically.',
+    action: { label: 'View my tickets', tab: 'tickets' },
+  },
   trg_Ticket_BI: {
     title: 'That ticket could not be booked',
     help: 'Try another date, or check what your membership covers.',

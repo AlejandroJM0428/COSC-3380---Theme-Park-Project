@@ -32,6 +32,16 @@ export const TRIGGER_CATALOG = [
     ],
   },
   {
+    name: 'trg_Ticket_BI_Window', table: 'Ticket', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
+    rule: 'Business rule: a ticket can be bought for a visit at most 180 days ahead (the limit moves with today\'s date).',
+    errors: ['Tickets can be bought at most 180 days before the visit.'],
+  },
+  {
+    name: 'trg_Ticket_BU_Window', table: 'Ticket', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
+    rule: 'Business rule: moving a ticket to a new visit date follows the same 180-day window.',
+    errors: ['Tickets can be bought at most 180 days before the visit.'],
+  },
+  {
     name: 'trg_Membership_AI_Welcome', table: 'Membership', timing: 'AFTER', event: 'INSERT', kind: 'Automatic',
     rule: 'A new membership unlocks its welcome perks (pin, parking day, VIP photo session, depending on the tier).',
   },
@@ -89,10 +99,11 @@ export const TRIGGER_CATALOG = [
   },
   {
     name: 'trg_TicketRefund_BI', table: 'TicketRefund', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
-    rule: 'A refund cannot be dated before the purchase. A weather refund needs weather that closed outdoor rides.',
+    rule: 'A refund cannot be dated before the purchase. A weather refund needs weather that closed outdoor rides. Any other refund needs at least 2 days notice before the visit (business rule).',
     errors: [
       'Refund cannot be dated before the ticket was purchased',
       'That weather did not close outdoor rides',
+      'Refunds need at least 2 days notice before the visit.',
     ],
   },
   {
