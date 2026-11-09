@@ -38,6 +38,26 @@ const BLOCKED_COPY = {
     help: 'Refunds need at least 2 days notice before the visit. Weather closures are refunded automatically.',
     action: { label: 'View my tickets', tab: 'tickets' },
   },
+  trg_Purchase_BI_Alcohol21: {
+    title: 'Alcohol needs a guest who is 21 or older',
+    help: 'Check the guest\'s date of birth. Pick a non-alcoholic item instead.',
+  },
+  trg_Purchase_BU_Alcohol21: {
+    title: 'Alcohol needs a guest who is 21 or older',
+    help: 'Check the guest\'s date of birth. Pick a non-alcoholic item instead.',
+  },
+  trg_Purchase_BI_DrinkLimit: {
+    title: 'Drink limit reached',
+    help: 'A ticket can have at most 8 alcoholic drinks per day.',
+  },
+  trg_Purchase_BU_DrinkLimit: {
+    title: 'Drink limit reached',
+    help: 'A ticket can have at most 8 alcoholic drinks per day.',
+  },
+  trg_Membership_BI_Adult: {
+    title: 'Memberships are for adults',
+    help: 'The membership holder must be 18 or older. Children are covered as dependents on a parent account.',
+  },
   trg_Ticket_BI: {
     title: 'That ticket could not be booked',
     help: 'Try another date, or check what your membership covers.',

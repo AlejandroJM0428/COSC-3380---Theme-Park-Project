@@ -42,6 +42,31 @@ export const TRIGGER_CATALOG = [
     errors: ['Tickets can be bought at most 180 days before the visit.'],
   },
   {
+    name: 'trg_Purchase_BI_Alcohol21', table: 'Purchase', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
+    rule: 'Business rule: alcohol can only be sold to guests who are 21 or older on the day of the purchase.',
+    errors: ['Alcohol can only be sold to guests who are 21 or older.'],
+  },
+  {
+    name: 'trg_Purchase_BU_Alcohol21', table: 'Purchase', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
+    rule: 'Business rule: correcting a purchase follows the same 21-or-older alcohol rule.',
+    errors: ['Alcohol can only be sold to guests who are 21 or older.'],
+  },
+  {
+    name: 'trg_Purchase_BI_DrinkLimit', table: 'Purchase', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
+    rule: 'Business rule: at most 8 alcoholic drinks per ticket per day (counts the earlier purchases on the same ticket).',
+    errors: ['Drink limit reached: at most 8 alcoholic drinks per ticket per day.'],
+  },
+  {
+    name: 'trg_Purchase_BU_DrinkLimit', table: 'Purchase', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
+    rule: 'Business rule: correcting a purchase follows the same 8-drinks-per-day limit.',
+    errors: ['Drink limit reached: at most 8 alcoholic drinks per ticket per day.'],
+  },
+  {
+    name: 'trg_Membership_BI_Adult', table: 'Membership', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
+    rule: 'Business rule: a membership holder must be 18 or older.',
+    errors: ['A membership holder must be 18 or older.'],
+  },
+  {
     name: 'trg_Membership_AI_Welcome', table: 'Membership', timing: 'AFTER', event: 'INSERT', kind: 'Automatic',
     rule: 'A new membership unlocks its welcome perks (pin, parking day, VIP photo session, depending on the tier).',
   },
