@@ -82,7 +82,8 @@ route(
   requireRole(...CAN_READ)(async (ctx) => {
     const name = typeof ctx.query.name === 'string' ? ctx.query.name.trim() : '';
     const dob = ctx.query.dob ? needDate(ctx.query.dob, 'Date of birth') : null;
-    if (!name && !dob) throw new HttpError(400, 'Enter a name, a date of birth, or both');
+    // browse=1 (the Sell Ticket drop-down) may search with nothing typed: the first 20 guests by last name.
+    if (!name && !dob && ctx.query.browse !== '1') throw new HttpError(400, 'Enter a name, a date of birth, or both');
     if (name.length > 60) throw new HttpError(400, 'Name must be 60 characters or fewer');
 
     const where = ['c.IsActive = 1', 'c.ParentCustomerID IS NULL']; // dependents are not searchable by staff

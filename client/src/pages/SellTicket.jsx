@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { createTicket } from '../api'
 import ErrorBanner from '../components/ErrorBanner.jsx'
-import CustomerLookup, { membershipStatus } from '../components/CustomerLookup.jsx'
+import CustomerPicker from '../components/CustomerPicker.jsx'
+import { membershipStatus } from '../components/CustomerLookup.jsx'
 
 // Local date as YYYY-MM-DD.
 function today() {
@@ -9,7 +10,7 @@ function today() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-// Step 1: find the guest by name or date of birth. Step 2: pick the visit date and Express, then save.
+// Step 1: choose the guest from the drop-down (click, or type part of the name). Step 2: pick the visit date and Express, then save.
 // Nobody types an ID. The chosen guest's customer and membership IDs are kept in state and sent with the ticket.
 export default function SellTicket() {
   const [guest, setGuest] = useState(null) // the row picked in the lookup
@@ -51,7 +52,7 @@ export default function SellTicket() {
       <p className="muted">The database sets the price. Rules like weekday-only memberships are checked when you save.</p>
 
       {!guest && (
-        <CustomerLookup
+        <CustomerPicker
           onPick={(c) => {
             setGuest(c)
             setSaved(null)
