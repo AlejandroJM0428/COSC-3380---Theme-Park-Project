@@ -233,6 +233,17 @@ export function getMyWork() {
   return http('/me/work')
 }
 
+// Maintenance worker: report an open job finished ({ outcome, note }), or undo that report.
+export function reportJobFinished(maintenanceId, data) {
+  needLive()
+  return http(`/me/jobs/${maintenanceId}/finished`, { method: 'POST', body: data })
+}
+
+export function undoJobFinished(maintenanceId) {
+  needLive()
+  return http(`/me/jobs/${maintenanceId}/finished`, { method: 'DELETE' })
+}
+
 // Customer lookup for the ticket forms. name and dob (YYYY-MM-DD) are each optional, but one is needed.
 // browse = true lets the search run with no name and no date (the guest drop-down: first 20 by last name).
 export function searchCustomers(name, dob, hasLogin = false, browse = false) {

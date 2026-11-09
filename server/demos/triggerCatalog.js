@@ -210,6 +210,19 @@ export const TRIGGER_CATALOG = [
     name: 'trg_Ticket_AI_SellingFast', table: 'Ticket', timing: 'AFTER', event: 'INSERT', kind: 'Notification',
     rule: 'When a visit date reaches 90% of capacity (and is not sold out), posts a "Selling fast" notice for that date.',
   },
+  {
+    name: 'trg_MaintWorkReport_BI', table: 'MaintenanceWorkReport', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
+    rule: 'Only a crew member of an open maintenance job can report it finished.',
+    errors: [
+      'This job is already closed.',
+      'Only a crew member of this job can report it finished.',
+    ],
+  },
+  {
+    name: 'trg_MaintWorkReport_BU', table: 'MaintenanceWorkReport', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
+    rule: 'A work-finished report cannot be changed once the manager has closed the job.',
+    errors: ['This job is already closed.'],
+  },
 ];
 
 // The catalog entry (without the long error list) for a trigger name, or null.
