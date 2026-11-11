@@ -1,7 +1,7 @@
 import { route } from '../router.js';
 import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
-import { requireRole } from '../middleware/requireRole.js';
+import { requireRole, requireRoleWithMessage } from '../middleware/requireRole.js';
 import { friendlyDbError, oneOf } from '../validate.js';
 import { audit } from './admin.js';
 import { insertWeather } from './weather.js';
@@ -11,9 +11,11 @@ import { clearPublicSiteCache } from './publicSite.js';
 // closing inserts a Severe WeatherLog row (the database then closes the park: SQL/migrations/27 and SQL/rules/29),
 // reopening gives that row an end time. Both write an AdminAudit row in the same transaction.
 //
-// Who: Admin and Manager (the Operations desk). Checked here on the server, not just hidden in the page.
-// RetailManager is deliberately not listed.
-const CAN_CLOSE = ['Admin', 'Manager'];
+// Who: Admin only. Checked here on the server, not just greyed out in the page.
+// Manager and RetailManager can still SEE the park status (CAN_SEE), so the page can show the button greyed out.
+const CAN_CLOSE = ['Admin'];
+const CAN_SEE = ['Admin', 'Manager', 'RetailManager'];
+const NOT_ALLOWED = 'Insufficient privileges: only an Admin can close or reopen the park';
 const CLOSE_TYPES = ['Storm', 'Rain', 'Heat', 'Cold'];
 
 // Same "in effect" test as v_RideAvailability and fn_ParkClosedByWeather.
@@ -41,7 +43,7 @@ async function inTransaction(fn) {
 route(
   'GET',
   '/api/admin/weather/park-status',
-  requireRole(...CAN_CLOSE)(async () => {
+  requireRole(...CAN_SEE)(async () => {
     const [rows] = await pool.query(
       `SELECT WeatherID, WeatherType, StartedAt FROM WeatherLog WHERE ${IN_EFFECT} ORDER BY StartedAt DESC LIMIT 1`,
     );
@@ -54,7 +56,7 @@ route(
 route(
   'POST',
   '/api/admin/weather/close-park',
-  requireRole(...CAN_CLOSE)(async (ctx) => {
+  requireRoleWithMessage(NOT_ALLOWED, ...CAN_CLOSE)(async (ctx) => {
     const b = ctx.body ?? {};
     const weatherType = oneOf(b.weatherType, 'Weather type', CLOSE_TYPES);
     const note = cleanNote(b.note);
@@ -83,7 +85,7 @@ route(
 route(
   'POST',
   '/api/admin/weather/reopen-park',
-  requireRole(...CAN_CLOSE)(async (ctx) => {
+  requireRoleWithMessage(NOT_ALLOWED, ...CAN_CLOSE)(async (ctx) => {
     const note = cleanNote(ctx.body?.note);
     const reopened = await inTransaction(async (conn) => {
       const [res] = await conn.query(`UPDATE WeatherLog SET EndedAt = NOW() WHERE ${IN_EFFECT}`);

@@ -316,6 +316,8 @@ export const WEATHER = {
   noun: 'weather entry',
   deleteRoles: ['Admin', 'Manager', 'RetailManager'],
   deleteNote: 'Entries that a refund uses cannot be deleted.',
+  // A Severe entry is the park being closed: only an Admin can change, end or delete it.
+  rowLock: (row, user) => (row.Severity === 'Severe' && user?.role !== 'Admin' ? 'Insufficient privileges: only an Admin can change a Severe entry (it closes the park)' : ''),
   filters: [
     {
       key: 'status',
@@ -356,6 +358,8 @@ export const WEATHER = {
         ['High', 'High (outdoor rides close)'],
         ['Severe', 'Severe (the whole park closes)'],
       ],
+      // Severe closes the park, so only an Admin can pick it (the server checks too: server/routes/weather.js).
+      optionLock: (v, user) => v === 'Severe' && user?.role !== 'Admin',
     },
     { key: 'startedAt', label: 'Started', type: 'datetime', required: true },
     { key: 'endedAt', label: 'Ended (leave empty while it is ongoing)', type: 'datetime' },

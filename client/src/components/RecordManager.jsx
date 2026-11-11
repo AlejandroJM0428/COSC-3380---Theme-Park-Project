@@ -10,7 +10,10 @@ import './RecordManager.css'
 
 // A table of records plus an add / edit / delete form, all driven by one config object
 // (see config/entities.js). Database trigger messages show in the red banner.
-export default function RecordManager({ entity }) {
+// Optional props for a page that shows something else about the same records (the weather page's park status banner):
+//   refreshKey  change it and the list reloads (no remount, so an open form is kept)
+//   onChanged   called after a save or delete went through
+export default function RecordManager({ entity, refreshKey = 0, onChanged }) {
   const { user } = useAuth()
   const canDelete = entity.deleteRoles.includes(user?.role)
   const canWrite = !entity.writeRoles || entity.writeRoles.includes(user?.role) // false = view only
@@ -53,7 +56,7 @@ export default function RecordManager({ entity }) {
     return () => {
       alive = false
     }
-  }, [entity.resource, filterKey, reload])
+  }, [entity.resource, filterKey, reload, refreshKey])
 
   function openAdd() {
     clearErrors()
@@ -106,6 +109,7 @@ export default function RecordManager({ entity }) {
       if (nextToast) setToast(nextToast)
       closeForm()
       setReload((n) => n + 1)
+      onChanged?.()
     } catch (err) {
       const nextToast = entity.rejectToast?.(err.message)
       if (nextToast) setToast(nextToast)
@@ -140,6 +144,7 @@ export default function RecordManager({ entity }) {
       await deleteRecord(entity.resource, row[entity.idKey], query)
       setNotice(`${deletePast} ${entity.describe(row)}.`)
       setReload((n) => n + 1)
+      onChanged?.()
     } catch (err) {
       setActionError(err.message)
     }
@@ -259,7 +264,7 @@ export default function RecordManager({ entity }) {
         <select id={id} value={value} required={field.required} onChange={(e) => set(field.key, e.target.value)}>
           {field.required && value === '' && <option value="">— choose —</option>}
           {options.map(([v, label]) => (
-            <option key={v} value={v}>
+            <option key={v} value={v} disabled={Boolean(field.optionLock?.(v, user))}>
               {label}
             </option>
           ))}
@@ -318,6 +323,7 @@ export default function RecordManager({ entity }) {
   const groupName = (key) => entity.groupBy.labels?.[key] ?? String(key || 'Other').replace(/([a-z])([A-Z])/g, '$1 $2')
 
   function renderRow(row) {
+    const lock = entity.rowLock?.(row, user) // a reason string: the row's Edit / Delete show greyed out with it
     return (
       <tr key={row[entity.rowKey ?? entity.idKey]}>
         {entity.columns.map((c) => (
@@ -330,7 +336,7 @@ export default function RecordManager({ entity }) {
             </button>
           )}
           {canEdit && (entity.canEditRow?.(row) ?? true) && (
-            <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
+            <button type="button" onClick={() => openEdit(row)} disabled={form !== null || Boolean(lock)} title={lock || undefined}>
               Edit
             </button>
           )}
@@ -340,10 +346,11 @@ export default function RecordManager({ entity }) {
             </button>
           )}
           {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
-            <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null}>
+            <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null || Boolean(lock)} title={lock || undefined}>
               {deleteLabel}
             </button>
           )}
+          {lock && <span className="rm-lockmsg">Insufficient privileges</span>}
         </td>
       </tr>
     )

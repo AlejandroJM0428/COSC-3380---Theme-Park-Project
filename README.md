@@ -107,7 +107,7 @@ Only two npm packages:
 
 Closing the park for weather
 ----------------------------
-Admin and the Operations desk (Manager) can close and reopen the park in one click from the **Weather Log** page. Closing logs a Severe weather event: the homepage shows the closed ticker, and the database refuses ride boardings, ticket sales for today, purchases and game plays until the park is reopened. Every close and reopen is saved in the admin audit log. On an existing database, apply `SQL/rules/29_sales_blocked_when_park_closed.sql` first (the command is in the file header).
+Only Admin can close and reopen the park, in one click from the **Weather Log** page. Managers and the retail manager can see the park status there, but the button and the Severe option are greyed out ("Insufficient privileges"), and the server refuses it too. Closing logs a Severe weather event: the homepage shows the closed ticker, and the database refuses ride boardings, ticket sales for today, purchases and game plays until the park is reopened. Every close and reopen is saved in the admin audit log. On an existing database, apply `SQL/rules/29_sales_blocked_when_park_closed.sql` first (the command is in the file header).
 
 Ride notices
 ------------

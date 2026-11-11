@@ -3,6 +3,7 @@ import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needDateTime, oneOf, optDateTime, recordId } from '../validate.js';
+import { clearPublicSiteCache } from './publicSite.js';
 
 // Weather log (data entry, not a report): list, get, add, edit, delete.
 // The form sends the weather type, a severity and the times. The database decides what closes
@@ -15,6 +16,14 @@ const CAN_WRITE = ['Admin', 'Manager', 'RetailManager'];
 const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
 const TYPES = ['Clear', 'Cloudy', 'Rain', 'Storm', 'Heat', 'Cold'];
 const SEVERITIES = ['Low', 'Medium', 'High', 'Severe'];
+
+// Severe closes the whole park, so only an Admin may add, edit or delete a Severe entry, or turn an entry into one.
+// Everyone else who can open the Weather Log sees those controls greyed out. Checked here, not just in the page.
+const PARK_CLOSER = 'Admin';
+const NOT_ALLOWED = 'Insufficient privileges: only an Admin can close or reopen the park';
+function needAdminForSevere(ctx, ...severities) {
+  if (ctx.session?.role !== PARK_CLOSER && severities.includes('Severe')) throw new HttpError(403, NOT_ALLOWED);
+}
 
 const SELECT_WEATHER = `
   SELECT WeatherID, WeatherType, Severity, StartedAt, EndedAt, TemperatureF, WindMph, LightningMiles,
@@ -86,8 +95,10 @@ route(
   '/api/weather',
   requireRole(...CAN_WRITE)(async (ctx) => {
     const w = parseWeather(ctx.body);
+    needAdminForSevere(ctx, w.severity);
     try {
       const insertId = await insertWeather(w);
+      clearPublicSiteCache(); // the homepage ticker follows the log
       ctx.status = 201;
       return await loadWeather(insertId);
     } catch (err) {
@@ -102,7 +113,8 @@ route(
   requireRole(...CAN_WRITE)(async (ctx) => {
     const id = recordId(ctx, 'Weather');
     const w = parseWeather(ctx.body);
-    await loadWeather(id); // 404 if missing
+    const before = await loadWeather(id); // 404 if missing
+    needAdminForSevere(ctx, before.Severity, w.severity); // changing a Severe entry (ending it too) or making one
     try {
       await pool.query(
         `UPDATE WeatherLog
@@ -113,6 +125,7 @@ route(
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);
     }
+    clearPublicSiteCache();
     return loadWeather(id);
   }),
 );
@@ -123,11 +136,13 @@ route(
   requireRole(...CAN_DELETE)(async (ctx) => {
     const id = recordId(ctx, 'Weather');
     const gone = await loadWeather(id); // 404 if missing
+    needAdminForSevere(ctx, gone.Severity);
     try {
       await pool.query('DELETE FROM WeatherLog WHERE WeatherID = ?', [id]);
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);
     }
+    clearPublicSiteCache();
     return gone;
   }),
 );

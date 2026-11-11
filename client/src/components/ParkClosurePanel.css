@@ -16,3 +16,7 @@
 .pcp-actions { display: flex; gap: 8px; }
 .pcp-msg { margin: 10px 0 0; }
 .pcp-err { margin: 10px 0 0; color: #c0392b; }
+
+.pcp-btnwrap { display: grid; justify-items: end; gap: 4px; }
+.pcp-locked:disabled { opacity: 0.5; cursor: not-allowed; }
+.pcp-lockmsg { font-size: 0.8rem; opacity: 0.8; }

@@ -11,14 +11,16 @@ export const MembershipsPage = () => <RecordManager entity={MEMBERSHIPS} />
 export const PurchasesPage = () => <RecordManager entity={PURCHASES} />
 export const GamePlaysPage = () => <RecordManager entity={GAME_PLAYS} />
 export const RideLogPage = () => <RecordManager entity={RIDE_LOG} />
-// The one-click close/reopen panel sits above the weather form. Only Admin and the Operations desk see it.
-// Changing the park's status remounts the list (key) so the new weather entry shows at once.
+// The park status banner and the weather log are two views of the same WeatherLog rows. Closing or reopening from the
+// banner reloads the list; saving or deleting an entry in the list reloads the banner. Only Admin can close or reopen;
+// the other roles that can open this page see the banner and the Severe controls greyed out.
 export function WeatherPage() {
-  const [version, setVersion] = useState(0)
+  const [listVersion, setListVersion] = useState(0)
+  const [panelVersion, setPanelVersion] = useState(0)
   return (
     <>
-      <ParkClosurePanel onChanged={() => setVersion((v) => v + 1)} />
-      <RecordManager key={version} entity={WEATHER} />
+      <ParkClosurePanel refreshKey={panelVersion} onChanged={() => setListVersion((v) => v + 1)} />
+      <RecordManager entity={WEATHER} refreshKey={listVersion} onChanged={() => setPanelVersion((v) => v + 1)} />
     </>
   )
 }

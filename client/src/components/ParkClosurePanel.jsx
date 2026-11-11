@@ -1,21 +1,27 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../auth/context.js'
 import { closePark, getParkClosure, reopenPark } from '../api/index.js'
-import { OPS_ROLES } from '../config/nav.js'
 import useParkClock from '../hooks/useParkClock.js'
 import usePersistedState from '../hooks/usePersistedState.js'
 import { clockLabel } from '../utils/parkTime.js'
 import './ParkClosurePanel.css'
 
-// Park status banner with one-click "Close park for weather" / "Reopen park" for Admin and the Operations desk (Manager).
+// Park status banner with one-click "Close park for weather" / "Reopen park". Admin only: everyone else who can see the
+// Weather Log sees the same banner with the button greyed out ("Insufficient privileges").
 // Green "Park is in operation" while the park is open; red "Park is closed" when it is closed (outside opening hours, or closed for weather).
 // It is a shortcut over the weather form below it: closing logs a Severe weather event, reopening ends it.
 // The server checks the role again, so hiding this panel is only for tidiness.
 const TYPES = ['Storm', 'Rain', 'Heat', 'Cold']
 
-export default function ParkClosurePanel({ onChanged }) {
+const VIEW_ROLES = ['Admin', 'Manager', 'RetailManager'] // same as CAN_SEE in server/routes/parkClosure.js
+const NO_RIGHTS = 'Insufficient privileges: only an Admin can close or reopen the park.'
+
+// onChanged: called after this panel closes or reopens the park (the log list reloads).
+// refreshKey: change it (the log was edited) and the banner reloads the park status at once.
+export default function ParkClosurePanel({ onChanged, refreshKey = 0 }) {
   const { user } = useAuth()
-  const allowed = OPS_ROLES.includes(user?.role)
+  const allowed = VIEW_ROLES.includes(user?.role)
+  const canClose = user?.role === 'Admin'
   const [status, setStatus] = useState(null) // { closed, weatherType, since } or null while loading
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -43,7 +49,7 @@ export default function ParkClosurePanel({ onChanged }) {
     load()
     const timer = setInterval(load, 15000)
     return () => clearInterval(timer)
-  }, [allowed, load])
+  }, [allowed, load, refreshKey])
 
   if (!allowed) return null
 
@@ -103,13 +109,22 @@ export default function ParkClosurePanel({ onChanged }) {
           </div>
         </div>
         {status != null && !confirming && (
-          <button type="button" className="pt-btn pt-btn-sm" onClick={() => { setMessage(''); setConfirming(true) }}>
-            {closed ? 'Reopen park' : 'Close park for weather'}
-          </button>
+          <div className="pcp-btnwrap">
+            <button
+              type="button"
+              className={`pt-btn pt-btn-sm ${canClose ? '' : 'pcp-locked'}`}
+              disabled={!canClose}
+              title={canClose ? undefined : NO_RIGHTS}
+              onClick={() => { setMessage(''); setConfirming(true) }}
+            >
+              {closed ? 'Reopen park' : 'Close park for weather'}
+            </button>
+            {!canClose && <span className="pcp-lockmsg">Insufficient privileges (Admin only)</span>}
+          </div>
         )}
       </div>
 
-      {confirming && (
+      {confirming && canClose && (
         <div className="pcp-confirm">
           <p>
             {closed
