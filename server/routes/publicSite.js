@@ -12,6 +12,12 @@ import { pool } from '../db.js';
 const CACHE_MS = 15 * 1000; // anonymous and read-only, so a short cache protects the database
 let cache = { at: 0, data: null };
 
+// Forget the cached answer. Called when something changes what the homepage shows (closing or reopening the park for
+// weather, and later rides being added or retired), so the change shows on the next request, not after the 15 s wait.
+export function clearPublicSiteCache() {
+  cache = { at: 0, data: null };
+}
+
 const hhmm = (t) => String(t ?? '').slice(0, 5);
 
 // Mirrors the generated columns on Membership: IncludesExpress = Premier, AnyDayAccess = not Basic.

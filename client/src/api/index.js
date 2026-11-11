@@ -375,3 +375,16 @@ export function adminBuild(spec) {
   needLive()
   return http('/admin/builder', { method: 'POST', body: spec })
 }
+
+// Close or reopen the park for weather (Admin and the Operations desk). The database then refuses sales until it reopens
+// (SQL/rules/29_sales_blocked_when_park_closed.sql). These always need the real server.
+const NEEDS_SERVER = 'Mock mode is on, so this would not touch the database. Set VITE_USE_MOCK=false in client/.env and restart npm run dev.'
+export function getParkClosure() {
+  return USE_MOCK ? Promise.reject(new Error(NEEDS_SERVER)) : http('/admin/weather/park-status')
+}
+export function closePark(data) {
+  return USE_MOCK ? Promise.reject(new Error(NEEDS_SERVER)) : http('/admin/weather/close-park', { method: 'POST', body: data })
+}
+export function reopenPark(data) {
+  return USE_MOCK ? Promise.reject(new Error(NEEDS_SERVER)) : http('/admin/weather/reopen-park', { method: 'POST', body: data })
+}

@@ -256,6 +256,21 @@ export const TRIGGER_CATALOG = [
     rule: 'A work-finished report cannot be changed once the manager has closed the job.',
     errors: ['This job is already closed.'],
   },
+  {
+    name: 'trg_Ticket_BI_WeatherClosed', table: 'Ticket', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
+    rule: 'No ticket for today is sold while a Severe weather event has closed the park. Tickets for a later date stay on sale.',
+    errors: ['Tickets for today are not on sale: weather has closed the park'],
+  },
+  {
+    name: 'trg_Purchase_BI_WeatherClosed', table: 'Purchase', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
+    rule: 'No food, drink or merchandise purchase is recorded while a Severe weather event has closed the park.',
+    errors: ['Purchases are paused: weather has closed the park'],
+  },
+  {
+    name: 'trg_GamePlay_BI_WeatherClosed', table: 'GamePlay', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
+    rule: 'No game play is recorded while a Severe weather event has closed the park.',
+    errors: ['Games are closed: weather has closed the park'],
+  },
 ];
 
 // The catalog entry (without the long error list) for a trigger name, or null.

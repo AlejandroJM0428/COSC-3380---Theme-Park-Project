@@ -4,8 +4,8 @@ import { parkMinutes, parkStatus, readPreview } from '../utils/parkTime.js'
 
 // The park's opening hours and any weather closure, shared by everything that asks for them.
 // Hours rarely change, but weather can close the park at any moment, so the answer is reused for at most
-// a minute and then fetched again.
-const REFRESH_MS = 60 * 1000
+// ten seconds and then fetched again, so a weather closure shows within about 10 s.
+const REFRESH_MS = 10 * 1000
 let infoRequest = null
 let loadedAt = 0
 function loadParkInfo() {
@@ -23,7 +23,7 @@ function loadParkInfo() {
 
 // What the park is doing right now, in park time: { mode, reason, hours, weather, openAt, closeAt, ... }.
 // mode is 'unknown' | 'closed' | 'happyhour' | 'open'. reason is 'weather' when severe weather closed it.
-// It re-checks every 30 seconds.
+// It re-checks every 10 seconds.
 export default function useParkClock() {
   const [info, setInfo] = useState({ hours: null, weather: null })
   const [now, setNow] = useState(() => parkMinutes())
@@ -37,7 +37,7 @@ export default function useParkClock() {
     const timer = setInterval(() => {
       setNow(parkMinutes())
       refresh()
-    }, 30000)
+    }, 10000)
     return () => {
       alive = false
       clearInterval(timer)

@@ -62,6 +62,19 @@ const BLOCKED_COPY = {
     title: 'That ticket could not be booked',
     help: 'Try another date, or check what your membership covers.',
   },
+  trg_Ticket_BI_WeatherClosed: {
+    title: 'The park is closed for weather',
+    help: 'Tickets for today are paused. You can still book a ticket for another day.',
+    action: { label: 'Pick another date', tab: 'tickets' },
+  },
+  trg_Purchase_BI_WeatherClosed: {
+    title: 'The park is closed for weather',
+    help: 'Nothing was charged. Purchases resume when the park reopens.',
+  },
+  trg_GamePlay_BI_WeatherClosed: {
+    title: 'The park is closed for weather',
+    help: 'Nothing was charged. Games reopen when the park reopens.',
+  },
 }
 const FALLBACK_COPY = { title: 'A park rule stopped that', help: 'Nothing was charged. Change the details and try again.' }
 

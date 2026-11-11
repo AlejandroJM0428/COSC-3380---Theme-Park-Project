@@ -1,0 +1,9 @@
+.pcp { border: 1px solid rgba(128, 128, 128, 0.4); border-radius: 8px; padding: 12px 14px; margin: 0 0 16px; }
+.pcp-closed { border-color: #c0392b; background: rgba(192, 57, 43, 0.08); }
+.pcp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pcp-confirm { margin-top: 12px; display: grid; gap: 10px; max-width: 520px; }
+.pcp-confirm p { margin: 0; }
+.pcp-confirm label { display: grid; gap: 4px; font-size: 0.9rem; }
+.pcp-actions { display: flex; gap: 8px; }
+.pcp-msg { margin: 10px 0 0; }
+.pcp-err { margin: 10px 0 0; color: #c0392b; }

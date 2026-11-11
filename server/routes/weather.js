@@ -40,6 +40,17 @@ export function parseWeather(body) {
   };
 }
 
+// The one INSERT for a weather event, used by the weather form and by the one-click "close park" button.
+// startedAt null means "now". Pass `db` (a connection inside a transaction) to commit or roll back with other writes.
+export async function insertWeather(w, db = pool) {
+  const [result] = await db.query(
+    `INSERT INTO WeatherLog (ParkID, WeatherType, Severity, StartedAt, EndedAt)
+     VALUES ((SELECT ParkID FROM Park ORDER BY ParkID LIMIT 1), ?, ?, COALESCE(?, NOW()), ?)`,
+    [w.weatherType, w.severity, w.startedAt ?? null, w.endedAt ?? null],
+  );
+  return result.insertId;
+}
+
 const FRIENDLY = {
   1062: 'There is already a weather entry that starts at that time',
   1451: 'A refund uses this weather event, so it cannot be deleted',
@@ -76,13 +87,9 @@ route(
   requireRole(...CAN_WRITE)(async (ctx) => {
     const w = parseWeather(ctx.body);
     try {
-      const [result] = await pool.query(
-        `INSERT INTO WeatherLog (ParkID, WeatherType, Severity, StartedAt, EndedAt)
-         VALUES ((SELECT ParkID FROM Park ORDER BY ParkID LIMIT 1), ?, ?, ?, ?)`,
-        [w.weatherType, w.severity, w.startedAt, w.endedAt],
-      );
+      const insertId = await insertWeather(w);
       ctx.status = 201;
-      return await loadWeather(result.insertId);
+      return await loadWeather(insertId);
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);
     }

@@ -22,6 +22,7 @@ import './routes/cancellations.js';
 import './routes/publicSite.js';
 import './routes/me.js';
 import './routes/admin.js';
+import './routes/parkClosure.js';
 import './routes/adminBrowse.js';
 import './routes/adminSql.js';
 import './routes/adminTransactions.js';
