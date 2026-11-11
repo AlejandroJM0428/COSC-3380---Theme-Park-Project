@@ -221,6 +221,31 @@
   margin: 10px 0 0;
 }
 
+.rp-editlinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 10px 0 14px;
+}
+
+.rp-editlinks-label {
+  font-weight: 700;
+}
+
+.rp-editlinks-link {
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel, #fff);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.rp-editlinks-link:hover {
+  border-color: var(--ink);
+}
+
 .rp-notes {
   margin: 12px 0;
   padding: 10px 14px;

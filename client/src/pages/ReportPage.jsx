@@ -9,6 +9,7 @@ import DataTable from '../components/DataTable.jsx'
 import DateRangePicker from '../components/DateRangePicker.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 import ReportParams, { emptySpec, isCustom, toRequest } from '../components/ReportParams.jsx'
+import ReportEditLinks from '../components/ReportEditLinks.jsx'
 import { makeLabeler } from '../config/labels.js'
 import { REPORTS } from '../config/reports.js'
 import NotFound from './NotFound.jsx'
@@ -555,6 +556,7 @@ export default function ReportPage({ reportKey }) {
     <div>
       <h1>{report.title}</h1>
       <p className="muted">{report.description}</p>
+      <ReportEditLinks reportKey={report.key} />
       {sections && (
         <div className="rp-tabs" role="tablist">
           {sections.map((s) => (
