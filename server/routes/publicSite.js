@@ -103,8 +103,9 @@ async function loadSite() {
       minHeightCm: r.MinHeightCm > 0 ? r.MinHeightCm : null,
       // Express-eligible rides are the park's headline rides (the "Premier rides" on /rides).
       expressEligible: Boolean(r.IsExpressEligible),
-      // Any "Closed - ..." reason (maintenance, weather) is shown as plain Closed.
+      // Any "Closed - ..." state is Closed. closedReason says why, so the page can show "Closed: maintenance".
       state: r.CurrentState === 'Open' ? 'Open' : 'Closed',
+      closedReason: r.CurrentState === 'Closed - Maintenance' ? 'maintenance' : r.CurrentState === 'Closed - Weather' ? 'weather' : null,
     })),
     venues: venueRows.map((v) => ({
       venueId: v.VenueID,

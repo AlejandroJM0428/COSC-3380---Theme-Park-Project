@@ -6,7 +6,7 @@
 export const TRIGGER_CATALOG = [
   {
     name: 'trg_Ride_AU_Notify', table: 'Ride', timing: 'AFTER', event: 'UPDATE', kind: 'Notification',
-    rule: 'When a ride status changes to Maintenance, inserts a New Maintenance Alert.',
+    rule: "When a ride status changes to Maintenance, posts that ride's New Maintenance Alert (one per ride, keyed by RideID; a repeat switches the old one back on).",
   },
   {
     name: 'trg_Ticket_BI', table: 'Ticket', timing: 'BEFORE', event: 'INSERT', kind: 'Check',

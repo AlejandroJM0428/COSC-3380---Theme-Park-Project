@@ -61,6 +61,7 @@ function itemsFor(tab, rides, venues) {
       zone: r.zoneName,
       facts: [r.rideType, r.minHeightCm != null ? `Min height ${r.minHeightCm} cm` : 'Any height'].filter(Boolean),
       state: r.state,
+      reason: r.closedReason ?? null,
     }))
 }
 
@@ -106,7 +107,7 @@ export default function Explorer({ rides = [], venues = [] }) {
                 <p className="pub-feature-meta">
                   {picked.zone}
                   {picked.facts.map((f) => <span key={f}>{f}</span>)}
-                  {picked.state && <span className={`pub-badge ${picked.state === 'Open' ? 'open' : 'closed'}`}>{picked.state}</span>}
+                  {picked.state && <span className={`pub-badge ${picked.state === 'Open' ? 'open' : 'closed'}`}>{picked.state === 'Open' ? 'Open' : picked.reason === 'maintenance' ? 'Closed: maintenance' : picked.reason === 'weather' ? 'Closed: weather' : picked.state}</span>}
                 </p>
               </>
             ) : (
