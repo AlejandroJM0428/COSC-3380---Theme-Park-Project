@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createRecord, deleteRecord, reactivateRecord, getLookups, getRecord, listRecords, updateRecord } from '../api'
 import { useAuth } from '../auth/context.js'
+import usePersistedState from '../hooks/usePersistedState.js'
 import ErrorBanner from './ErrorBanner.jsx'
 import LookupField from './LookupField.jsx'
 import DateTimeField from './DateTimeField.jsx'
@@ -22,9 +23,12 @@ export default function RecordManager({ entity }) {
   const [form, setForm] = useState(null) // null = form closed
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState('') // load failures
   const [notice, setNotice] = useState('')
-  const [toast, setToast] = useState(null)
+  // What a database rule said about a save, delete or reactivate. Both stay through a refresh until closed.
+  const [actionError, setActionError] = usePersistedState(`records.${entity.resource}.error`, '')
+  const [toast, setToast] = usePersistedState(`records.${entity.resource}.toast`, null)
+  const clearErrors = () => { setError(''); setActionError('') }
   const [asking, setAsking] = useState(null) // { row, action: 'deactivate' | 'reactivate' } while the reason dialog is open
   const [askBusy, setAskBusy] = useState(false)
   const [askError, setAskError] = useState('')
@@ -40,12 +44,6 @@ export default function RecordManager({ entity }) {
     }
   }, [entity.resource])
 
-  useEffect(() => {
-    if (!toast) return undefined
-    const timer = setTimeout(() => setToast(null), 5000)
-    return () => clearTimeout(timer)
-  }, [toast])
-
   const filterKey = JSON.stringify(filters)
   useEffect(() => {
     let alive = true
@@ -58,28 +56,28 @@ export default function RecordManager({ entity }) {
   }, [entity.resource, filterKey, reload])
 
   function openAdd() {
-    setError('')
+    clearErrors()
     setNotice('')
     setEditingId(null)
     setForm(entity.blank())
   }
 
   function openAddLogin(row) {
-    setError('')
+    clearErrors()
     setNotice('')
     setEditingId(null)
     setForm(entity.addLoginForm(row, lookups))
   }
 
   async function openEdit(row) {
-    setError('')
+    clearErrors()
     setNotice('')
     try {
       const full = await getRecord(entity.resource, row[entity.idKey]) // the list has no crew, the single record does
       setEditingId(row[entity.idKey])
       setForm(entity.fromRecord(full))
     } catch (err) {
-      setError(err.message)
+      setActionError(err.message)
     }
   }
 
@@ -90,14 +88,15 @@ export default function RecordManager({ entity }) {
 
   async function submit(e) {
     e.preventDefault()
-    setError('')
+    clearErrors()
     setNotice('')
     const missing = entity.fields.find((f) => f.type === 'lookup' && f.required && !form[f.key] && (!f.show || f.show(form)))
     if (missing) {
-      setError(`Choose the ${missing.pickLabel ?? missing.label.toLowerCase()} first.`)
+      setActionError(`Choose the ${missing.pickLabel ?? missing.label.toLowerCase()} first.`)
       return
     }
     setSaving(true)
+    setToast(null)
     try {
       const body = entity.toPayload(form)
       const saved = editingId == null ? await createRecord(entity.resource, body) : await updateRecord(entity.resource, editingId, body)
@@ -110,7 +109,7 @@ export default function RecordManager({ entity }) {
     } catch (err) {
       const nextToast = entity.rejectToast?.(err.message)
       if (nextToast) setToast(nextToast)
-      else setError(err.message) // the trigger's own text, for example "Park is at capacity for that date"
+      else setActionError(err.message) // the trigger's own text, for example "Park is at capacity for that date"
     } finally {
       setSaving(false)
     }
@@ -135,14 +134,14 @@ export default function RecordManager({ entity }) {
     } else if (!window.confirm(`${deleteLabel} ${entity.describe(row)}? ${entity.deleteNote ?? 'This cannot be undone.'}`)) {
       return
     }
-    setError('')
+    clearErrors()
     setNotice('')
     try {
       await deleteRecord(entity.resource, row[entity.idKey], query)
       setNotice(`${deletePast} ${entity.describe(row)}.`)
       setReload((n) => n + 1)
     } catch (err) {
-      setError(err.message)
+      setActionError(err.message)
     }
   }
 
@@ -153,14 +152,14 @@ export default function RecordManager({ entity }) {
       setAsking({ row, action: 'reactivate' })
       return
     }
-    setError('')
+    clearErrors()
     setNotice('')
     try {
       await reactivateRecord(entity.resource, row[entity.idKey])
       setNotice(`Reactivated ${entity.describe(row)}.`)
       setReload((n) => n + 1)
     } catch (err) {
-      setError(err.message)
+      setActionError(err.message)
     }
   }
 
@@ -362,6 +361,7 @@ export default function RecordManager({ entity }) {
       )}
 
       <ErrorBanner message={error} onClose={() => setError('')} />
+      <ErrorBanner message={actionError} onClose={() => setActionError('')} />
       {notice && <p className="result allowed">{notice}</p>}
 
       <div className="rm-toolbar">
@@ -423,6 +423,7 @@ export default function RecordManager({ entity }) {
           <div className="corner-toast-top">
             <strong>{toast.title}</strong>
             {toast.badge && <span className="corner-badge">{toast.badge}</span>}
+            <button type="button" className="corner-toast-x" aria-label="Dismiss" onClick={() => setToast(null)}>×</button>
           </div>
           <p>{toast.message}</p>
           {toast.footnote && <p className="muted">{toast.footnote}</p>}

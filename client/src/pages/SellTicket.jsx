@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import usePersistedState from '../hooks/usePersistedState.js'
 import { createTicket } from '../api'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 import CustomerPicker from '../components/CustomerPicker.jsx'
@@ -17,7 +18,7 @@ export default function SellTicket() {
   const [visitDate, setVisitDate] = useState(today)
   const [hasExpress, setHasExpress] = useState(false)
   const [saved, setSaved] = useState(null)
-  const [error, setError] = useState('')
+  const [error, setError] = usePersistedState('sell.error', '') // the rule's text stays through a refresh
 
   // The lookup finds the membership that covers today. It only applies to the ticket if it is still running on the visit date.
   const membershipApplies = Boolean(guest?.MembershipID) && (!guest.MembershipEnd || String(guest.MembershipEnd).slice(0, 10) >= visitDate)

@@ -3,6 +3,7 @@ import { useAuth } from '../auth/context.js'
 import { closePark, getParkClosure, reopenPark } from '../api/index.js'
 import { OPS_ROLES } from '../config/nav.js'
 import useParkClock from '../hooks/useParkClock.js'
+import usePersistedState from '../hooks/usePersistedState.js'
 import { clockLabel } from '../utils/parkTime.js'
 import './ParkClosurePanel.css'
 
@@ -18,6 +19,7 @@ export default function ParkClosurePanel({ onChanged }) {
   const [status, setStatus] = useState(null) // { closed, weatherType, since } or null while loading
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [actionError, setActionError] = usePersistedState('closure.actionError', '') // a refused close or reopen stays through a refresh
   const [confirming, setConfirming] = useState(false)
   const [weatherType, setWeatherType] = useState('Storm')
   const [note, setNote] = useState('')
@@ -70,6 +72,7 @@ export default function ParkClosurePanel({ onChanged }) {
   async function confirm() {
     setBusy(true)
     setError('')
+    setActionError('')
     try {
       if (closed) {
         await reopenPark({ note })
@@ -83,7 +86,7 @@ export default function ParkClosurePanel({ onChanged }) {
       await load()
       onChanged?.()
     } catch (e) {
-      setError(e.message)
+      setActionError(e.message)
     } finally {
       setBusy(false)
     }
@@ -138,6 +141,7 @@ export default function ParkClosurePanel({ onChanged }) {
 
       {message && <p className="pcp-msg" role="status">{message}</p>}
       {error && <p className="pcp-err" role="alert">{error}</p>}
+      {actionError && <p className="pcp-err" role="alert">{actionError}</p>}
     </section>
   )
 }

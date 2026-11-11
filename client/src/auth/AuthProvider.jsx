@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import * as api from '../api/index.js'
 import { SESSION_EXPIRED } from '../api/http.js'
 import { AuthContext } from './context.js'
+import { clearPersisted } from '../hooks/usePersistedState.js'
 
 const STORAGE_KEY = 'themepark.user'
 
@@ -63,6 +64,7 @@ export default function AuthProvider({ children }) {
   useEffect(() => {
     function expired() {
       setUser(null)
+      clearPersisted()
       try {
         sessionStorage.removeItem(STORAGE_KEY)
       } catch {
@@ -94,6 +96,7 @@ export default function AuthProvider({ children }) {
   function logout() {
     setSignedOut(true)
     setUser(null)
+    clearPersisted()
     try {
       sessionStorage.removeItem(STORAGE_KEY)
     } catch {

@@ -5,7 +5,10 @@ import { BRAND } from '../config/brand.js'
 import { clockLabel, durationLabel } from '../utils/parkTime.js'
 import './NotificationBar.css'
 
-const DISMISS_KEY = 'park.notices.dismissed'
+// What was closed since the page loaded. It is kept in memory only, so a refresh brings every notice back for as
+// long as it is active on the server. Moving between pages does not bring them back.
+let seenThisLoad = []
+let dismissedThisLoad = ''
 
 // Park notices (sold out, weather, maintenance closed, promos). Made by database triggers, except promos
 // which staff type in. Shows nothing if there are none or the server is unreachable.
@@ -19,28 +22,16 @@ export default function NotificationBar({ variant = 'default' }) {
 }
 
 // Portal notices: ONE card at a time instead of a stack of boxes. "Next" steps through them and the last one
-// says "Got it". After the last one the card is gone. Each notice is remembered as read for this browser tab,
-// so a refresh does not bring them back, but a new or reworded notice shows up again.
-const SEEN_KEY = 'park.notices.seen'
+// says "Got it". After the last one the card is gone until the next refresh. A new or reworded notice shows up again.
 const seenKeyOf = (n) => `${n.NotificationID}|${n.CreatedAt}|${n.Message}`
-
-function readSeen() {
-  try {
-    const list = JSON.parse(sessionStorage.getItem(SEEN_KEY) || '[]')
-    return Array.isArray(list) ? list : []
-  } catch {
-    return []
-  }
-}
 
 function NoticeList() {
   const items = useNotices()
-  const [seen, setSeen] = useState(readSeen)
+  const [seen, setSeen] = useState(seenThisLoad)
   const markSeen = (keys) => {
     setSeen((list) => {
-      const next = [...new Set([...list, ...keys])].slice(-100)
-      try { sessionStorage.setItem(SEEN_KEY, JSON.stringify(next)) } catch { /* private mode: fine */ }
-      return next
+      seenThisLoad = [...new Set([...list, ...keys])].slice(-100)
+      return seenThisLoad
     })
   }
 
@@ -77,18 +68,16 @@ function NoticeList() {
 function TopBanner() {
   const notices = useNotices()
   const park = useParkClock()
-  const [dismissed, setDismissed] = useState(() => {
-    try { return sessionStorage.getItem(DISMISS_KEY) || '' } catch { return '' }
-  })
+  const [dismissed, setDismissed] = useState(dismissedThisLoad)
 
   const showTicker = park.mode === 'closed' || park.mode === 'happyhour'
-  // Closing the banner is remembered for this browser tab, for this mode and this exact set of notices.
+  // Closing the banner lasts until the page is refreshed, for this mode and this exact set of notices.
   // When the park goes from closed to open, Happy Hour starts, or weather closes the park, the new mode shows again.
   const mode = park.reason === 'weather' ? 'closed-weather' : park.mode
   const signature = `${showTicker ? mode : 'notices'}:${notices.slice(0, 3).map((n) => n.NotificationID).join(',')}`
   const dismiss = () => {
+    dismissedThisLoad = signature
     setDismissed(signature)
-    try { sessionStorage.setItem(DISMISS_KEY, signature) } catch { /* private mode: fine */ }
   }
   if (dismissed === signature) return null
 

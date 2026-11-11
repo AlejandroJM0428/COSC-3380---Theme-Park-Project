@@ -3,11 +3,12 @@ import useNotices from '../hooks/useNotices.js'
 import './NoticePopup.css'
 
 // Centered pop-up for the notices that matter most: maintenance, weather, and rides added or taken out of service.
-// It shows once per notice per browser tab (sessionStorage). It closes on the X button, "Got it", a click on the
-// backdrop, Esc, or after 8 seconds (the timer pauses while the mouse or keyboard focus is on it).
-// After that the notice is still in the banner, which is not touched by this component.
-// If several notices are new, they show one at a time.
-const POPPED_KEY = 'park.notices.popped'
+// It shows every time the page loads for as long as the notice is active on the server, so a refresh brings it
+// back. Closing it (the X button, "Got it", a click on the backdrop, Esc, or after 8 seconds; the timer pauses
+// while the mouse or keyboard focus is on it) only hides it until the next refresh, and moving between pages
+// does not show it again. Nothing is written to the browser: the server's list of active notices is the memory.
+// After it closes the notice is still in the banner, which is not touched by this component.
+// If several notices are active, they show one at a time.
 const SHOW_MS = 8000
 const POPUP_KINDS = new Set(['Weather', 'Maintenance', 'MaintenanceClosed', 'RideAdded', 'RideDeactivated'])
 
@@ -15,22 +16,18 @@ const POPUP_KINDS = new Set(['Weather', 'Maintenance', 'MaintenanceClosed', 'Rid
 // so the key also holds the time and the text. A new version of a notice pops up again.
 const keyOf = (n) => `${n.NotificationID}|${n.CreatedAt}|${n.Message}`
 
-function readPopped() {
-  try {
-    const list = JSON.parse(sessionStorage.getItem(POPPED_KEY) || '[]')
-    return Array.isArray(list) ? list : []
-  } catch {
-    return []
-  }
-}
-
-function savePopped(list) {
-  try { sessionStorage.setItem(POPPED_KEY, JSON.stringify(list.slice(-100))) } catch { /* private mode: fine */ }
-}
+// Notices closed since the page loaded. It lives in memory, so a refresh empties it and the notices come back.
+let closedThisLoad = []
 
 export default function NoticePopup() {
   const notices = useNotices()
-  const [popped, setPopped] = useState(readPopped)
+  const [popped, setPoppedState] = useState(closedThisLoad)
+  const setPopped = (update) => {
+    setPoppedState((list) => {
+      closedThisLoad = typeof update === 'function' ? update(list) : update
+      return closedThisLoad
+    })
+  }
   const current = notices.find((n) => POPUP_KINDS.has(n.Kind) && !popped.includes(keyOf(n))) ?? null
   const currentKey = current ? keyOf(current) : null
   const [paused, setPaused] = useState(false)
@@ -43,13 +40,6 @@ export default function NoticePopup() {
     setPopped((list) => (list.includes(currentKey) ? list : [...list, currentKey]))
     setPaused(false)
   }
-
-  // Remember the notice as soon as it is on screen, so a refresh while it is open does not show it again.
-  useEffect(() => {
-    if (currentKey == null) return
-    const list = readPopped()
-    if (!list.includes(currentKey)) savePopped([...list, currentKey])
-  }, [currentKey])
 
   // A new notice starts with a full 8 seconds and the close button focused.
   useEffect(() => {

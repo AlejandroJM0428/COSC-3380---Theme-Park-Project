@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getMyWork, reportJobFinished, undoJobFinished } from '../api/index.js'
 import DataTable from '../components/DataTable.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
+import usePersistedState from '../hooks/usePersistedState.js'
 import './MyWork.css'
 
 const day = (s) => (s ? String(s).slice(0, 16) : '—')
@@ -75,7 +76,7 @@ function OpenJob({ job, onChanged, onError }) {
 export default function MyWork() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
-  const [actionError, setActionError] = useState('')
+  const [actionError, setActionError] = usePersistedState('mywork.actionError', '') // the rule's text stays through a refresh
   const [tab, setTab] = useState('jobs')
 
   const load = () => getMyWork().then(setData).catch((err) => setError(err.message))

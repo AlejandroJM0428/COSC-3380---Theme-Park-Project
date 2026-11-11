@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { approveCancellation, listCancellations, rejectCancellation } from '../api/index.js'
 import ErrorBanner from '../components/ErrorBanner.jsx'
+import usePersistedState from '../hooks/usePersistedState.js'
 import { clock, formatDate } from '../utils/portalFormat.js'
 import './CancellationsPage.css'
 
@@ -82,6 +83,7 @@ export default function CancellationsPage() {
   const [filter, setFilter] = useState('Pending')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [actionError, setActionError] = usePersistedState('cancellations.actionError', '') // a refused decision stays through a refresh
   const [busyId, setBusyId] = useState(null)
 
   // Promise.resolve().then(...) turns an immediate throw into a normal rejection that the banner can show.
@@ -106,6 +108,7 @@ export default function CancellationsPage() {
     if (!window.confirm(question)) return
 
     setError('')
+    setActionError('')
     setNotice('')
     setBusyId(row.requestId)
     try {
@@ -117,7 +120,7 @@ export default function CancellationsPage() {
       )
     } catch (err) {
       // A 409 means another reviewer decided it first. Reloading shows the real state.
-      setError(err.message)
+      setActionError(err.message)
     } finally {
       setBusyId(null)
       await load()
@@ -135,6 +138,7 @@ export default function CancellationsPage() {
         A member asks to cancel. Approving turns auto-renew off, so the membership ends on its normal end date. It does not end early and nothing is refunded. Rejecting changes nothing.
       </p>
       <ErrorBanner message={error} onClose={() => setError('')} />
+      <ErrorBanner message={actionError} onClose={() => setActionError('')} />
       {notice && <p className="page-note">{notice}</p>}
 
       <div className="tabs" role="group" aria-label="Show requests">
