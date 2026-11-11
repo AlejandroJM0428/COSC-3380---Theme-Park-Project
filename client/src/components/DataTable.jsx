@@ -54,7 +54,8 @@ const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-l
 // labelOf optional: reports pass their plain-label function, without it the header is the column name split into words)
 // rowClass is optional: 'high' shades the row green and 'low' shades it red, so unusual rows stand out.
 // Click a column header to sort: first click ascending, second descending, third back to the original order.
-export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT, labelOf }) {
+// onDetail, when passed, adds a Details button on each row. detailKey is the open row (JSON.stringify of that row).
+export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT, labelOf, onDetail, detailKey }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
   const [count, setCount] = useState(pageSize) // how many rows are showing
 
@@ -111,6 +112,7 @@ export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMI
                   </th>
                 )
               })}
+              {onDetail && <th className="dt-detail">Details</th>}
             </tr>
           </thead>
           <tbody>
@@ -121,6 +123,18 @@ export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMI
                     {formatCell(row[c], c)}
                   </td>
                 ))}
+                {onDetail && (
+                  <td className="dt-detail">
+                    <button
+                      type="button"
+                      className="dt-toggle"
+                      aria-expanded={detailKey === JSON.stringify(row)}
+                      onClick={() => onDetail(row)}
+                    >
+                      {detailKey === JSON.stringify(row) ? 'Hide' : 'Details'}
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

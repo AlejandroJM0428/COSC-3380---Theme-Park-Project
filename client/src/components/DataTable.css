@@ -29,6 +29,13 @@ td.dt-num {
   margin: 8px 0 0;
 }
 
+th.dt-detail,
+td.dt-detail {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
 .dt-toggle {
   margin-left: 10px;
   padding: 4px 10px;

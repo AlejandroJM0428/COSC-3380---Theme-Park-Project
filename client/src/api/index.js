@@ -47,6 +47,26 @@ export async function runReport(endpoint, spec) {
   return http(`/reports/${endpoint}/run`, { method: 'POST', body: spec ?? {} })
 }
 
+// The tables and matching source rows behind one report line. Loaded only when that line's Details button is clicked.
+export function reportDetail(endpoint, row) {
+  if (USE_MOCK) {
+    return Promise.resolve({
+      sources: [],
+      label: 'Source tables',
+      note: 'Mock mode has no database tables behind these rows.',
+      rows: [],
+      shown: 0,
+      more: false,
+    })
+  }
+  const plain = {}
+  for (const [k, v] of Object.entries(row ?? {})) {
+    if (k === 'Note' || k.startsWith('_')) continue
+    if (v === null || typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string') plain[k] = v
+  }
+  return http(`/reports/${endpoint}/detail`, { method: 'POST', body: { row: plain } })
+}
+
 // Live database only: these have no mock, because the point is to reach MySQL.
 function needLive() {
   if (USE_MOCK) {
