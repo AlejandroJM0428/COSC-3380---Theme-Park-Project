@@ -3,7 +3,8 @@ import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { audit } from './admin.js';
-import { DEFAULT_LIMIT, ROW_LIMITS, SUGGEST_CAP, columnOptions, describeSource, fixedRules, runReport } from '../reportQuery.js';
+import { DEFAULT_LIMIT, ROW_LIMITS, SUGGEST_CAP, columnOptions, describeSource, fixedRules, runReport, runSelect } from '../reportQuery.js';
+import { DETAIL_CAP, applyDetailRange, countDetailSql, describeDetail } from '../reportDetail.js';
 
 // Who may open which report. Keep these lists in step with `roles` in client/src/config/reports.js.
 // The server is what actually enforces access; the client only hides what you cannot open.
@@ -152,64 +153,39 @@ route(
   }),
 );
 
-
+// One clicked report row: the tables it came from, and at most 20 matching source rows.
+// Query tabs (q1 to q5) use the same door. Their role lists match server/routes/queries.js.
+const QUERY_ROLES = { q1: RETAIL, q2: OPERATIONS, q3: MAINTENANCE, q4: RETAIL, q5: RETAIL };
 
 route(
-  'GET',
-  '/api/revenue/ticket-transactions',
-  requireRole(...RETAIL)(async (ctx) => {
-    const from = ctx.query?.from || ''
-    const to = ctx.query?.to || ''
-
-    const validDate = (value) =>
-      !value || /^\d{4}-\d{2}-\d{2}$/.test(value)
-
-    if (!validDate(from) || !validDate(to) || (from && to && from > to)) {
-      return { error: 'Invalid date range' }
+  'POST',
+  '/api/reports/:name/detail',
+  requireRole(...ANY_REPORT_ROLE)(async (ctx) => {
+    const name = ctx.params.name;
+    const roles = REPORTS[name]?.roles ?? QUERY_ROLES[name];
+    if (!roles) throw new HttpError(404, 'Unknown report');
+    if (!roles.includes(ctx.session.role)) throw new HttpError(403, 'Your role cannot open this report');
+    const from = ctx.body?.from;
+    const to = ctx.body?.to;
+    const spec = applyDetailRange(describeDetail(name, ctx.body?.row), from, to);
+    if (!spec) throw new HttpError(404, 'This report has no source lookup');
+    if (!spec.sql) {
+      return { sources: spec.sources, label: spec.label, note: spec.note, rows: [], shown: 0, total: 0, more: false };
     }
-
-    const conditions = ['t.VisitDate <= CURDATE()']
-    const params = []
-
-    if (from) {
-      conditions.push('t.VisitDate >= ?')
-      params.push(from)
-    }
-
-    if (to) {
-      conditions.push('t.VisitDate <= ?')
-      params.push(to)
-    }
-
-    const [rows] = await pool.query(
-      `
-      SELECT
-        t.TicketID,
-        t.CustomerID,
-        t.PurchaseDate,
-        t.VisitDate,
-        t.TicketPrice,
-        t.HasExpress
-      FROM Ticket t
-      WHERE ${conditions.join(' AND ')}
-        AND NOT EXISTS (
-          SELECT 1
-          FROM TicketRefund r
-          WHERE r.TicketID = t.TicketID
-        )
-      ORDER BY t.VisitDate DESC, t.TicketID DESC
-      `,
-      params
-    )
-
+    const [{ rows }, count] = await Promise.all([
+      runSelect(spec.sql, spec.params),
+      runSelect(countDetailSql(spec.sql), spec.params),
+    ]);
+    const total = Number(count.rows[0]?.total ?? rows.length);
+    const more = total > DETAIL_CAP;
     return {
-      ticketsSold: rows.length,
-      totalRevenue: rows.reduce(
-        (sum, ticket) => sum + Number(ticket.TicketPrice),
-        0
-      ),
-      transactions: rows,
-    }
-  })
-)
-
+      sources: spec.sources,
+      label: spec.label,
+      note: spec.note,
+      rows: more ? rows.slice(0, DETAIL_CAP) : rows,
+      shown: Math.min(rows.length, DETAIL_CAP),
+      total,
+      more,
+    };
+  }),
+);

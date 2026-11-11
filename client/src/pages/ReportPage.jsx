@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { getReportOptions, getReportParams, listQueries, runQuery, runReport } from '../api/index.js'
+import { getReportOptions, getReportParams, listQueries, reportDetail, runQuery, runReport } from '../api/index.js'
+import ReportDetail from '../components/ReportDetail.jsx'
 import { useAuth } from '../auth/context.js'
 import DataTable from '../components/DataTable.jsx'
-import TicketTransactions from '../components/TicketTransactions.jsx'
 import DateRangePicker from '../components/DateRangePicker.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 import ReportParams, { emptySpec, isCustom, toRequest } from '../components/ReportParams.jsx'
@@ -155,7 +155,6 @@ function ReportBody({ report, csvName }) {
   const [spec, setSpec] = useState(() => emptySpec(null)) // parameters chosen before running (sent to the server)
   const [ranCustom, setRanCustom] = useState(false) // the last run was a summary or a column choice
   const [ranRequest, setRanRequest] = useState('')
-  const [ranDates, setRanDates] = useState({ from: '', to: '' })
   // A tab with `query: 'q1'` runs one of the SQL files in SQL/queries instead of a view. Its parameters come from the server.
   const isQuery = Boolean(report.query)
   const [queryDef, setQueryDef] = useState(null) // { id, title, params: [{ name, label, type, default, choices? }] }
@@ -163,6 +162,7 @@ function ReportBody({ report, csvName }) {
   const [searchText, setSearchText] = useState('') // the name search when the database cannot do it (mock mode); otherwise it lives in spec.filters
   const label = useMemo(() => makeLabeler(report.labels), [report.labels])
   const [names, setNames] = useState([]) // the names offered in the search box's drop-down
+  const [detail, setDetail] = useState(null) // { key, loading, error, data } for the open Details row
 
   // The list of columns is cheap (no report data is read), so it loads when the report opens.
   // The report itself still loads only when Run report is pressed.
@@ -245,19 +245,59 @@ function ReportBody({ report, csvName }) {
   // Only the Run report button fetches. A newer press makes an older, slower answer be ignored. The component is remounted
   // per report and tab, so a report you switch away from starts empty again and loads nothing until you press the button.
   const latest = useRef(0)
+  const detailReq = useRef(0)
+  function detailTitle(row) {
+    const cols = (!ranCustom && report.columns) || Object.keys(row)
+    return cols
+      .filter((c) => c !== 'Note' && !String(c).startsWith('_') && row[c] !== null && row[c] !== undefined && row[c] !== '')
+      .slice(0, 4)
+      .map((c) => `${label(c)} ${row[c]}`)
+      .join(' · ')
+  }
+  function detailRange() {
+    let saved = null
+    try {
+      saved = JSON.parse(ranRequest)
+    } catch {
+      saved = null
+    }
+    if (isQuery) return { from: saved?.start || '', to: saved?.end || '' }
+    if (dateOnServer) {
+      const hit = (saved?.filters ?? []).find((f) => f.column === dateKey)
+      return { from: hit?.from || '', to: hit?.to || '' }
+    }
+    return { from, to }
+  }
+  function openDetail(row) {
+    const key = JSON.stringify(row)
+    if (detail?.key === key) {
+      setDetail(null)
+      return
+    }
+    const id = report.endpoint || report.query
+    const mine = ++detailReq.current
+    setDetail({ key, title: detailTitle(row), loading: true, error: '', data: null })
+    reportDetail(id, row, detailRange())
+      .then((data) => {
+        if (mine === detailReq.current) setDetail({ key, title: detailTitle(row), loading: false, error: '', data })
+      })
+      .catch((err) => {
+        if (mine === detailReq.current) setDetail({ key, title: detailTitle(row), loading: false, error: err.message, data: null })
+      })
+  }
   function run() {
     const mine = ++latest.current
     const request = isQuery ? qvals : meta ? toRequest(spec) : undefined
     const custom = !isQuery && Boolean(meta) && isCustom(spec)
     setLoading(true)
     setError('')
+    setDetail(null)
     ;(isQuery ? runQuery(report.query, qvals) : runReport(report.endpoint, request))
       .then(({ rows: data }) => {
         if (mine !== latest.current) return
         setRows(report.prepare && !custom ? report.prepare(data) : data)
         setRanCustom(custom)
         setRanRequest(JSON.stringify(request ?? null))
-        setRanDates({ from: pickFrom, to: pickTo })
         setLoaded(true)
       })
       .catch((err) => {
@@ -438,20 +478,6 @@ function ReportBody({ report, csvName }) {
               <Chart chart={extra.chart} rows={extraRows} label={label} />
             </>
           )}
-          {report.endpoint === 'revenue-by-source' &&
-            !ranCustom &&
-            !stale &&
-            (!selects.Source || selects.Source === 'Tickets') &&
-            !spec.filters.some(
-              (f) => f.column === 'Source' &&
-                f.values?.length > 0 &&
-                !f.values.includes('Tickets')
-            ) && (
-              <TicketTransactions
-                from={ranDates.from}
-                to={ranDates.to}
-             />
-             )}
           <div className="rp-actions">
             <span className="muted">{tableRows.length.toLocaleString('en-US')} rows</span>
             <button
@@ -463,7 +489,17 @@ function ReportBody({ report, csvName }) {
               Download CSV
             </button>
           </div>
-          <DataTable key={csvName} rows={tableRows} columns={ranCustom ? undefined : report.columns} rowClass={ranCustom ? undefined : report.rowClass} pageSize={10} labelOf={label} />
+          <DataTable
+            key={csvName}
+            rows={tableRows}
+            columns={ranCustom ? undefined : report.columns}
+            rowClass={ranCustom ? undefined : report.rowClass}
+            pageSize={10}
+            labelOf={label}
+            onDetail={report.endpoint || report.query ? openDetail : undefined}
+            detailKey={detail?.key ?? null}
+            detailSlot={detail ? <ReportDetail state={detail} onClose={() => setDetail(null)} /> : null}
+          />
         </>
       )}
     </div>
