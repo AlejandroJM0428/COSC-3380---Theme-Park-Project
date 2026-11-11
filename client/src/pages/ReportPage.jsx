@@ -270,12 +270,14 @@ function ReportBody({ report, csvName, addRequest, onAddHandled }) {
   // Only the Run report button fetches. A newer press makes an older, slower answer be ignored. The component is remounted
   // per report and tab, so a report you switch away from starts empty again and loads nothing until you press the button.
   const latest = useRef(0)
-  const [notice, setNotice] = useState('') // short "saved" message, shown as a toast above any pop-up
+  // The "report changed" card: { title, message, extra?, footnote?, bad? }, shown above any pop-up so a change is never silent.
+  const [notice, setNotice] = useState(null)
   useEffect(() => {
     if (!notice) return undefined
-    const t = setTimeout(() => setNotice(''), 5000)
+    const t = setTimeout(() => setNotice(null), 9000)
     return () => clearTimeout(t)
   }, [notice])
+  const REFRESHED = 'The report below was refreshed with this change.'
   const detailReq = useRef(0)
   const allReq = useRef(0)
   function detailTitle(row) {
@@ -356,7 +358,7 @@ function ReportBody({ report, csvName, addRequest, onAddHandled }) {
           // Nothing is left on this line (the last record was removed or moved elsewhere): close the panel instead of showing an empty one.
           closeViewAll()
           setDetail(null)
-          setNotice('No records are left on that line.')
+          setNotice({ title: 'Report updated', message: 'No records are left on that line.', footnote: REFRESHED })
           return
         }
         setDetail((cur) => (cur && cur.key === key ? { key, title, loading: false, error: '', data } : cur))
@@ -614,17 +616,33 @@ function ReportBody({ report, csvName, addRequest, onAddHandled }) {
             detailKey={detail?.key ?? null}
             detailSlot={detail ? <ReportDetail state={detail} onClose={() => setDetail(null)} onViewAll={openViewAll} rowAction={rowActionFor} /> : null}
           />
-          {notice && <p className="rp-toast" role="status">{notice}</p>}
+          {notice && (
+            <aside className={`rp-toast ${notice.bad ? 'rp-toast-bad' : ''}`} role="status" aria-live="polite">
+              <button type="button" className="rp-toast-x" onClick={() => setNotice(null)} aria-label="Dismiss">
+                ×
+              </button>
+              <strong className="rp-toast-title">{notice.title}</strong>
+              <p>{notice.message}</p>
+              {notice.extra && (
+                <p className="rp-toast-extra">
+                  <strong>{notice.extra.title}</strong> {notice.extra.message}
+                </p>
+              )}
+              {notice.footnote && <p className="rp-toast-foot">{notice.footnote}</p>}
+            </aside>
+          )}
           {viewAll && <DetailModal state={viewAll} onClose={closeViewAll} rowAction={rowActionFor} />}
           {editing && <RecordEditDialog entity={editing.entity} mode={editing.mode} id={editing.id} row={editing.row} onDeleted={(message) => {
               setEditing(null)
-              if (message) setNotice(message)
+              if (message) setNotice({ title: 'Record deleted', message, footnote: REFRESHED })
               refreshReport()
               refreshDetail()
               refreshViewAll()
-            }} onSaved={(_saved, message) => {
+            }} onSaved={(saved, message) => {
+              const extra = editing.entity.savedToast?.(saved) // a database rule added something (for example a notice): say so too
+              const title = editing.mode === 'add' ? 'Record added' : 'Record updated'
               setEditing(null)
-              if (message) setNotice(message)
+              if (message) setNotice({ title, message, extra, footnote: extra?.footnote ?? REFRESHED })
               refreshReport()
               refreshDetail()
               refreshViewAll()
