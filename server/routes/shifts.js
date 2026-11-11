@@ -7,8 +7,9 @@ import { requireRole } from '../middleware/requireRole.js';
 // Shift has nothing pointing at it, so delete removes the row. Overlap and hire date are
 // sp_AssertShift, called here. An inactive employee is rejected here. MySQL no longer has a shift trigger.
 
-const CAN_READ = ['Admin', 'Manager', 'HRManager'];
-const CAN_WRITE = ['Admin', 'Manager', 'HRManager'];
+// Role matrix: shift ratings belong to the HR desk only.
+const CAN_READ = ['Admin', 'HRManager'];
+const CAN_WRITE = ['Admin', 'HRManager'];
 const CAN_DELETE = ['Admin', 'HRManager'];
 
 const isId = (n) => Number.isInteger(n) && n > 0;

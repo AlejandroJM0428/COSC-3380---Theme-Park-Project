@@ -61,7 +61,7 @@ export async function dispatch(req, res, url) {
       const data = await r.handler(ctx);
       sendJson(res, ctx.status, data ?? { ok: true });
     } catch (err) {
-      handleError(res, err);
+      handleError(res, err, req);
     }
     return;
   }

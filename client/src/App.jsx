@@ -2,23 +2,29 @@ import './App.css'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import RequireAuth from './auth/RequireAuth.jsx'
 import Layout from './components/Layout.jsx'
-import Login from './pages/Login.jsx'
+import SignIn from './pages/SignIn.jsx'
 import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import AdminOnePage from './pages/AdminOnePage.jsx'
 import ReportPage from './pages/ReportPage.jsx'
-import QueryPage from './pages/QueryPage.jsx'
-import TriggerDemo from './pages/TriggerDemo.jsx'
 import SellTicket from './pages/SellTicket.jsx'
 import MaintenancePage from './pages/MaintenancePage.jsx'
 import TicketSalesPage from './pages/TicketSalesPage.jsx'
 import ShiftRatingsPage from './pages/ShiftRatingsPage.jsx'
 import MyWork from './pages/MyWork.jsx'
 import NotificationsPage from './pages/NotificationsPage.jsx'
+import CancellationsPage from './pages/CancellationsPage.jsx'
 import { CustomersPage, FacilitiesPage, GamePlaysPage, MembershipsPage, PurchasesPage, RideLogPage, UsersPage, WeatherPage } from './pages/DataEntryPages.jsx'
 import Placeholder from './pages/Placeholder.jsx'
 import NotFound from './pages/NotFound.jsx'
-import VisitorPortal from './pages/VisitorPortal.jsx'
-import { FORM_PAGES, MANAGEMENT, STAFF_ROLES } from './config/nav.js'
+import PublicLayout from './components/PublicLayout.jsx'
+import HomePage from './pages/HomePage.jsx'
+import Tickets from './pages/Tickets.jsx'
+import Rides from './pages/Rides.jsx'
+import Memberships from './pages/Memberships.jsx'
+import Plan from './pages/Plan.jsx'
+import MemberPortal from './pages/MemberPortal.jsx'
+import { ADMIN_NAV_SECTIONS, ADMIN_ONLY, FORM_PAGES, MANAGEMENT, STAFF_ROLES } from './config/nav.js'
 
 // When you build a real page, import it here and add ONE line to this map
 // (key = the `path` in config/nav.js). Until then the Placeholder is shown.
@@ -31,6 +37,7 @@ const PAGE_COMPONENTS = {
   'my-work': MyWork,
   customers: CustomersPage,
   memberships: MembershipsPage,
+  cancellations: CancellationsPage,
   purchases: PurchasesPage,
   'game-plays': GamePlaysPage,
   'ride-log': RideLogPage,
@@ -43,36 +50,58 @@ export default function App() {
   return (
     <Routes>
       {/* 1. Public visitor page: the front door, no login needed */}
-      <Route path="/" element={<VisitorPortal mode="public" />} />
-
-      {/* 2. Member (customer) login + account */}
-      <Route path="/member/login" element={<Login audience="member" />} />
-      <Route path="/member/register" element={<Register />} />
-      <Route element={<RequireAuth roles={['Customer']} loginPath="/member/login" />}>
-        <Route path="/member" element={<VisitorPortal mode="member" />} />
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/tickets" element={<Tickets />} />
+        <Route path="/rides" element={<Rides />} />
+        <Route path="/memberships" element={<Memberships />} />
+        <Route path="/plan" element={<Plan />} />
       </Route>
 
-      {/* 3. Staff transaction portal */}
-      <Route path="/staff/login" element={<Login audience="staff" />} />
-      <Route path="/login" element={<Navigate to="/staff/login" replace />} />
+      {/* 2. The one sign-in page: members, staff and admins all sign in here and are sent to their own portal */}
+      <Route path="/login" element={<SignIn />} />
+      <Route path="/member/login" element={<Navigate to="/login" replace />} />
+      <Route path="/staff/login" element={<Navigate to="/login" replace />} />
+
+      {/* 3. Member sign up + account */}
+      <Route path="/member/register" element={<Register />} />
+      <Route element={<RequireAuth roles={['Customer']} />}>
+        <Route path="/member" element={<MemberPortal />} />
+      </Route>
+
       <Route path="/visitor" element={<Navigate to="/" replace />} />
 
       <Route path="*" element={<NotFound />} />
 
-      <Route path="/staff" element={<RequireAuth roles={STAFF_ROLES} />}>
+      {/* Admin portal: Admin only. Everyone else who is signed in goes back to /staff. */}
+      <Route path="/admin" element={<RequireAuth roles={ADMIN_ONLY} denyTo="/staff" />}>
+        {/* The one-page admin: no sidebar. Everything an admin does is a section on this page. */}
+        <Route index element={<AdminOnePage />} />
+        {/* The older admin pages keep working at their own addresses (with the sidebar). */}
+        <Route element={<Layout base="/admin" sections={ADMIN_NAV_SECTIONS} brandSub="Admin portal" />}>
+          <Route path="reports/:key" element={<ReportPage />} />
+          {FORM_PAGES.map((p) => {
+            const Page = PAGE_COMPONENTS[p.path]
+            return <Route key={p.path} path={p.path} element={Page ? <Page /> : <Placeholder title={p.label} />} />
+          })}
+
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Route>
+
+      {/* Staff portal: every other employee role. An admin who opens /staff is sent to /admin. */}
+      <Route path="/staff" element={<RequireAuth roles={STAFF_ROLES} redirects={{ Admin: '/admin' }} />}>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
 
-          <Route element={<RequireAuth roles={MANAGEMENT} />}>
+          <Route element={<RequireAuth roles={MANAGEMENT} denyTo="/staff" />}>
             <Route path="reports/:key" element={<ReportPage />} />
-            <Route path="queries" element={<QueryPage />} />
-            <Route path="trigger-demos" element={<TriggerDemo />} />
           </Route>
 
           {FORM_PAGES.map((p) => {
             const Page = PAGE_COMPONENTS[p.path]
             return (
-              <Route key={p.path} element={<RequireAuth roles={p.roles} />}>
+              <Route key={p.path} element={<RequireAuth roles={p.roles} denyTo="/staff" />}>
                 <Route path={p.path} element={Page ? <Page /> : <Placeholder title={p.label} />} />
               </Route>
             )

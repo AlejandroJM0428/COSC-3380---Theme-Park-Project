@@ -4,16 +4,19 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, needInt, optDateTime, recordId } from '../validate.js';
 
-// Food and shop purchases (revenue): list, get, add, delete.
-// There is no PUT. MySQL no longer blocks a direct UPDATE of a purchase. The browser never sends the price: trg_Purchase_BI copies it from the item.
-// trg_Purchase_BI also refuses retired items and venues under maintenance (errno 1644 -> handleError).
+// Food and shop purchases (revenue): list, get, add, edit, delete.
+// The browser never sends the price: trg_Purchase_BI copies it from the item. An edit goes through trg_Purchase_BU, which
+// re-checks what changed (ticket, time, item) and keeps the price the guest paid unless the item itself changes.
+// Both triggers refuse retired items and venues under maintenance (errno 1644 -> handleError).
 
-const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_WRITE = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
+// Role matrix (TA fixes plan): the retail desk and the ticket booth own these records. The operations manager has no access.
+const CAN_READ = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_WRITE = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_EDIT = ['Admin', 'RetailManager']; // the booth adds sales; changing a finished sale is the retail desk's call, like deleting one
+const CAN_DELETE = ['Admin', 'RetailManager'];
 
 const SELECT_PURCHASE = `
-  SELECT p.PurchaseID, p.TicketID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
+  SELECT p.PurchaseID, p.TicketID, p.ItemID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
          v.VenueName, i.ItemName, p.Quantity, p.UnitPrice,
          ROUND(p.Quantity * p.UnitPrice, 2) AS LineTotal, p.PurchasedAt
     FROM Purchase p
@@ -54,7 +57,8 @@ route(
   '/api/purchases/lookups',
   requireRole(...CAN_READ)(async () => {
     const [items] = await pool.query(
-      `SELECT i.ItemID AS id, CONCAT(v.VenueName, ' - ', i.ItemName, ' ($', FORMAT(i.Price, 2), ')') AS name
+      `SELECT i.ItemID AS id, i.IsAlcoholic AS alcoholic,
+              CONCAT(v.VenueName, ' - ', i.ItemName, ' ($', FORMAT(i.Price, 2), ')', IF(i.IsAlcoholic = 1, ' [alcohol, 21+]', '')) AS name
          FROM Item i
          JOIN Venue v ON v.VenueID = i.VenueID
         WHERE i.IsActive = 1 AND v.IsActive = 1
@@ -85,6 +89,26 @@ route(
     } catch (err) {
       throw friendlyDbError(err, { 1452: 'Ticket ID or item does not exist' });
     }
+  }),
+);
+
+// PUT changes a purchase. An empty time keeps the time it already had. The database sets the price (trg_Purchase_BU).
+route(
+  'PUT',
+  '/api/purchases/:id',
+  requireRole(...CAN_EDIT)(async (ctx) => {
+    const id = recordId(ctx, 'Purchase');
+    await loadPurchase(id); // 404 if missing
+    const p = parsePurchase(ctx.body);
+    try {
+      await pool.query(
+        'UPDATE Purchase SET TicketID = ?, ItemID = ?, Quantity = ?, PurchasedAt = COALESCE(?, PurchasedAt) WHERE PurchaseID = ?',
+        [p.ticketId, p.itemId, p.quantity, p.purchasedAt, id],
+      );
+    } catch (err) {
+      throw friendlyDbError(err, { 1452: 'Ticket ID or item does not exist' });
+    }
+    return loadPurchase(id);
   }),
 );
 

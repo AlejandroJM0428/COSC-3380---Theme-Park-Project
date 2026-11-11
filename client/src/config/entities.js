@@ -2,6 +2,8 @@
 // add / edit / delete form, so a new page is one config object and a few lines (see pages/MaintenancePage.jsx).
 //
 // fields:    what the form shows. type = text | number | datetime | select | multicheck.
+//            writeRoles (optional): the only roles that see Add and Edit; everyone else who can open the page sees the table read only.
+//            type 'lookup' picks a guest, ticket or membership by name or date (kind = customer | ticket | membership) and keeps the ID out of sight.
 //            select options come from `options` ([value, label] pairs) or `optionsFrom(form, lookups)`.
 // columns:   what the table shows. `format(value, row)` is optional.
 // toPayload: form state -> the JSON body the server expects. The browser never sends ids, prices or roles.
@@ -21,10 +23,11 @@ const LOOKUP_FOR_KIND = { Ride: 'rides', Game: 'games', Venue: 'venues' }
 export const MAINTENANCE = {
   title: 'Maintenance',
   intro:
-    'Log repair and inspection jobs. To close a job, fill in the end time, the outcome and the repair cost together. The database refuses to close a job without a cost.',
+    'Log repair and inspection jobs. To close a job, fill in the end time, the outcome and the repair cost together. The database refuses to close a job without a cost. When a crew member reports the work finished, it shows in the Crew report column and under Ready to close.',
   resource: 'maintenance',
   idKey: 'MaintenanceID',
   noun: 'job',
+  writeRoles: ['Admin', 'MaintenanceManager'], // the operations manager can view jobs but not add or change them
   deleteRoles: ['Admin', 'MaintenanceManager'],
   filters: [
     {
@@ -33,6 +36,7 @@ export const MAINTENANCE = {
       options: [
         ['', 'All jobs'],
         ['open', 'Open jobs'],
+        ['ready', 'Ready to close (crew reported finished)'],
         ['closed', 'Closed jobs'],
       ],
     },
@@ -44,6 +48,11 @@ export const MAINTENANCE = {
     { key: 'StartDate', label: 'Started', format: shortDate },
     { key: 'EndDate', label: 'Closed', format: (v) => (v ? shortDate(v) : 'Open') },
     { key: 'Outcome', label: 'Outcome', format: (v) => v ?? '—' },
+    {
+      key: 'ReportOutcome',
+      label: 'Crew report',
+      format: (v, row) => (v ? `${row.ReportedBy}: work finished, ${v.toLowerCase()}${row.ReportNote ? ` · ${row.ReportNote}` : ''}` : '—'),
+    },
     { key: 'RepairCost', label: 'Repair cost', format: money },
     { key: 'HoursWorked', label: 'Hours', format: (v) => v ?? '—' },
     { key: 'Reason', label: 'Reason' },
@@ -122,17 +131,17 @@ export const MAINTENANCE = {
   describe: (row) => `job #${row.MaintenanceID} (${row.FacilityName}, ${row.MaintType})`,
 }
 
-// Revenue: ticket sales. "Void" adds a permanent refund row, so money records are never erased.
+// Revenue: ticket sales. "Refund" adds a permanent refund row, so money records are never erased.
 export const TICKETS = {
   title: 'Ticket Sales & Refunds',
   intro:
-    'Revenue records. Add a ticket sale, correct its guest, membership, visit date or Express add-on, or void it. The database sets the price. Voiding keeps the record and marks it refunded.',
+    'Revenue records. Add a ticket sale, correct its guest, membership, visit date or Express add-on, or refund it. The database sets the price. Refunding keeps the record and marks it refunded.',
   resource: 'tickets',
   idKey: 'TicketID',
   noun: 'ticket',
-  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
-  deleteLabel: 'Void',
-  deletePast: 'Voided',
+  deleteRoles: ['Admin', 'RetailManager'],
+  deleteLabel: 'Refund',
+  deletePast: 'Refunded',
   askReason: true,
   canEditRow: (row) => !row.IsVoided,
   canDeleteRow: (row) => !row.IsVoided,
@@ -143,7 +152,7 @@ export const TICKETS = {
       options: [
         ['', 'All tickets'],
         ['active', 'Active tickets'],
-        ['voided', 'Voided tickets'],
+        ['voided', 'Refunded tickets'],
       ],
     },
   ],
@@ -155,11 +164,12 @@ export const TICKETS = {
     { key: 'HasExpress', label: 'Express', format: (v) => (Number(v) ? 'Yes' : 'No') },
     { key: 'TicketPrice', label: 'Price', format: money },
     { key: 'PurchaseDate', label: 'Bought', format: shortDate },
-    { key: 'IsVoided', label: 'Status', format: (v, row) => (Number(v) ? `Voided: ${row.RefundReason}` : 'Active') },
+    { key: 'IsVoided', label: 'Status', format: (v, row) => (Number(v) ? `Refunded: ${row.RefundReason}` : 'Active') },
+    { key: 'RefundedAt', label: 'Refunded on', format: shortDate },
   ],
   fields: [
-    { key: 'customerId', label: 'Customer ID', type: 'number', required: true, min: 1, step: '1' },
-    { key: 'membershipId', label: 'Membership ID (optional)', type: 'number', min: 1, step: '1' },
+    { key: 'customerId', label: 'Guest', type: 'lookup', kind: 'customer', required: true },
+    { key: 'membershipId', label: 'Membership (optional)', type: 'lookup', kind: 'membership', forCustomerKey: 'customerId', wide: false },
     { key: 'visitDate', label: 'Visit date', type: 'date', required: true },
     { key: 'hasExpress', label: 'Express add-on', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
   ],
@@ -183,7 +193,7 @@ export const TICKETS = {
 export const SHIFTS = {
   title: 'Shift Ratings',
   intro:
-    'Employee performance records. Log a shift, then rate it from 1 to 5 once it has ended. The database refuses overlapping shifts and shifts before the hire date.',
+    'Employee performance records. Log a shift, then rate it from 1 to 5 once it has ended. The database refuses overlapping shifts, shifts before the hire date, and any shift that would take someone over 40 clocked hours in a week (Monday to Sunday).',
   resource: 'shifts',
   idKey: 'ShiftID',
   noun: 'shift',

@@ -8,8 +8,9 @@ import { requireRole } from '../middleware/requireRole.js';
 // The browser never sends the id or IsPlanned. MaintenanceID is auto-numbered and IsPlanned is generated.
 // Closing a job without a repair cost is rejected in parseJob. MySQL does not check it.
 
+// Role matrix: the operations manager can view maintenance jobs (to see which rides are down) but only the maintenance side changes them.
 const CAN_READ = ['Admin', 'Manager', 'MaintenanceManager'];
-const CAN_WRITE = ['Admin', 'Manager', 'MaintenanceManager'];
+const CAN_WRITE = ['Admin', 'MaintenanceManager'];
 const CAN_DELETE = ['Admin', 'MaintenanceManager']; // hard delete: Maintenance has no IsActive column
 
 const TYPES = ['Routine Inspection', 'Preventive Service', 'Refurbishment', 'Emergency Repair', 'Safety Recall'];
@@ -20,8 +21,12 @@ const SELECT_JOB = `
   SELECT m.MaintenanceID, m.MaintType, m.IsPlanned, m.RideID, m.GameID, m.VenueID,
          COALESCE(r.RideName, g.GameName, v.VenueName) AS FacilityName,
          m.StartDate, m.EndDate, m.Outcome, m.Reason, m.RepairCost,
-         TIMESTAMPDIFF(HOUR, m.StartDate, COALESCE(m.EndDate, NOW())) AS HoursWorked
+         TIMESTAMPDIFF(HOUR, m.StartDate, COALESCE(m.EndDate, NOW())) AS HoursWorked,
+         w.ProposedOutcome AS ReportOutcome, w.Note AS ReportNote, w.ReportedAt,
+         CONCAT(re.FirstName, ' ', re.LastName) AS ReportedBy
     FROM Maintenance m
+    LEFT JOIN MaintenanceWorkReport w ON w.MaintenanceID = m.MaintenanceID
+    LEFT JOIN Employee re ON re.EmployeeID = w.EmployeeID
     LEFT JOIN Ride r  ON r.RideID  = m.RideID
     LEFT JOIN Game g  ON g.GameID  = m.GameID
     LEFT JOIN Venue v ON v.VenueID = m.VenueID`;
@@ -171,14 +176,14 @@ async function saveJob(job, id) {
   }
 }
 
-// GET /api/maintenance?status=open|closed (optional). Newest first.
+// GET /api/maintenance?status=open|closed|ready (optional; ready = open and a crew member reported the work finished). Newest first.
 route(
   'GET',
   '/api/maintenance',
   requireRole(...CAN_READ)(async (ctx) => {
     const { status } = ctx.query;
-    if (status !== undefined && status !== 'open' && status !== 'closed') throw new HttpError(400, 'Status must be open or closed');
-    const where = status === 'open' ? ' WHERE m.EndDate IS NULL' : status === 'closed' ? ' WHERE m.EndDate IS NOT NULL' : '';
+    if (status !== undefined && !['open', 'closed', 'ready'].includes(status)) throw new HttpError(400, 'Status must be open, closed or ready');
+    const where = status === 'ready' ? ' WHERE m.EndDate IS NULL AND w.MaintenanceID IS NOT NULL' : status === 'open' ? ' WHERE m.EndDate IS NULL' : status === 'closed' ? ' WHERE m.EndDate IS NOT NULL' : '';
     const [rows] = await pool.query(`${SELECT_JOB}${where} ORDER BY m.StartDate DESC, m.MaintenanceID DESC LIMIT 500`);
     return rows;
   }),

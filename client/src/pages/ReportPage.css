@@ -1,5 +1,46 @@
 /* Styles for the report page only. Every class starts with rp- so nothing else on the site is affected. */
 
+.rp-runbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 4px;
+}
+
+.rp-datepick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--muted, #4a6663);
+}
+
+.rp-search {
+  min-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule, #d5dde5);
+  border-radius: 6px;
+  background: var(--white, #fff);
+  color: var(--ink, #12302e);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.rp-run {
+  padding: 9px 18px;
+  border: 1px solid var(--ink, #12302e);
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rp-run:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .rp-filters {
   display: flex;
   flex-wrap: wrap;
@@ -98,3 +139,62 @@
     width: 100%;
   }
 }
+
+.rp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 6px;
+  border-bottom: 2px solid var(--line, #d5e1dd);
+}
+
+.rp-tab {
+  padding: 8px 14px;
+  border: 1px solid var(--line, #d5e1dd);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rp-tab[aria-selected='true'] {
+  background: var(--panel, #fff);
+  font-weight: 700;
+  box-shadow: inset 0 3px 0 var(--lagoon, #1c9aa8);
+}
+
+.rp-section-desc {
+  margin: 10px 0 0;
+}
+
+.rp-notes {
+  margin: 12px 0;
+  padding: 10px 14px;
+  background: var(--panel, #fff);
+  border: 1px solid var(--line, #d5e1dd);
+  border-left: 6px solid var(--sun, #f2b14f);
+  border-radius: 6px;
+  font-size: 0.92rem;
+}
+
+.rp-notes strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.rp-notes ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.rp-chart-title {
+  margin: 14px 0 0;
+  font-size: 1rem;
+}
+
+/* Run Queries page (QueryPage.jsx) reuses the report look for its click-first inputs */
+.qp-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted, #4a6663); }
+.qp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.qp-chips button { padding: 7px 12px; border: 1px solid var(--line, #d5e1dd); border-radius: 6px; background: var(--panel, #fff); font: inherit; cursor: pointer; }
+.qp-chips button[aria-pressed='true'] { background: var(--role, #5b3f9a); color: var(--on-role, #fff); border-color: var(--ink, #12302e); font-weight: 700; }

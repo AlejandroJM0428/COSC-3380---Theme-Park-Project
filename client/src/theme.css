@@ -1,0 +1,27 @@
+/* Brand names for the public site and the portals. The values come from tokens.css; change the look there. */
+:root {
+  --brand-primary: var(--blue-deep);
+  --brand-primary-contrast: #ffffff;
+  --brand-accent: #ffd566;
+  --brand-accent-contrast: #0b2a66;
+  --brand-ink: #14202b;
+  --brand-muted: #667785;
+  --brand-surface: #ffffff;
+  --brand-surface-alt: #f2f5f8;
+  --brand-line: var(--rule);
+  --brand-radius: 12px;
+  --brand-font-display: var(--font-display, system-ui, sans-serif);
+  /* shown behind any image that is missing */
+  --brand-image-fallback: linear-gradient(135deg, #0b3d91 0%, #3a78c9 55%, #ffd566 140%);
+}
+
+/* Plain-text wordmark (no logo yet) */
+.wordmark { display: flex; align-items: center; gap: 10px; line-height: 1.1; }
+.wordmark-text { display: block; min-width: 0; }
+.wordmark strong { display: block; font-family: var(--brand-font-display); font-size: 1.03rem; letter-spacing: -.03em; color: inherit; }
+.wordmark small { display: block; color: var(--brand-muted); font-size: .78rem; margin-top: 1px; }
+.wordmark-light small { color: inherit; opacity: .75; }
+
+/* Image slot with a gradient fallback */
+.brand-image { background-color: #3a78c9; background-size: cover; background-position: center; }
+.brand-image-fallback { background-image: var(--brand-image-fallback) !important; }

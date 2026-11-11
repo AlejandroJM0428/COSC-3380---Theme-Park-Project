@@ -1,0 +1,38 @@
+/* Membership cancellations (staff). Uses the park palette from index.css. */
+.cx-list { display: grid; gap: 14px; max-width: 760px; }
+
+.cx-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--line);
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+.cx-card[data-status='Pending'] { border-left-color: var(--sun); }
+.cx-card[data-status='Approved'] { border-left-color: var(--good); }
+.cx-card[data-status='Rejected'] { border-left-color: var(--bad); }
+
+.cx-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.cx-head h3 { margin: 0; font-size: 1.1rem; }
+.cx-head p { margin: 2px 0 0; font-size: 0.88rem; }
+
+.cx-status { font-size: 0.82rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; border: 1.5px solid var(--line); white-space: nowrap; }
+.cx-status[data-status='Pending'] { background: #fff1c2; border-color: #f0d27a; }
+.cx-status[data-status='Approved'] { background: var(--good-bg); border-color: #b4dcc2; color: var(--good); }
+.cx-status[data-status='Rejected'] { background: var(--bad-bg); border-color: #f0b4b0; color: var(--bad); }
+
+.cx-reason { margin: 0; padding: 8px 12px; background: var(--mist); border-radius: 4px; max-width: 70ch; overflow-wrap: anywhere; }
+
+.cx-facts { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: 0; }
+.cx-facts dt { font-size: 0.82rem; color: var(--muted); }
+.cx-facts dd { margin: 0; font-weight: 600; }
+
+.cx-decide { display: grid; gap: 10px; }
+.cx-decided { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+
+@media (max-width: 520px) {
+  .cx-head { flex-direction: column; }
+  .cx-decide .button-row button { flex: 1; }
+}

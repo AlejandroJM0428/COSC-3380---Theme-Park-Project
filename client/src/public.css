@@ -1,0 +1,2103 @@
+/* Public site (homepage and public pages). Uses the tokens in theme.css. Scoped under .pub / .pub-* */
+
+.pub { min-height: 100vh; background: var(--brand-surface-alt); color: var(--brand-ink); font-family: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.pub button, .pub input { font: inherit; }
+.pub a { color: inherit; }
+.pub :focus-visible { outline: 3px solid var(--brand-primary); outline-offset: 2px; }
+.pub-hero :focus-visible, .pub-footer :focus-visible, .notice-strip :focus-visible { outline-color: var(--brand-accent); }
+
+/* Header: one row, sticky */
+.pub-header { position: sticky; top: 0; z-index: 50; background: var(--brand-surface); border-bottom: 1px solid var(--brand-line); }
+.pub-header-inner { max-width: 1240px; margin: 0 auto; height: 68px; padding: 0 20px; display: flex; align-items: center; gap: 28px; }
+.pub-wordmark { text-decoration: none; color: var(--brand-primary); flex: none; }
+.pub-wordmark .wordmark strong { font-size: 1.25rem; }
+.pub-nav { display: flex; align-items: center; gap: 26px; flex: 1; }
+.pub-nav a { text-decoration: none; font-weight: 700; font-size: .93rem; padding: 6px 0; border-bottom: 2px solid transparent; }
+.pub-nav a:hover, .pub-nav a.active { border-bottom-color: var(--brand-primary); }
+.pub-signin-mobile { display: none; }
+.pub-actions { display: flex; align-items: center; gap: 18px; margin-left: auto; }
+.pub-signin { text-decoration: none; font-weight: 700; font-size: .93rem; }
+.pub-signin:hover { text-decoration: underline; }
+.pub-menu-button { display: none; background: transparent; border: 1px solid var(--brand-line); border-radius: 8px; width: 42px; height: 42px; font-size: 1.3rem; line-height: 1; cursor: pointer; color: var(--brand-ink); }
+
+/* Buttons */
+.pub-buy { display: inline-block; background: var(--brand-accent); color: var(--brand-accent-contrast); text-decoration: none; font-weight: 800; border-radius: 999px; padding: 10px 20px; white-space: nowrap; border: 0; }
+.pub-buy:hover { filter: brightness(.95); }
+.pub-buy-lg { padding: 15px 32px; font-size: 1.05rem; }
+.pub a.pub-buy { color: var(--brand-accent-contrast); }
+.pub-link { color: var(--brand-primary); font-weight: 700; }
+
+/* Hero: headline on the left, price check on the right */
+.pub-hero { position: relative; display: flex; align-items: center; min-height: 560px; padding: 56px 0; color: var(--white); }
+.pub-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, rgba(8, 20, 40, .82), rgba(8, 20, 40, .25) 70%); }
+.pub-hero-inner { position: relative; z-index: 1; max-width: 1240px; width: 100%; margin: 0 auto; padding: 0 20px; box-sizing: border-box; display: grid; grid-template-columns: 1fr 380px; gap: 48px; align-items: center; }
+.pub-hero h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); margin: 0 0 12px; max-width: 14ch; line-height: 1.02; }
+.pub-hero-copy p { font-size: 1.15rem; max-width: 32rem; margin: 0 0 26px; opacity: .95; }
+.pub .pub-hero-link { color: var(--white); font-weight: 800; text-decoration: none; border-bottom: 2px solid var(--brand-accent); padding-bottom: 2px; }
+
+.pub-pc { background: var(--brand-surface); color: var(--brand-ink); border-radius: 18px; box-shadow: 0 22px 54px rgba(5, 15, 35, .35); padding: 24px; display: grid; gap: 16px; }
+.pub-pc-title { margin: 0; font-family: var(--brand-font-display); font-size: 1.3rem; letter-spacing: -.02em; }
+.pub-pc-field { display: grid; gap: 6px; }
+.pub-pc-field > span { font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-muted); }
+.pub-pc-field input { padding: 11px 12px; border: 1px solid var(--brand-line); border-radius: 10px; background: var(--white); color: var(--brand-ink); }
+.pub-pc-stepper { display: inline-flex; align-items: center; justify-self: start; border: 1px solid var(--brand-line); border-radius: 999px; overflow: hidden; }
+.pub .pub-pc-stepper button { border-radius: 0; width: 44px; height: 44px; border: 0; background: var(--brand-surface-alt); font-size: 1.3rem; font-weight: 700; cursor: pointer; color: var(--brand-ink); }
+.pub-pc-stepper button:disabled { opacity: .35; cursor: default; }
+.pub-pc-stepper output { min-width: 48px; text-align: center; font-weight: 800; font-size: 1.1rem; }
+.pub-pc-express { display: flex; flex-direction: row; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--brand-line); border-radius: 12px; cursor: pointer; transition: border-color .15s, background .15s; }
+.pub-pc-express.on { border-color: var(--brand-primary); background: var(--wash); }
+.pub-pc-express input { width: 22px; height: 22px; accent-color: var(--brand-primary); flex: none; }
+.pub-pc-express strong, .pub-pc-express small { display: block; }
+.pub-pc-express small { color: var(--brand-muted); font-size: .8rem; }
+.pub-pc-total { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px solid var(--brand-line); }
+.pub-pc-total span { color: var(--brand-muted); font-weight: 600; }
+.pub-pc-total strong { font-family: var(--brand-font-display); font-size: 2.2rem; letter-spacing: -.04em; }
+.pub .pub-pc .pub-pc-submit { font-weight: 800; background: var(--brand-primary); color: var(--brand-primary-contrast); border: 0; border-radius: 12px; padding: 15px 22px; cursor: pointer; }
+.pub .pub-pc .pub-pc-submit:hover:not(:disabled) { background: var(--brand-primary); box-shadow: none; filter: brightness(1.15); }
+.pub-pc-note { margin: -4px 0 0; text-align: center; color: var(--brand-muted); font-size: .8rem; }
+
+/* Simple page body (placeholder pages) */
+.pub-page { max-width: 760px; margin: 56px auto; padding: 0 20px; min-height: 40vh; }
+.pub-page h1 { margin: 0 0 12px; }
+
+/* Homepage sections */
+.pub-section { max-width: 1240px; margin: 0 auto; padding: 56px 20px 0; }
+.pub-section:last-of-type { padding-bottom: 72px; }
+.pub-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.pub-h2 { font-family: var(--brand-font-display); font-size: clamp(1.5rem, 3vw, 2.1rem); letter-spacing: -.03em; margin: 0 0 22px; }
+.pub-eyebrow { margin: 0 0 6px; font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+.pub-alert { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border: 1px solid var(--land-loop); border-radius: 10px; background: var(--land-loop); color: var(--land-loop-dark); font-size: .9rem; margin-top: 28px; }
+.pub-alert button { margin-left: auto; background: transparent; border: 1px solid currentColor; color: inherit; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; }
+
+/* Explorer: pick a land, pick a ride, see its details */
+.pub-tabs-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+.pub-pill { font-weight: 700; padding: 10px 20px; border-radius: 999px; border: 1px solid var(--brand-line); background: var(--brand-surface); color: var(--brand-ink); cursor: pointer; transition: background .15s, color .15s; }
+.pub-pill:hover { border-color: var(--brand-primary); }
+.pub-pill[aria-pressed='true'] { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--brand-primary-contrast); }
+.pub-explore { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; align-items: stretch; }
+.pub-feature { position: relative; min-height: 360px; border-radius: 18px; display: flex; align-items: flex-end; overflow: hidden; animation: pub-fade .35s ease; }
+.pub-feature::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(8, 20, 40, .86), rgba(8, 20, 40, 0) 70%); }
+.pub-feature-body { position: relative; z-index: 1; padding: 26px; color: var(--white); display: grid; gap: 8px; }
+.pub-feature-body h3 { margin: 0; font-family: var(--brand-font-display); font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -.03em; }
+.pub-feature-meta { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .92rem; }
+.pub-feature-meta > span { padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, .18); }
+.pub-feature-meta .pub-badge { background: var(--white); }
+.pub .pub-feature-link { color: var(--white); font-weight: 800; text-decoration: none; justify-self: start; border-bottom: 2px solid var(--brand-accent); padding-bottom: 2px; }
+.pub-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start; }
+.pub-chip { text-align: left; display: grid; gap: 2px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--brand-line); background: var(--brand-surface); color: var(--brand-ink); cursor: pointer; text-decoration: none; transition: border-color .15s, box-shadow .15s; }
+.pub-chip:hover { border-color: var(--brand-primary); }
+.pub-chip[aria-pressed='true'] { border-color: var(--brand-primary); box-shadow: inset 0 0 0 1px var(--brand-primary); background: var(--wash); }
+.pub-chip small { color: var(--brand-muted); }
+.pub .pub-chip-more { display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--brand-primary); }
+@keyframes pub-fade { from { opacity: .4; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pub-feature { animation: none; } }
+
+/* Memberships + plan side by side */
+.pub-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+.pub-panel { background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: 18px; padding: 28px; display: flex; flex-direction: column; gap: 14px; }
+.pub-panel .pub-eyebrow { margin: 0; color: var(--brand-muted); }
+.pub-panel-title { margin: 0; font-family: var(--brand-font-display); font-size: 1.5rem; letter-spacing: -.02em; }
+.pub-segment { display: inline-flex; align-self: flex-start; padding: 4px; gap: 4px; border-radius: 999px; background: var(--brand-surface-alt); max-width: 100%; flex-wrap: wrap; }
+@media (max-width: 560px) { .pub-segment { border-radius: 18px; } }
+.pub-segment button { border: 0; background: transparent; font-weight: 700; padding: 8px 16px; border-radius: 999px; cursor: pointer; color: var(--brand-ink); }
+.pub-segment button[aria-pressed='true'] { background: var(--brand-primary); color: var(--brand-primary-contrast); }
+.pub-panel-price { margin: 0; }
+.pub-panel-price strong { font-family: var(--brand-font-display); font-size: 2.6rem; letter-spacing: -.04em; }
+.pub-panel-price small { color: var(--brand-muted); }
+.pub-panel-answer { margin: 0; font-size: 1.15rem; line-height: 1.5; min-height: 4.5em; }
+.pub-checks { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; flex: 1; }
+.pub-checks li::before { content: '✓'; color: var(--brand-primary); font-weight: 800; margin-right: 10px; }
+.pub-panel-actions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: auto; }
+.pub-panel > .pub-panel-answer + .pub-panel-actions { margin-top: auto; }
+
+/* Plan your visit tiles */
+.pub-plan { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.pub-plan article { background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: var(--brand-radius); padding: 24px; }
+.pub-plan h3 { margin: 0 0 8px; font-family: var(--brand-font-display); font-size: 1.15rem; }
+.pub-plan p { margin: 0; color: var(--brand-muted); line-height: 1.5; }
+
+/* Footer */
+.pub-footer { background: var(--navy); color: var(--white); padding: 48px 0 22px; }
+.pub-footer-inner { max-width: 1240px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 32px 56px; }
+.pub-footer-brand p { margin: 6px 0 0; font-size: .85rem; opacity: .7; }
+.pub-footer-cols { display: flex; flex-wrap: wrap; gap: 28px 64px; }
+.pub-footer-cols div { display: grid; gap: 10px; align-content: start; }
+.pub-footer-cols h2 { margin: 0 0 4px; font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: .6; }
+.pub-footer a { text-decoration: none; font-weight: 600; font-size: .92rem; opacity: .9; }
+.pub-footer a:hover { opacity: 1; text-decoration: underline; }
+.pub-footer-bottom { max-width: 1240px; margin: 36px auto 0; padding: 18px 20px 0; box-sizing: border-box; border-top: 1px solid rgba(255, 255, 255, .14); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: .8rem; opacity: .8; }
+
+/* Public pages (/rides, /memberships, /plan) */
+.pub-page-wide { max-width: 1240px; padding: 0 20px 72px; }
+.pub-h1 { font-family: var(--brand-font-display); font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -.03em; margin: 0 0 8px; }
+.pub-lede { margin: 0 0 24px; color: var(--brand-muted); font-size: 1.05rem; }
+.pub-h2-spaced { margin-top: 40px; }
+.pub-note { margin: 18px 0 0; color: var(--brand-muted); font-size: .9rem; }
+.pub-empty { padding: 28px 16px; text-align: center; border: 1px dashed var(--brand-line); border-radius: var(--brand-radius); color: var(--brand-muted); }
+.pub-page .pub-alert { margin: 0 0 16px; }
+
+.pub-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.pub .pub-tabs a { text-decoration: none; font-weight: 700; font-size: .9rem; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--brand-line); background: var(--brand-surface); }
+.pub .pub-tabs a:hover { border-color: var(--brand-primary); }
+.pub .pub-tabs a.active { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--brand-primary-contrast); }
+
+.pub-list-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.pub-search input { font: inherit; min-width: min(320px, 80vw); padding: 11px 14px; border: 1px solid var(--brand-line); border-radius: 10px; background: var(--white); color: var(--brand-ink); }
+
+.pub-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.pub-row { display: flex; align-items: center; gap: 16px; background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: var(--brand-radius); padding: 10px 16px 10px 10px; }
+.pub-row-img { flex: none; width: 96px; height: 72px; border-radius: 8px; }
+.pub-row-main { flex: 1; min-width: 0; }
+.pub-row-main h2 { margin: 0 0 2px; font-size: 1.05rem; }
+.pub-row-main p { margin: 0; color: var(--brand-muted); font-size: .88rem; }
+.pub-row-closed .pub-row-img { filter: grayscale(.8); opacity: .75; }
+.pub-badge { flex: none; font-size: .78rem; font-weight: 800; padding: 5px 12px; border-radius: 999px; }
+.pub-badge.open { background: var(--land-montrose); color: var(--land-montrose-dark); }
+.pub-badge.closed { background: var(--wash); color: var(--ink-soft); }
+
+.pub-tier-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 36px; }
+.pub-tier-card { background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: var(--brand-radius); padding: 28px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.pub-tier-card h2 { margin: 0; font-family: var(--brand-font-display); font-size: 1.4rem; }
+.pub-tier-price { margin: 0; }
+.pub-tier-price strong { font-family: var(--brand-font-display); font-size: 2.4rem; letter-spacing: -.04em; }
+.pub-tier-price small { color: var(--brand-muted); }
+.pub-tier-card ul { margin: 0 0 14px; padding-left: 18px; color: var(--brand-muted); line-height: 1.6; flex: 1; }
+
+.pub-table-wrap { overflow-x: auto; background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: var(--brand-radius); }
+.pub-table { width: 100%; border-collapse: collapse; min-width: 480px; }
+.pub-table th, .pub-table td { padding: 14px 18px; text-align: center; border-bottom: 1px solid var(--brand-line); }
+.pub-table th:first-child { text-align: left; }
+.pub-table tbody tr:last-child > * { border-bottom: 0; }
+.pub .pub-table th { background: var(--brand-surface); color: var(--brand-ink); font-size: 1rem; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.pub .pub-table thead th { font-family: var(--brand-font-display); background: var(--brand-surface-alt); }
+.pub-table td { font-weight: 700; }
+.pub-no { color: var(--brand-muted); }
+
+/* Tablet and phone */
+@media (max-width: 980px) {
+  .pub-hero-inner { grid-template-columns: 1fr; gap: 28px; }
+  .pub-hero { min-height: 0; }
+  .pub-pc { max-width: 460px; }
+  .pub-explore, .pub-duo { grid-template-columns: 1fr; }
+  .pub-feature { min-height: 300px; }
+  .pub-plan { grid-template-columns: 1fr; }
+  .pub-tier-cards { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .pub-header-inner { gap: 12px; }
+  .pub-signin { display: none; }
+  .pub-menu-button { display: inline-block; }
+  .pub-nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0; background: var(--brand-surface); border-bottom: 1px solid var(--brand-line); box-shadow: 0 14px 24px rgba(10, 25, 50, .12); padding: 8px 20px 14px; }
+  .pub-nav.open { display: flex; }
+  .pub-nav a { padding: 14px 0; border-bottom: 1px solid var(--brand-line); }
+  .pub-signin-mobile { display: block; }
+}
+@media (max-width: 560px) {
+  .pub-hero { padding: 40px 0; }
+  .pub-pc { padding: 18px; }
+  .pub-chips { grid-template-columns: 1fr; }
+  .pub-panel { padding: 22px; }
+  .pub-buy { padding: 9px 16px; }
+  .pub-section { padding-top: 44px; }
+  .pub-row-img { width: 72px; height: 60px; }
+  .pub-row { gap: 12px; padding-right: 12px; }
+}
+
+/* Visually hidden text (kept here so the public site does not depend on the portal stylesheet) */
+.pub .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* /rides: premier rides, entertainment, park map */
+.pub-premier { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.pub-premier-img { position: relative; height: 190px; border-radius: 16px; padding: 12px; box-sizing: border-box; display: flex; align-items: flex-start; justify-content: flex-end; }
+.pub-premier-img.is-closed { filter: grayscale(.7); }
+.pub-premier h3 { margin: 12px 0 2px; font-size: 1.1rem; }
+.pub-premier p { margin: 0; color: var(--brand-muted); font-size: .9rem; }
+.pub .pub-premier .pub-premier-tag { margin-top: 6px; color: var(--brand-primary); font-weight: 700; }
+.pub-games { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.pub-games li { display: grid; gap: 2px; padding: 14px 16px; background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: 12px; }
+.pub-games span { color: var(--brand-muted); font-size: .88rem; }
+.pub-games b { color: var(--brand-primary); font-size: .92rem; }
+.pub-mapwrap { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; align-items: start; }
+.pub-map { width: 100%; height: auto; display: block; }
+.pub-map-bg { fill: var(--rule); }
+.pub-map-paths path { fill: none; stroke: var(--white); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+.pub-map-entrance { font: 800 13px var(--brand-font-display, system-ui); letter-spacing: .14em; fill: var(--brand-muted); }
+.pub-zone { cursor: pointer; transition: opacity .2s; }
+.pub-zone rect { stroke: transparent; stroke-width: 5; transition: stroke .15s, transform .15s; }
+.pub-zone:hover rect { stroke: rgba(11, 61, 145, .45); }
+.pub-zone.on rect { stroke: var(--brand-primary); }
+.pub-zone.dim { opacity: .55; }
+.pub .pub-zone:focus-visible { outline: none; }
+.pub-zone:focus-visible rect { stroke: var(--brand-primary); stroke-dasharray: 10 6; }
+.pub-zone-name { font: 800 22px var(--brand-font-display, system-ui); fill: var(--navy); pointer-events: none; }
+.pub-zone-count { font: 600 15px system-ui, sans-serif; fill: var(--navy); pointer-events: none; }
+.pub-zonepanel { background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: 18px; padding: 22px; display: grid; gap: 14px; }
+.pub-zonepanel h3 { margin: 0; font-family: var(--brand-font-display); font-size: 1.4rem; letter-spacing: -.02em; }
+.pub-zonepanel .pub-note { margin: 0; }
+.pub-zonelist h4 { margin: 0 0 6px; font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--brand-muted); }
+.pub-zonelist ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.pub-zonelist li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--brand-line); font-weight: 600; }
+.pub-zonelist li:last-child { border-bottom: 0; }
+.pub-zonelist small { color: var(--brand-muted); font-weight: 600; }
+.pub-zonelist li.is-closed span { color: var(--brand-muted); }
+@media (max-width: 980px) {
+  .pub-premier { grid-template-columns: 1fr 1fr; }
+  .pub-games { grid-template-columns: 1fr 1fr; }
+  .pub-mapwrap { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .pub-premier, .pub-games { grid-template-columns: 1fr; }
+  .pub-zone-name { font-size: 26px; }
+}
+
+
+/* Vibrant Homepage Hero */
+
+.pub-hero {
+  min-height: 620px;
+  padding: 65px 0;
+  background-color: var(--blue-deep);
+}
+
+.pub-hero::before {
+  background: linear-gradient(
+    100deg,
+    rgba(8, 25, 75, 0.78) 0%,
+    rgba(15, 65, 130, 0.35) 55%,
+    rgba(0, 0, 0, 0.12) 100%
+  );
+}
+
+.pub-hero h1 {
+  font-size: clamp(3rem, 6vw, 5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  color: var(--white);
+  text-shadow: 3px 4px 0 var(--scarlet);
+}
+
+.pub-hero-copy p {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--white);
+  line-height: 1.6;
+}
+
+.pub .pub-hero-link {
+  display: inline-block;
+  background: var(--blue);
+  color: var(--navy);
+  padding: 15px 28px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 6px 0 var(--blue-deep);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pub .pub-hero-link:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 9px 0 var(--blue-deep);
+}
+
+@media (max-width: 560px) {
+  .pub-hero {
+    min-height: 0;
+    padding: 45px 0;
+  }
+
+  .pub-hero h1 {
+    font-size: 2.7rem;
+  }
+}
+
+
+
+
+/* Electric Blue Rides Explorer */
+
+#explore .pub-h2 {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 900;
+  color: var(--navy);
+  margin-bottom: 26px;
+}
+
+/* Ride category buttons */
+#explore .pub-tabs-row {
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+#explore .pub-pill {
+  background: var(--white);
+  color: var(--navy);
+  border: 2px solid var(--blue);
+  border-radius: 50px;
+  padding: 13px 22px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 var(--blue-deep);
+  transition: transform 0.2s, background 0.2s;
+}
+
+#explore .pub-pill:hover {
+  background: var(--wash);
+  transform: translateY(-3px);
+}
+
+#explore .pub-pill[aria-pressed="true"] {
+  background: var(--blue);
+  color: var(--white);
+  border-color: var(--blue);
+  box-shadow: 0 4px 0 var(--blue-deep);
+}
+
+/* Large featured attraction image */
+#explore .pub-feature {
+  border-radius: 24px;
+  min-height: 400px;
+  box-shadow: 0 12px 30px rgba(20, 33, 61, 0.16);
+  border: 4px solid var(--blue);
+}
+
+#explore .pub-feature-body h3 {
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-weight: 900;
+}
+
+#explore .pub-feature-link {
+  display: inline-block;
+  background: var(--blue);
+  color: var(--navy);
+  padding: 12px 20px;
+  border-radius: 50px;
+  border: none;
+  font-weight: 900;
+  text-decoration: none;
+  margin-top: 10px;
+}
+
+/* Ride selection cards */
+#explore .pub-chip {
+  background: var(--white);
+  border: 2px solid var(--rule);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 5px 12px rgba(20, 33, 61, 0.06);
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+#explore .pub-chip:hover {
+  transform: translateY(-4px);
+  border-color: var(--blue);
+}
+
+#explore .pub-chip[aria-pressed="true"] {
+  background: var(--wash);
+  border-color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+
+#explore .pub-chip strong {
+  font-weight: 900;
+  color: var(--navy);
+}
+
+#explore .pub-chip-more {
+  color: var(--blue-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #explore .pub-pill,
+  #explore .pub-chip {
+    transition: none;
+  }
+}
+
+
+
+
+/* Electric Blue Membership Panel */
+
+.pub-duo > .pub-panel:first-child {
+  background: var(--white);
+  border: 3px solid var(--blue);
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(20, 33, 61, 0.10);
+}
+
+.pub-duo > .pub-panel:first-child .pub-eyebrow {
+  color: var(--blue);
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.pub-duo > .pub-panel:first-child .pub-panel-title {
+  color: var(--navy);
+  font-size: 1.9rem;
+  font-weight: 900;
+}
+
+.pub-duo > .pub-panel:first-child .pub-segment {
+  background: var(--wash);
+  border-radius: 50px;
+  padding: 6px;
+}
+
+.pub-duo > .pub-panel:first-child .pub-segment button {
+  color: var(--navy);
+  font-weight: 800;
+  transition: background 0.2s, color 0.2s;
+}
+
+.pub-duo > .pub-panel:first-child .pub-segment button[aria-pressed="true"] {
+  background: var(--blue);
+  color: var(--white);
+}
+
+.pub-duo > .pub-panel:first-child .pub-panel-price strong {
+  color: var(--blue);
+  font-size: 2.8rem;
+  font-weight: 900;
+}
+
+.pub-duo > .pub-panel:first-child .pub-checks li::before {
+  color: var(--land-montrose-dark);
+}
+
+.pub-duo > .pub-panel:first-child .pub-link {
+  color: var(--blue-deep);
+  font-weight: 900;
+}
+
+@media (max-width: 560px) {
+  .pub-duo > .pub-panel:first-child {
+    padding: 22px;
+  }
+}
+
+
+
+
+/* Electric Blue Plan Your Day Panel */
+
+.pub-duo > .pub-panel:last-child {
+  background: var(--white);
+  border: 3px solid var(--blue);
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(20, 33, 61, 0.10);
+}
+
+.pub-duo > .pub-panel:last-child .pub-eyebrow {
+  color: var(--blue);
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.pub-duo > .pub-panel:last-child .pub-panel-title {
+  color: var(--navy);
+  font-size: 1.9rem;
+  font-weight: 900;
+}
+
+.pub-duo > .pub-panel:last-child .pub-segment {
+  background: var(--wash);
+  border-radius: 50px;
+  padding: 6px;
+}
+
+.pub-duo > .pub-panel:last-child .pub-segment button {
+  color: var(--navy);
+  font-weight: 800;
+  transition: background 0.2s, color 0.2s;
+}
+
+.pub-duo > .pub-panel:last-child .pub-segment button[aria-pressed="true"] {
+  background: var(--blue);
+  color: var(--white);
+}
+
+.pub-duo > .pub-panel:last-child .pub-panel-answer {
+  color: var(--navy);
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.pub-duo > .pub-panel:last-child .pub-link {
+  color: var(--blue-deep);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.pub-duo > .pub-panel:last-child .pub-link:hover {
+  color: var(--scarlet);
+  text-decoration: underline;
+}
+
+@media (max-width: 560px) {
+  .pub-duo > .pub-panel:last-child {
+    padding: 22px;
+  }
+}
+
+
+
+/* Bright Blue Navigation */
+
+.pub-header {
+  background: var(--navy);
+  border-bottom: 3px solid var(--blue);
+  box-shadow: 0 4px 15px rgba(20, 33, 61, 0.18);
+}
+
+.pub-wordmark,
+.pub-nav a,
+.pub-signin {
+  color: var(--white);
+}
+
+.pub-nav a:hover,
+.pub-nav a.active {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+}
+
+.pub .pub-buy {
+  background: var(--scarlet);
+  color: var(--white);
+  box-shadow: 0 4px 0 var(--scarlet-dark);
+}
+
+.pub a.pub-buy {
+  color: var(--white);
+}
+
+@media (max-width: 900px) {
+  .pub-nav {
+    background: var(--navy);
+  }
+
+  .pub-menu-button {
+    color: var(--white);
+    border-color: var(--white);
+  }
+}
+
+
+/* Electric Blue Hero Button */
+
+.pub .pub-hero-link {
+  background: var(--blue);
+  color: var(--navy);
+  border: none;
+  box-shadow: 0 6px 0 var(--blue-deep);
+}
+
+.pub .pub-hero-link:hover {
+  background: var(--blue);
+  box-shadow: 0 9px 0 var(--blue-deep);
+}
+
+
+/* Electric Blue Rides Section */
+
+#explore .pub-pill {
+  border-color: var(--blue);
+  box-shadow: 0 4px 0 var(--blue-deep);
+}
+
+#explore .pub-pill:hover {
+  background: var(--wash);
+}
+
+#explore .pub-pill[aria-pressed="true"] {
+  background: var(--blue);
+  color: var(--white);
+  border-color: var(--blue);
+  box-shadow: 0 4px 0 var(--blue-deep);
+}
+
+#explore .pub-feature {
+  border-color: var(--blue);
+}
+
+#explore .pub-feature-link {
+  background: var(--blue);
+  color: var(--navy);
+}
+
+#explore .pub-chip:hover,
+#explore .pub-chip[aria-pressed="true"] {
+  border-color: var(--blue);
+}
+
+#explore .pub-chip[aria-pressed="true"] {
+  background: var(--wash);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+
+
+/* Electric Blue Memberships */
+
+.pub-duo > .pub-panel:first-child {
+  border-color: var(--blue);
+}
+
+.pub-duo > .pub-panel:first-child .pub-eyebrow {
+  color: var(--blue);
+}
+
+.pub-duo > .pub-panel:first-child .pub-segment {
+  background: var(--wash);
+}
+
+.pub-duo > .pub-panel:first-child .pub-segment button[aria-pressed="true"] {
+  background: var(--blue);
+  color: var(--white);
+}
+
+.pub-duo > .pub-panel:first-child .pub-panel-price strong {
+  color: var(--blue);
+}
+
+.pub-duo > .pub-panel:first-child .pub-link {
+  color: var(--blue-deep);
+}
+
+
+/* Electric Blue Plan Your Day */
+
+.pub-duo > .pub-panel:last-child {
+  border-color: var(--blue);
+}
+
+.pub-duo > .pub-panel:last-child .pub-eyebrow {
+  color: var(--blue);
+}
+
+.pub-duo > .pub-panel:last-child .pub-segment {
+  background: var(--wash);
+}
+
+.pub-duo > .pub-panel:last-child .pub-segment button[aria-pressed="true"] {
+  background: var(--blue);
+  color: var(--white);
+}
+
+.pub-duo > .pub-panel:last-child .pub-link {
+  color: var(--blue-deep);
+}
+
+.pub-duo > .pub-panel:last-child .pub-link:hover {
+  color: var(--scarlet);
+}
+
+
+
+
+/* Colorful Homepage Background */
+
+.pub {
+  background: linear-gradient(
+    135deg,
+    var(--wash) 0%,
+    var(--wash) 40%,
+    var(--wash) 75%,
+    var(--wash) 100%
+  );
+}
+
+/* Interactive Ride Cards */
+
+#explore .pub-chip {
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
+}
+
+#explore .pub-chip:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 22px rgba(59, 130, 246, 0.18);
+}
+
+#explore .pub-feature {
+  transition: transform 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+#explore .pub-feature:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 35px rgba(0, 200, 248, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #explore .pub-chip,
+  #explore .pub-feature {
+    transition: none;
+  }
+
+  #explore .pub-chip:hover,
+  #explore .pub-feature:hover {
+    transform: none;
+  }
+}
+
+
+/* Interactive Homepage Panels */
+
+.pub-duo > .pub-panel {
+  transition: transform 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+.pub-duo > .pub-panel:first-child:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 35px rgba(59, 130, 246, 0.20);
+}
+
+.pub-duo > .pub-panel:last-child:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 35px rgba(0, 200, 248, 0.20);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-duo > .pub-panel {
+    transition: none;
+  }
+
+  .pub-duo > .pub-panel:hover {
+    transform: none;
+  }
+}
+
+
+/* Cinematic Homepage Hero */
+
+.pub-hero {
+  min-height: 720px;
+  padding: 80px 0;
+  overflow: hidden;
+}
+
+.pub-hero::before {
+  background: linear-gradient(
+    90deg,
+    rgba(5, 15, 40, 0.90) 0%,
+    rgba(10, 35, 75, 0.70) 40%,
+    rgba(10, 35, 75, 0.20) 100%
+  );
+}
+
+.pub-hero-inner {
+  max-width: 1320px;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 70px;
+}
+
+.pub-hero-copy h1 {
+  font-size: clamp(3.5rem, 6.5vw, 6rem);
+  font-weight: 900;
+  line-height: 1.02;
+  max-width: 12ch;
+  letter-spacing: -0.05em;
+  text-shadow: 3px 4px 0 var(--scarlet);
+}
+
+.pub-hero-copy p {
+  font-size: 1.3rem;
+  max-width: 440px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.pub .pub-hero-link {
+  padding: 18px 34px;
+  font-size: 1.1rem;
+  border-radius: 50px;
+  box-shadow: 0 7px 0 var(--blue-deep);
+}
+
+.pub-pc {
+  border: 2px solid rgba(0, 200, 248, 0.45);
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 980px) {
+  .pub-hero {
+    min-height: auto;
+    padding: 65px 0;
+  }
+
+  .pub-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .pub-hero-copy h1 {
+    font-size: clamp(2.8rem, 8vw, 4.5rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .pub-hero {
+    padding: 45px 0;
+  }
+
+  .pub-hero-copy h1 {
+    font-size: 2.8rem;
+  }
+}
+
+
+/* Enhanced Entertainment Cards */
+
+.pub-games-enhanced {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.pub-games-enhanced .pub-game-card {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid var(--rule);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.07);
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.pub-games-enhanced .pub-game-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}
+
+.pub-game-image {
+  height: 185px;
+  background: linear-gradient(135deg, var(--wash), var(--land-bayou));
+  overflow: hidden;
+}
+
+.pub-game-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pub-game-content {
+  padding: 16px;
+}
+
+.pub-game-content h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 7px;
+  color: var(--navy);
+}
+
+.pub-game-location {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0 0 12px;
+}
+
+.pub-game-price {
+  display: inline-block;
+  padding: 7px 12px;
+  border-radius: 20px;
+  background: var(--wash);
+  color: var(--blue-deep);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 800px) {
+  .pub-games-enhanced {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .pub-games-enhanced {
+    grid-template-columns: 1fr;
+  }
+}
+.pub-games-enhanced .pub-game-price {
+  color: var(--blue-deep);
+}
+
+
+/* Enhanced Premier Ride Cards */
+
+.pub-premier > li {
+  min-width: 0;
+  padding: 10px;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease,
+              border-color 0.25s ease;
+}
+
+.pub-premier > li:hover {
+  transform: translateY(-6px);
+  border-color: var(--blue);
+  background: var(--white);
+  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.16);
+}
+
+.pub-premier-img {
+  overflow: hidden;
+  border-radius: 14px;
+  transition: filter 0.25s ease;
+}
+
+.pub-premier > li:hover .pub-premier-img {
+  filter: brightness(1.07);
+}
+
+.pub-premier > li:hover .pub-premier-img.is-closed {
+  filter: grayscale(0.7);
+}
+
+.pub-premier h3 {
+  color: var(--navy);
+  font-size: 1.15rem;
+  font-weight: 900;
+  margin-top: 12px;
+}
+
+.pub-premier .pub-badge.open {
+  background: var(--land-montrose);
+  color: var(--land-montrose-dark);
+  border: 1px solid var(--land-montrose);
+}
+
+.pub-premier .pub-badge.closed {
+  background: var(--wash);
+  color: var(--ink-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-premier > li,
+  .pub-premier-img {
+    transition: none;
+  }
+
+  .pub-premier > li:hover {
+    transform: none;
+  }
+}
+
+
+/* Ride Category Filters */
+
+.pub-ride-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.pub-ride-filter {
+  padding: 12px 22px;
+  border: 2px solid var(--blue);
+  border-radius: 50px;
+  background: var(--white);
+  color: var(--navy);
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--blue-deep);
+  transition: transform 0.2s ease,
+              background 0.2s ease,
+              box-shadow 0.2s ease;
+}
+
+.pub-ride-filter:hover {
+  background: var(--wash);
+  transform: translateY(-3px);
+}
+
+.pub-ride-filter.active {
+  background: var(--blue);
+  color: var(--white);
+  border-color: var(--blue);
+}
+
+.pub-ride-filter:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .pub-ride-filters {
+    gap: 10px;
+  }
+
+  .pub-ride-filter {
+    padding: 10px 15px;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-ride-filter {
+    transition: none;
+  }
+
+  .pub-ride-filter:hover {
+    transform: none;
+  }
+}
+
+
+/* Interactive Park Map */
+
+.pub-mapwrap {
+  gap: 24px;
+  align-items: start;
+}
+
+/* Map background */
+.pub-map-bg {
+  fill: var(--rule);
+}
+
+/* Walking paths */
+.pub-map-paths path {
+  stroke: var(--white);
+  stroke-width: 12;
+}
+
+/* Park zones */
+.pub-zone {
+  cursor: pointer;
+  transition: opacity 0.25s ease;
+}
+
+.pub-zone rect {
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 3;
+  transition: stroke 0.25s ease,
+              stroke-width 0.25s ease,
+              filter 0.25s ease;
+}
+
+/* Hover effect */
+.pub-zone:hover rect {
+  stroke: var(--blue);
+  stroke-width: 6;
+  filter: brightness(1.06);
+}
+
+/* Selected zone */
+.pub-zone.on rect {
+  stroke: var(--blue-deep);
+  stroke-width: 7;
+  filter: drop-shadow(0 4px 6px rgba(36, 89, 184, 0.25));
+}
+
+/* Dim other zones when one is selected */
+.pub-zone.dim {
+  opacity: 0.5;
+}
+
+/* Zone labels */
+.pub-zone-name {
+  font-weight: 900;
+  fill: var(--navy);
+}
+
+.pub-zone-count {
+  fill: var(--navy);
+  font-weight: 700;
+}
+
+/* Entrance label */
+.pub-map-entrance {
+  fill: var(--blue-deep);
+  font-weight: 900;
+}
+
+/* Information panel */
+.pub-zonepanel {
+  border: 2px solid var(--rule);
+  border-radius: 20px;
+  padding: 26px;
+  background: var(--white);
+  box-shadow: 0 8px 24px rgba(20, 33, 61, 0.08);
+}
+
+.pub-zonepanel h3 {
+  color: var(--navy);
+  font-weight: 900;
+}
+
+.pub-zonelist li {
+  transition: background 0.2s ease;
+}
+
+.pub-zonelist li:hover {
+  background: var(--wash);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-zone,
+  .pub-zone rect,
+  .pub-zonelist li {
+    transition: none;
+  }
+}
+
+
+/* Enhanced Membership Cards */
+
+.pub-tier-cards {
+  gap: 24px;
+  align-items: stretch;
+  margin-top: 30px;
+  margin-bottom: 42px;
+}
+
+.pub-tier-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  padding: 32px;
+  background: var(--white);
+  box-shadow: 0 8px 24px rgba(20, 33, 61, 0.08);
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.pub-tier-card:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 18px 35px rgba(20, 33, 61, 0.16);
+}
+
+/* Basic - Blue */
+.pub-tier-basic {
+  border: 3px solid var(--blue);
+  background: linear-gradient(180deg, var(--wash), var(--white) 65%);
+}
+
+/* Plus - Purple */
+.pub-tier-plus {
+  border: 3px solid var(--land-main-street-dark);
+  background: linear-gradient(180deg, var(--land-main-street), var(--white) 65%);
+}
+
+/* Premier - Gold */
+.pub-tier-premier {
+  border: 3px solid var(--land-hermann);
+  background: linear-gradient(180deg, var(--land-hermann), var(--white) 65%);
+}
+
+/* Most Popular Badge */
+.pub-tier-popular {
+  display: inline-block;
+  background: var(--land-main-street-dark);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  padding: 7px 13px;
+  border-radius: 50px;
+  margin-bottom: 10px;
+}
+
+/* Membership Titles */
+.pub-tier-card h2 {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: var(--navy);
+}
+
+/* Membership Prices */
+.pub-tier-card .pub-tier-price strong {
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: var(--navy);
+}
+
+.pub-tier-plus .pub-tier-price strong {
+  color: var(--land-main-street-dark);
+}
+
+.pub-tier-premier .pub-tier-price strong {
+  color: var(--land-hermann-dark);
+}
+
+/* Benefits */
+.pub-tier-card ul {
+  line-height: 1.9;
+  color: var(--ink-soft);
+}
+
+/* Buttons */
+.pub-tier-card .pub-buy {
+  margin-top: auto;
+  transition: transform 0.2s ease,
+              filter 0.2s ease;
+}
+
+.pub-tier-card .pub-buy:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+/* Membership Comparison Table */
+.pub-table-wrap {
+  border-radius: 18px;
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  box-shadow: 0 6px 20px rgba(20, 33, 61, 0.06);
+}
+
+.pub-table thead th {
+  background: var(--wash);
+  color: var(--navy);
+}
+
+.pub-table tbody tr:hover {
+  background: var(--wash);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-tier-card,
+  .pub-tier-card .pub-buy {
+    transition: none;
+  }
+
+  .pub-tier-card:hover,
+  .pub-tier-card .pub-buy:hover {
+    transform: none;
+  }
+}
+
+/* Plan Your Visit Page */
+
+.pub-plan-page .pub-plan-heading {
+  margin-bottom: 34px;
+}
+
+.pub-plan-eyebrow {
+  display: inline-block;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.pub-plan-page .pub-h1 {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 900;
+  color: var(--navy);
+}
+
+.pub-plan-page .pub-lede {
+  line-height: 1.6;
+}
+
+/* Existing Hours, Height Rules, Getting Here Cards */
+
+.pub-plan-page .pub-plan article {
+  border-radius: 20px;
+  border: 2px solid var(--rule);
+  background: var(--white);
+  padding: 28px;
+  box-shadow: 0 6px 20px rgba(20, 33, 61, 0.07);
+  transition: transform 0.25s ease,
+              box-shadow 0.25s ease;
+}
+
+.pub-plan-page .pub-plan article:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 30px rgba(59, 130, 246, 0.14);
+}
+
+.pub-plan-page .pub-plan article h3 {
+  color: var(--navy);
+  font-size: 1.25rem;
+  font-weight: 900;
+  margin-bottom: 12px;
+}
+
+.pub-plan-page .pub-plan article p {
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+/* Good to Know Cards */
+
+.pub-plan-page .pub-plan-info {
+  margin-top: 20px;
+}
+
+.pub-plan-page .pub-plan-info .pub-info-card {
+  padding: 30px;
+}
+
+.pub-info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: var(--wash);
+  font-size: 28px;
+  margin-bottom: 18px;
+}
+
+.pub-plan-page .pub-info-blue {
+  border-color: var(--blue) !important;
+  background: linear-gradient(
+    180deg, var(--wash), var(--white) 75%
+  ) !important;
+}
+
+.pub-plan-page .pub-info-purple {
+  border-color: var(--land-main-street-dark) !important;
+  background: linear-gradient(
+    180deg, var(--land-main-street), var(--white) 75%
+  ) !important;
+}
+
+.pub-plan-page .pub-info-gold {
+  border-color: var(--land-hermann) !important;
+  background: linear-gradient(
+    180deg, var(--land-hermann), var(--white) 75%
+  ) !important;
+}
+
+.pub-info-purple .pub-info-icon {
+  background: var(--land-main-street);
+}
+
+.pub-info-gold .pub-info-icon {
+  background: var(--land-hermann);
+}
+
+/* Ticket Call to Action */
+
+.pub-plan-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 48px;
+  padding: 36px;
+  border-radius: 24px;
+  background: linear-gradient(
+    120deg, var(--blue-deep), var(--blue), var(--blue-deep)
+  );
+  color: var(--white);
+  box-shadow: 0 12px 30px rgba(36, 89, 184, 0.2);
+}
+
+.pub-plan-cta h2 {
+  margin: 0 0 10px;
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+.pub-plan-cta p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--white);
+}
+
+.pub-plan-cta .pub-buy {
+  flex-shrink: 0;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .pub-plan-cta {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 26px;
+  }
+
+  .pub-plan-cta .pub-buy {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-plan-page .pub-plan article {
+    transition: none;
+  }
+
+  .pub-plan-page .pub-plan article:hover {
+    transform: none;
+  }
+}
+#explore-rides {
+  scroll-margin-top: 90px;
+}
+
+#dining-shops {
+  scroll-margin-top: 90px;
+}
+
+
+/* Membership improvements */
+.membership-tier-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.membership-tier-heading span {
+  font-size: 28px;
+}
+
+.membership-benefits {
+  list-style: none;
+  padding-left: 0;
+}
+
+.membership-benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.membership-benefits li::before {
+  content: "✓";
+  color: var(--land-montrose-dark);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+
+/* Plan Your Visit featured cards */
+
+.pub-plan-featured-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.pub-plan-featured-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 28px rgba(15, 35, 65, 0.14);
+}
+
+.pub-plan-featured-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background: var(--wash);
+  font-size: 28px;
+}
+
+.pub-plan-featured-card:nth-child(2) .pub-plan-featured-icon {
+  background: var(--land-montrose);
+}
+
+.pub-plan-featured-card:nth-child(3) .pub-plan-featured-icon {
+  background: var(--land-loop);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pub-plan-featured-card {
+    transition: none;
+  }
+
+  .pub-plan-featured-card:hover {
+    transform: none;
+  }
+}
+
+/* Tickets page */
+
+.tv-ticket-page {
+  background: linear-gradient(180deg, var(--wash), var(--white));
+  min-height: 100vh;
+  padding-bottom: 70px;
+}
+
+.tv-ticket-hero {
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 65px 20px;
+  color: white;
+  background:
+    linear-gradient(135deg, rgba(15, 36, 96, .88), rgba(31, 92, 199, .75)),
+    url('/images/roller-coaster.jpg') center/cover;
+}
+
+.tv-ticket-hero-content {
+  max-width: 780px;
+}
+
+.tv-ticket-eyebrow {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--land-hermann);
+}
+
+.tv-ticket-hero h1 {
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1.1;
+  margin: 18px 0;
+  font-weight: 900;
+}
+
+.tv-ticket-hero p {
+  font-size: 18px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.tv-ticket-hero-btn,
+.tv-ticket-signin {
+  display: inline-block;
+  background: var(--scarlet);
+  color: white;
+  padding: 15px 28px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: 800;
+  transition: transform .2s, background .2s;
+}
+
+.tv-ticket-hero-btn:hover,
+.tv-ticket-signin:hover {
+  background: var(--scarlet-dark);
+  transform: translateY(-3px);
+}
+
+.tv-ticket-container {
+  max-width: 1150px;
+  margin: auto;
+  padding: 50px 24px;
+}
+
+.tv-ticket-heading {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.tv-ticket-heading h2 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.tv-ticket-heading p {
+  color: var(--ink-soft);
+}
+
+.tv-ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.tv-ticket-card {
+  background: white;
+  padding: 35px 25px;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(20, 50, 100, .1);
+  transition: transform .2s;
+}
+
+.tv-ticket-card:hover {
+  transform: translateY(-6px);
+}
+
+.tv-ticket-icon {
+  font-size: 45px;
+  margin-bottom: 15px;
+}
+
+.tv-ticket-card h3 {
+  font-size: 21px;
+  margin-bottom: 12px;
+}
+
+.tv-ticket-card p {
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.tv-ticket-checkout {
+  margin-top: 45px;
+  padding: 45px 25px;
+  text-align: center;
+  border-radius: 20px;
+  background: var(--blue-deep);
+  color: white;
+}
+
+.tv-ticket-checkout h2 {
+  font-size: 32px;
+  margin: 15px 0;
+}
+
+.tv-ticket-checkout p {
+  margin: 12px auto 25px;
+  max-width: 550px;
+  line-height: 1.6;
+}
+
+.tv-ticket-actions {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tv-ticket-back {
+  color: white;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .tv-ticket-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tv-ticket-hero {
+    min-height: 300px;
+  }
+
+  .tv-ticket-container {
+    padding: 35px 16px;
+  }
+
+  .tv-ticket-checkout {
+    padding: 35px 18px;
+  }
+}
+
+
+/* Park map: Beltway 8 ring road, lake and the 610 Interchange hub */
+.pub-map-ring { fill: none; stroke: var(--white); stroke-width: 16; }
+.pub-map-ringline { fill: none; stroke: var(--brand-muted); stroke-width: 2; stroke-dasharray: 12 10; opacity: .5; }
+.pub-map-lake { fill: var(--wash); stroke: var(--white); stroke-width: 5; }
+.pub-map-hub { fill: var(--white); stroke: var(--brand-primary); stroke-width: 5; }
+.pub-map-hubtext { font: 800 18px var(--brand-font-display, system-ui); fill: var(--brand-primary); }
+.pub-map-label { font: 800 12px var(--brand-font-display, system-ui); letter-spacing: .14em; fill: var(--brand-muted); }
+.pub-map-label-lake { fill: var(--land-bayou-dark); }
+.pub-map-label-ring { font-size: 11px; }
+.pub-map-ringtag { fill: var(--white); }
+.pub-map-legendline { stroke: var(--brand-muted); stroke-width: 3; stroke-dasharray: 8 6; }
+.pub-map-legendtext { font: 600 13px system-ui, sans-serif; fill: var(--brand-muted); }
+
+@media (max-width: 560px) {
+  .pub-map-label { font-size: 17px; }
+  .pub-map-label-ring, .pub-map-ringtag { display: none; }
+  .pub-map-legend { display: none; }
+  .pub-map-hubtext { font-size: 22px; }
+}
+
+
+/* Header on navy: white text everywhere, and an "Est." line you can actually read.
+   `.pub a { color: inherit }` outranks single-class rules, so these are scoped under .pub. */
+.pub .pub-wordmark,
+.pub .pub-signin,
+.pub .pub-nav a {
+  color: var(--white);
+}
+
+.pub .pub-nav a:hover,
+.pub .pub-nav a.active {
+  color: var(--blue);
+}
+
+.pub-header .wordmark small {
+  color: var(--on-navy-soft);
+  font-weight: 700;
+  opacity: 1;
+}
+
+.pub-header :focus-visible {
+  outline-color: var(--white);
+}
+
+/* The global `button:hover` rule in index.css turns buttons light, which hides the white menu icon (and on a
+   phone the hover sticks after a tap). Keep the header's menu button dark-on-blue when hovered. */
+.pub-header .pub-menu-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .2);
+  color: var(--white);
+}
+
+
+/* Hero and awning (homepage step 4).
+   Earlier hero layers above set a red headline shadow, very tight letters and a near-black overlay;
+   this is the last word on them. Red stays reserved for "Buy Tickets". */
+
+.pub-hero-inner {
+  max-width: 1240px; /* same width and 20px gutter as the header, so the left edges line up */
+  padding-inline: 20px;
+}
+
+.pub-hero::before {
+  background: linear-gradient(
+    90deg,
+    rgba(12, 35, 64, 0.94) 0%,
+    rgba(12, 35, 64, 0.72) 36%,
+    rgba(12, 35, 64, 0) 82%
+  );
+}
+
+.pub-hero-copy h1 {
+  font-size: clamp(3rem, 5.6vw, 5.25rem);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  max-width: 15ch;
+  text-wrap: balance;
+  text-shadow: none;
+}
+
+/* Today's hours and ride count */
+.pub-hero-facts {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pub-hero-facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: rgba(12, 35, 64, 0.55);
+  color: var(--white);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pub-fact-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+.pub-hero-facts li.off .pub-fact-dot {
+  background: transparent;
+  border: 2px solid var(--white);
+  box-sizing: border-box;
+}
+
+/* "Explore the park": a quiet outline button, so there is no third accent color next to the blue and red */
+.pub .pub-hero .pub-hero-link {
+  background: transparent;
+  color: var(--white);
+  border: 2px solid var(--white);
+  box-shadow: none;
+  padding: 14px 30px;
+  transform: none;
+}
+
+.pub .pub-hero .pub-hero-link:hover {
+  background: var(--white);
+  color: var(--navy);
+  box-shadow: none;
+  transform: none;
+}
+
+@media (max-width: 980px) {
+  .pub-hero-copy h1 {
+    font-size: clamp(2.6rem, 8vw, 4.25rem);
+  }
+
+  /* One column: the text spans the whole width, so the navy runs top to bottom instead of left to right */
+  .pub-hero::before {
+    background: linear-gradient(180deg, rgba(12, 35, 64, 0.9) 0%, rgba(12, 35, 64, 0.76) 55%, rgba(12, 35, 64, 0.55) 100%);
+  }
+}
+
+@media (max-width: 560px) {
+  .pub-hero-copy h1 {
+    font-size: 2.6rem;
+  }
+}
+
+/* Awning: a scalloped stripe hanging from the header, like the one in the staff portal */
+.pub-header {
+  border-bottom: 0;
+}
+
+.pub-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 1;
+  height: 14px;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg, var(--blue) 0 28px, var(--land-bayou) 28px 56px);
+  -webkit-mask: radial-gradient(circle at 14px 0, #000 13.5px, transparent 14px) 0 0 / 28px 14px repeat-x;
+  mask: radial-gradient(circle at 14px 0, #000 13.5px, transparent 14px) 0 0 / 28px 14px repeat-x;
+}
+
+/* The phone menu drops down over the awning */
+.pub-nav {
+  z-index: 2;
+}
+
+
+/* Price card as a ticket stub (homepage step 5).
+   Two parts joined by a dashed tear line with a notch on each side. The shadow is a drop-shadow on the form,
+   because a mask on each part would clip a box-shadow. Colors come from the theme variables. */
+
+.pub-pc {
+  display: block;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 22px 34px rgba(5, 15, 35, 0.4));
+  --stub-notch: 11px;
+}
+
+.pub-pc-main,
+.pub-pc-stub {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+}
+
+.pub-pc-main {
+  border-radius: 18px 18px 0 0;
+  padding-bottom: 22px;
+  -webkit-mask:
+    radial-gradient(circle var(--stub-notch) at 0 100%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--stub-notch) at 100% 100%, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle var(--stub-notch) at 0 100%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--stub-notch) at 100% 100%, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+
+.pub-pc-stub {
+  border-radius: 0 0 18px 18px;
+  padding-top: 22px;
+  gap: 12px;
+  -webkit-mask:
+    radial-gradient(circle var(--stub-notch) at 0 0, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--stub-notch) at 100% 0, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle var(--stub-notch) at 0 0, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--stub-notch) at 100% 0, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+
+.pub-pc-stub .pub-pc-total {
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* The tear line, drawn between the two notches */
+.pub-pc-stub::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--stub-notch);
+  right: var(--stub-notch);
+  border-top: 2px dashed var(--brand-line);
+}
+
+.pub-pc-stub { position: relative; }
+
+.pub-pc-includes {
+  margin: -6px 0 0;
+  color: var(--brand-muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.pub-pc-note {
+  margin: 0;
+  text-align: center;
+  color: var(--brand-muted);
+  font-size: 0.84rem;
+}
+
+.pub .pub-pc .pub-pc-members {
+  justify-self: center;
+  color: var(--brand-muted);
+  font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 6px 4px;
+}
+
+.pub .pub-pc .pub-pc-members:hover {
+  color: var(--brand-primary);
+}
+
+/* Date picker */
+.pub-dp { display: grid; gap: 8px; }
+
+.pub .pub-pc .pub-dp-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--brand-line);
+  border-radius: 10px;
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pub .pub-pc .pub-dp-toggle:hover:not(:disabled) {
+  background: var(--brand-surface-alt);
+  color: var(--brand-ink);
+  box-shadow: none;
+}
+
+.pub-dp-panel {
+  border: 1px solid var(--brand-line);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--brand-surface);
+}
+
+.pub-dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.pub .pub-pc .pub-dp-head button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--brand-primary);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pub .pub-pc .pub-dp-head button:hover:not(:disabled) {
+  background: var(--brand-surface-alt);
+  color: var(--brand-primary);
+  box-shadow: none;
+}
+
+.pub-dp-head button:disabled { opacity: 0.3; cursor: default; }
+
+.pub-dp-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+.pub-dp-grid th {
+  padding: 4px 0;
+  color: var(--brand-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pub-dp-grid td { padding: 1px; text-align: center; }
+
+.pub .pub-pc .pub-dp-day {
+  width: 100%;
+  min-height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--brand-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pub .pub-pc .pub-dp-day:hover:not(:disabled) {
+  background: var(--brand-surface-alt);
+  color: var(--brand-ink);
+  box-shadow: none;
+}
+
+.pub .pub-pc .pub-dp-day.on,
+.pub .pub-pc .pub-dp-day.on:hover:not(:disabled) {
+  background: var(--brand-primary);
+  color: var(--brand-primary-contrast);
+}
+
+.pub-dp-day:disabled { cursor: default; color: var(--brand-muted); opacity: 0.45; }
+
+.pub-dp-day.sold:disabled {
+  opacity: 1;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  background: var(--brand-surface-alt);
+}
+
+.pub-dp-legend { margin: 8px 0 0; color: var(--brand-muted); font-size: 0.78rem; text-align: center; }
+.pub-dp-key { display: inline-block; text-decoration: line-through; font-weight: 800; margin-right: 4px; }
+
+@media (max-width: 560px) {
+  .pub-pc-main, .pub-pc-stub { padding: 18px; }
+}
+
+
+/* Rides grouped by land: each card gets its land's color on the top edge and on the location line (dark twin, so the text stays readable) */
+.pub-premier > li[data-land] { border-top: 5px solid var(--land-color, var(--blue)); }
+.pub-premier > li[data-land] > p:first-of-type { color: var(--land-color-dark, var(--ink-soft)); font-weight: 700; }
+[data-land='loop'] { --land-color: var(--land-loop); --land-color-dark: var(--land-loop-dark); }
+[data-land='bayou'] { --land-color: var(--land-bayou); --land-color-dark: var(--land-bayou-dark); }
+[data-land='montrose'] { --land-color: var(--land-montrose); --land-color-dark: var(--land-montrose-dark); }
+[data-land='hermann'] { --land-color: var(--land-hermann); --land-color-dark: var(--land-hermann-dark); }
+[data-land='main-street'] { --land-color: var(--land-main-street); --land-color-dark: var(--land-main-street-dark); }
+
+/* Phone: the mark and name must fit beside Buy Tickets and the menu button */
+@media (max-width: 560px) {
+  .pub-wordmark .helmet { width: 30px; height: 30px; }
+  .pub-wordmark .wordmark { gap: 8px; }
+  .pub-wordmark .wordmark strong { font-size: 1.05rem; }
+  .pub-header-inner { gap: 8px; padding: 0 12px; }
+}
+
+@media (max-width: 360px) {
+  .pub-wordmark .wordmark small { display: none; }
+  .pub .pub-buy { padding: 8px 12px; font-size: 0.9rem; }
+}

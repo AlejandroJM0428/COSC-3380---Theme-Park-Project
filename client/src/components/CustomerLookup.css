@@ -1,0 +1,23 @@
+.customer-lookup { display: grid; gap: 12px; max-width: 560px; margin-bottom: 16px; }
+.customer-lookup h2 { margin: 0; font-size: 1.05rem; }
+.cl-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.cl-row label { display: grid; gap: 4px; flex: 1 1 160px; }
+.cl-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.cl-results button { width: 100%; text-align: left; }
+.cl-member { display: block; font-size: 0.85em; color: var(--muted); }
+.cl-member.is-member { color: var(--good); font-weight: 600; }
+
+/* Sell Ticket: the chosen guest, shown as plain text with a button to pick someone else. */
+.sell-guest { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; max-width: 560px; margin-bottom: 16px; }
+.sell-guest-member { display: block; font-size: 0.85em; color: var(--muted); }
+
+/* Sell Ticket guest drop-down (CustomerPicker.jsx). */
+.customer-picker { position: relative; display: grid; gap: 6px; max-width: 560px; margin-bottom: 16px; }
+.customer-picker h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.cp-field { position: relative; }
+.cp-field input { width: 100%; padding-right: 32px; box-sizing: border-box; }
+.cp-caret { position: absolute; right: 12px; top: 50%; width: 0; height: 0; margin-top: -2px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--ink-soft); pointer-events: none; }
+.cp-list { list-style: none; margin: 0; padding: 4px; max-height: 320px; overflow-y: auto; background: var(--white); border: 1px solid var(--rule); border-radius: var(--r-sm); box-shadow: var(--shadow-2); }
+.cp-list li[role='option'] { padding: 8px 10px; border-radius: var(--r-sm); cursor: pointer; }
+.cp-list li.is-active { background: var(--wash); }
+.cp-note { padding: 8px 10px; font-size: 0.85em; color: var(--ink-soft); }

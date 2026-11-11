@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createRecord, deleteRecord, getLookups, getRecord, listRecords, updateRecord } from '../api'
 import { useAuth } from '../auth/context.js'
 import ErrorBanner from './ErrorBanner.jsx'
+import LookupField from './LookupField.jsx'
 import './RecordManager.css'
 
 // A table of records plus an add / edit / delete form, all driven by one config object
@@ -9,6 +10,8 @@ import './RecordManager.css'
 export default function RecordManager({ entity }) {
   const { user } = useAuth()
   const canDelete = entity.deleteRoles.includes(user?.role)
+  const canWrite = !entity.writeRoles || entity.writeRoles.includes(user?.role) // false = view only
+  const canEdit = canWrite && (!entity.editRoles || entity.editRoles.includes(user?.role)) // editRoles: only these roles get the Edit button (they must match the PUT route)
 
   const [filters, setFilters] = useState(() => Object.fromEntries((entity.filters ?? []).map((f) => [f.key, ''])))
   const [rows, setRows] = useState(null)
@@ -20,6 +23,7 @@ export default function RecordManager({ entity }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [toast, setToast] = useState(null)
+  const [grouped, setGrouped] = useState(Boolean(entity.groupBy?.defaultOn)) // entity.groupBy: show the rows under a heading per group (groupBy.defaultOn starts it on)
 
   useEffect(() => {
     let alive = true
@@ -55,6 +59,13 @@ export default function RecordManager({ entity }) {
     setForm(entity.blank())
   }
 
+  function openAddLogin(row) {
+    setError('')
+    setNotice('')
+    setEditingId(null)
+    setForm(entity.addLoginForm(row, lookups))
+  }
+
   async function openEdit(row) {
     setError('')
     setNotice('')
@@ -76,11 +87,17 @@ export default function RecordManager({ entity }) {
     e.preventDefault()
     setError('')
     setNotice('')
+    const missing = entity.fields.find((f) => f.type === 'lookup' && f.required && !form[f.key] && (!f.show || f.show(form)))
+    if (missing) {
+      setError(`Choose the ${missing.pickLabel ?? missing.label.toLowerCase()} first.`)
+      return
+    }
     setSaving(true)
     try {
       const body = entity.toPayload(form)
       const saved = editingId == null ? await createRecord(entity.resource, body) : await updateRecord(entity.resource, editingId, body)
-      setNotice(`${entity.noun[0].toUpperCase()}${entity.noun.slice(1)} #${saved[entity.idKey]} saved.`)
+      const label = `${entity.noun[0].toUpperCase()}${entity.noun.slice(1)}`
+      setNotice(entity.hideIds ? `${label} saved.` : `${label} #${saved[entity.idKey]} saved.`)
       const nextToast = entity.savedToast?.(saved)
       if (nextToast) setToast(nextToast)
       closeForm()
@@ -94,7 +111,7 @@ export default function RecordManager({ entity }) {
     }
   }
 
-  // Optional entity settings: deleteLabel ('Void'), deletePast ('Voided'), askReason (prompt sent as ?reason=),
+  // Optional entity settings: lockedNote (why Edit is turned off, shown under the intro), hideIds (never show record numbers), deleteLabel ('Void'), deletePast ('Voided'), askReason (prompt sent as ?reason=),
   // canEditRow(row) and canDeleteRow(row) to hide the buttons on rows that are already finished.
   const deleteLabel = entity.deleteLabel ?? 'Delete'
   const deletePast = entity.deletePast ?? 'Deleted'
@@ -119,7 +136,8 @@ export default function RecordManager({ entity }) {
     }
   }
 
-  const set = (key, value) => setForm((f) => ({ ...f, [key]: value }))
+  // An entity may add `onFieldChange(key, value, form, lookups)` to fill other fields when one changes (it returns the extra values, or null).
+  const set = (key, value) => setForm((f) => ({ ...f, [key]: value, ...(entity.onFieldChange?.(key, value, f, lookups) ?? {}) }))
 
   function renderField(field) {
     if (field.show && !field.show(form)) return null
@@ -147,6 +165,46 @@ export default function RecordManager({ entity }) {
     }
 
     let input
+    if (field.type === 'lookup') {
+      // Pick a guest, ticket or membership by what a person knows. The form keeps the ID, nobody sees or types it.
+      return (
+        <div key={field.key} className={`rm-field ${field.wide ?? true ? 'rm-wide' : ''}`}>
+          <span id={`${id}-label`}>{field.label}</span>
+          <LookupField
+            id={id}
+            kind={field.kind}
+            value={value}
+            required={field.required}
+            forCustomer={field.forCustomerKey ? form[field.forCustomerKey] : undefined}
+            needsLogin={field.needsLogin}
+            onChange={(v) => set(field.key, v)}
+          />
+        </div>
+      )
+    }
+    if (field.type === 'whenNow') {
+      // "Now" (empty, the server stamps the time) or a picked date and time. Opens on Now, so nobody touches the calendar.
+      const picked = (value ?? '') !== ''
+      const stamp = () => {
+        const d = new Date()
+        const p = (n) => String(n).padStart(2, '0')
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+      }
+      return (
+        <div key={field.key} className="rm-field rm-wide">
+          <span id={`${id}-label`}>{field.label}</span>
+          <div className="rm-when" role="group" aria-labelledby={`${id}-label`}>
+            <button type="button" className={picked ? '' : 'rm-when-on'} aria-pressed={!picked} onClick={() => set(field.key, '')}>
+              Now
+            </button>
+            <button type="button" className={picked ? 'rm-when-on' : ''} aria-pressed={picked} onClick={() => !picked && set(field.key, stamp())}>
+              Pick a time
+            </button>
+            {picked && <input id={id} type="datetime-local" value={value} onChange={(e) => set(field.key, e.target.value)} />}
+          </div>
+        </div>
+      )
+    }
     if (field.type === 'select') {
       input = (
         <select id={id} value={value} required={field.required} onChange={(e) => set(field.key, e.target.value)}>
@@ -187,35 +245,104 @@ export default function RecordManager({ entity }) {
     if (e.target.id === `f-${kindFieldKey}`) setForm((f) => ({ ...f, facilityId: '' }))
   }
 
+  // Grouped view: one heading row per group (for example per role), in the order the entity lists, with the group size.
+  function buildGroups(list) {
+    const by = new Map()
+    for (const row of list) {
+      const key = row[entity.groupBy.key] ?? ''
+      if (!by.has(key)) by.set(key, [])
+      by.get(key).push(row)
+    }
+    const order = entity.groupBy.order ?? []
+    const known = order.filter((k) => by.has(k))
+    const others = [...by.keys()].filter((k) => !order.includes(k)).sort()
+    return [...known, ...others].map((k) => ({ key: k, rows: by.get(k) }))
+  }
+  const groupName = (key) => entity.groupBy.labels?.[key] ?? String(key || 'Other').replace(/([a-z])([A-Z])/g, '$1 $2')
+
+  function renderRow(row) {
+    return (
+      <tr key={row[entity.rowKey ?? entity.idKey]}>
+        {entity.columns.map((c) => (
+          <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
+        ))}
+        <td className="rm-actions">
+          {canWrite && entity.canAddLoginRow?.(row) && (
+            <button type="button" onClick={() => openAddLogin(row)} disabled={form !== null}>
+              Add login
+            </button>
+          )}
+          {canEdit && (entity.canEditRow?.(row) ?? true) && (
+            <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
+              Edit
+            </button>
+          )}
+          {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
+            <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null}>
+              {deleteLabel}
+            </button>
+          )}
+        </td>
+      </tr>
+    )
+  }
+
   return (
     <div className="rm">
       <h1>{entity.title}</h1>
       <p className="muted">{entity.intro}</p>
+      {!canWrite && <p className="rm-locked" role="note">View only for your role. The maintenance desk adds and changes these jobs.</p>}
+      {entity.lockedNote && (
+        <p className="rm-locked" role="note">
+          <strong>Why there is no Edit button:</strong> {entity.lockedNote}
+        </p>
+      )}
 
       <ErrorBanner message={error} onClose={() => setError('')} />
       {notice && <p className="result allowed">{notice}</p>}
 
       <div className="rm-toolbar">
-        <button type="button" className="btn-primary" onClick={openAdd} disabled={form !== null}>
-          + Add {entity.noun}
-        </button>
+        {canWrite && (
+          <button type="button" className="btn-primary" onClick={openAdd} disabled={form !== null}>
+            + Add {entity.noun}
+          </button>
+        )}
         {(entity.filters ?? []).map((f) => (
           <label key={f.key} className="rm-filter">
             {f.label}
-            <select value={filters[f.key]} onChange={(e) => setFilters((cur) => ({ ...cur, [f.key]: e.target.value }))}>
-              {f.options.map(([v, label]) => (
-                <option key={v} value={v}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            {f.type === 'search' ? (
+              <input
+                type="search"
+                value={filters[f.key]}
+                placeholder={f.placeholder}
+                maxLength={50}
+                onChange={(e) => setFilters((cur) => ({ ...cur, [f.key]: e.target.value }))}
+              />
+            ) : (
+              <select value={filters[f.key]} onChange={(e) => setFilters((cur) => ({ ...cur, [f.key]: e.target.value }))}>
+                {f.options.map(([v, label]) => (
+                  <option key={v} value={v}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            )}
           </label>
         ))}
+        {entity.groupBy && (
+          <label className="rm-filter">
+            {entity.groupBy.label ?? 'Group by'}
+            <select value={grouped ? 'on' : ''} onChange={(e) => setGrouped(e.target.value === 'on')}>
+              <option value="">None</option>
+              <option value="on">{entity.groupBy.optionLabel ?? 'Group'}</option>
+            </select>
+          </label>
+        )}
       </div>
 
       {form && (
         <form className="panel rm-form" onSubmit={submit} onChange={onFormChange}>
-          <h2>{editingId == null ? `Add ${entity.noun}` : `Edit ${entity.noun} #${editingId}`}</h2>
+          <h2>{editingId == null ? `Add ${entity.noun}` : entity.hideIds ? `Edit ${entity.noun}` : `Edit ${entity.noun} #${editingId}`}</h2>
           <div className="rm-grid">{entity.fields.map(renderField)}</div>
           <div className="button-row">
             <button type="submit" disabled={saving}>
@@ -255,25 +382,16 @@ export default function RecordManager({ entity }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row[entity.idKey]}>
-                  {entity.columns.map((c) => (
-                    <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
-                  ))}
-                  <td className="rm-actions">
-                    {(entity.canEditRow?.(row) ?? true) && (
-                      <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
-                        Edit
-                      </button>
-                    )}
-                    {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
-                      <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null}>
-                        {deleteLabel}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {entity.groupBy && grouped
+                ? buildGroups(rows).map((g) => [
+                    <tr key={`group-${g.key}`} className="rm-group">
+                      <th colSpan={entity.columns.length + 1}>
+                        {groupName(g.key)} ({g.rows.length})
+                      </th>
+                    </tr>,
+                    ...g.rows.map(renderRow),
+                  ])
+                : rows.map(renderRow)}
             </tbody>
           </table>
         </div>

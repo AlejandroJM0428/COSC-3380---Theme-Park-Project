@@ -1,6 +1,3 @@
-<<<<<<< Updated upstream
-# COSC-3380---Theme-Park-Project
-=======
 # Theme Park <img src="docs/beltway-helmet.svg" alt="Beltway Park astronaut helmet" height="40" align="center">
 
 **Beltway Park** is a theme park management web app, loosely inspired by Astroworld. Visitors buy tickets and memberships and use a member portal. Staff run rides, maintenance, shifts, purchases, and reports. Admins manage logins and edit records.
@@ -112,17 +109,10 @@ Demo
 ----
 
 ### Homepage
-Public visitors check today's hours, how many rides are open, and the price of a day pass.
-
-![Beltway Park homepage, with the hero and the day-pass price card](docs/demo-homepage.jpg)
+![Beltway Park homepage with the header and notification bar](docs/screenshots/homepage.png)
 
 ### Admin portal
-Admins see park totals, customers by month, rides that are open, and staff accounts by role.
-
-![Admin portal home for Beltway Park](docs/demo-admin.png)
+![Admin portal home with data tables and reports](docs/screenshots/admin-portal.png)
 
 ### Member portal
-A signed-in member sees their next visit, membership, and which rides are open.
-
-![Member portal overview for a Plus member](docs/demo-member.png)
->>>>>>> Stashed changes
+![Member portal showing membership and ticket details](docs/screenshots/member-portal.png)

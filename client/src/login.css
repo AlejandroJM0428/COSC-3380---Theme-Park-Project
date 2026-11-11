@@ -1,0 +1,57 @@
+/* Sign in and sign up pages (AuthShell): one card for member sign in, member sign up and staff sign in.
+   Every color, radius and shadow comes from tokens.css. Two looks on the same card:
+   .auth-member = white card on the light page, Columbia blue awning (sign in and sign up)
+   .auth-staff  = same card with a navy header; the awning and button take the role color once a portal is chosen
+   Scarlet is for "Buy Tickets" only, so the sign in button is blue. */
+.auth { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: var(--paper); color: var(--navy); }
+.auth-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-6) var(--space-4) 48px; }
+
+/* the card */
+.auth-card { width: 100%; max-width: 440px; overflow: hidden; background: var(--white); border: 1px solid var(--rule); border-radius: var(--r-md); box-shadow: var(--shadow-2); }
+.auth-head { padding: var(--space-5) 28px var(--space-4); }
+.auth-head h1 { margin: var(--space-3) 0 0; font-size: 1.7rem; letter-spacing: -0.02em; }
+.auth-sub { margin: var(--space-2) 0 0; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; }
+.auth-body { padding: var(--space-1) 28px 28px; }
+.auth-body form { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* fields: the same look as .field-label and .input in shared.css */
+.auth-body label { display: block; margin: 0; color: var(--navy); font-size: 0.9rem; font-weight: 700; }
+.auth-body input, .auth-body select { display: block; width: 100%; min-height: 44px; margin-top: var(--space-1); padding: 0 var(--space-3); border: 1px solid var(--rule); border-radius: var(--r-sm); background: var(--white); color: var(--navy); font: inherit; font-weight: 400; }
+.auth-body input:focus-visible, .auth-body select:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; border-color: var(--blue-deep); }
+
+/* submit: the same look as .btn .btn-primary (the bare form button rule in index.css is overridden here) */
+.auth-body .auth-submit { width: 100%; min-height: 46px; margin-top: var(--space-1); padding: 0 var(--space-4); border: 1px solid var(--blue-deep); border-radius: var(--r-pill); background: var(--blue-deep); color: var(--white); font-size: 1rem; font-weight: 700; box-shadow: none; }
+.auth-body .auth-submit:hover:not(:disabled) { background: var(--navy); border-color: var(--navy); box-shadow: none; }
+.auth-body .auth-submit:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.auth-note, .auth-links, .auth-wait { margin: 0; font-size: 0.9rem; }
+.auth-wait { padding: var(--space-3) 0 var(--space-2); }
+.auth-links { text-align: center; }
+.auth-links a, .auth-back a { color: var(--blue-deep); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.auth-back { margin: 0; font-size: 0.9rem; text-align: center; }
+.auth .muted { color: var(--ink-soft); }
+
+/* member: the awning hangs across the top of the page without taking part in the page layout */
+.auth-member { --role: var(--blue); --on-role: var(--white); position: relative; }
+.auth-member > .awning-wrap { position: absolute; top: 0; left: 0; right: 0; z-index: 1; }
+.auth-member .wordmark strong { color: var(--blue-deep); }
+.auth-member .auth-head { text-align: center; }
+.auth-member .wordmark { justify-content: center; }
+
+/* staff: the same card, with a navy header */
+.auth-staff:not([data-role]) .awning { --awning: repeating-linear-gradient(90deg, var(--plum) 0 28px, var(--white) 28px 56px, var(--bayou) 56px 84px, var(--white) 84px 112px, var(--amber) 112px 140px, var(--white) 140px 168px); }
+.auth-staff .auth-card { border: 2px solid var(--navy); }
+.auth-staff .auth-head { background: var(--navy); color: var(--white); }
+.auth-staff .auth-head .wordmark small { color: inherit; }
+.auth-staff .auth-body { padding-top: var(--space-5); }
+.auth-staff .auth-body .auth-submit { background: var(--role); border-color: var(--role); color: var(--on-role); }
+.auth-staff .auth-body .auth-submit:hover:not(:disabled) { background: var(--role); border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy); }
+
+@media (max-width: 480px) {
+  .auth-main { justify-content: flex-start; padding-top: var(--space-5); }
+  .auth-member .auth-main { padding-top: 44px; } /* clears the awning, which sits over the top of the page */
+  .auth-head { padding: 20px 20px var(--space-3); }
+  .auth-head h1 { font-size: 1.45rem; }
+  .auth-body { padding: var(--space-1) 20px 22px; }
+  .auth-staff .auth-body { padding-top: 18px; }
+}

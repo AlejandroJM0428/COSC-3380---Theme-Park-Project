@@ -1,14 +1,32 @@
 import { useMemo, useState } from 'react'
 import './DataTable.css'
 
-// Long reports show the first rows plus a "Show all" button, so a big view does not freeze the page.
+// Long tables show the first rows, then "Show N more" and "Show all" buttons, so a big view does not freeze the page.
+// `pageSize` is how many rows to show first and how many each "Show more" adds (reports pass 10; other pages keep 100).
 const ROW_LIMIT = 100
 
 const isEmpty = (v) => v === null || v === undefined || v === ''
 
-function formatCell(value) {
+// Money columns get a dollar sign and two decimals. Matched by column name, so "ShareOfRevenue" (a percent) is excluded.
+const MONEY_COLUMN = /Revenue|Cost|Price|Spend|Sale|Total|Fees|AvgFood|AvgShop|AvgGames|AvgExtras/
+const NOT_MONEY = /Share|Rate$|Hours|Pct/
+// Whole-number identifiers and calendar parts stay plain: 2026 must not become 2,026.
+const PLAIN_NUMBER = /(^|[a-z])(Year|Month|Day|ID|Id|Key|Rank)$|^(Year|Month|Rank)$/
+
+const isMoneyColumn = (key) => MONEY_COLUMN.test(key) && !NOT_MONEY.test(key)
+
+function formatCell(value, key = '') {
   if (value === null || value === undefined) return '—'
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  // Money columns sometimes arrive as DECIMAL text ("1234.5"); turn those into numbers so they format too.
+  if (typeof value === 'string' && isMoneyColumn(key) && /^-?\d+(\.\d+)?$/.test(value)) value = Number(value)
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (isMoneyColumn(key)) {
+      return value.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    }
+    if (PLAIN_NUMBER.test(key)) return String(value)
+    return value.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  }
   return String(value)
 }
 
@@ -30,11 +48,15 @@ function compareValues(a, b) {
   return String(a).localeCompare(String(b), undefined, { numeric: true })
 }
 
-// <DataTable rows={[...]} columns={['A','B']} />   (columns optional: defaults to every key)
+const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-low' : undefined)
+
+// <DataTable rows={[...]} columns={['A','B']} rowClass={(row) => 'high' | 'low' | undefined} labelOf={(column) => 'Header text'} />   (columns optional: defaults to every key;
+// labelOf optional: reports pass their plain-label function, without it the header is the column name split into words)
+// rowClass is optional: 'high' shades the row green and 'low' shades it red, so unusual rows stand out.
 // Click a column header to sort: first click ascending, second descending, third back to the original order.
-export default function DataTable({ rows, columns }) {
+export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT, labelOf }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
-  const [showAll, setShowAll] = useState(false)
+  const [count, setCount] = useState(pageSize) // how many rows are showing
 
   const sorted = useMemo(() => {
     if (!sort || !rows) return rows
@@ -56,7 +78,8 @@ export default function DataTable({ rows, columns }) {
     }),
   )
 
-  const visible = showAll ? sorted : sorted.slice(0, ROW_LIMIT)
+  const visible = sorted.slice(0, count)
+  const left = sorted.length - visible.length
 
   function toggleSort(key) {
     setSort((s) => {
@@ -80,7 +103,7 @@ export default function DataTable({ rows, columns }) {
                     aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
                   >
                     <button type="button" className="dt-sort" onClick={() => toggleSort(c)} title="Click to sort">
-                      {headerLabel(c)}
+                      {labelOf ? labelOf(c) : headerLabel(c)}
                       <span className="dt-arrow" aria-hidden="true">
                         {active ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ''}
                       </span>
@@ -92,10 +115,10 @@ export default function DataTable({ rows, columns }) {
           </thead>
           <tbody>
             {visible.map((row, i) => (
-              <tr key={i}>
+              <tr key={i} className={rowClass ? markClass(rowClass(row)) : undefined}>
                 {cols.map((c) => (
                   <td key={c} className={numeric.has(c) ? 'dt-num' : undefined}>
-                    {formatCell(row[c])}
+                    {formatCell(row[c], c)}
                   </td>
                 ))}
               </tr>
@@ -103,12 +126,20 @@ export default function DataTable({ rows, columns }) {
           </tbody>
         </table>
       </div>
-      {sorted.length > ROW_LIMIT && (
+      {sorted.length > pageSize && (
         <p className="dt-more muted">
           Showing {visible.length.toLocaleString('en-US')} of {sorted.length.toLocaleString('en-US')} rows
-          <button type="button" className="dt-toggle" onClick={() => setShowAll((v) => !v)}>
-            {showAll ? `Show first ${ROW_LIMIT}` : 'Show all'}
-          </button>
+          {left > 0 && (
+            <button type="button" className="dt-toggle" onClick={() => setCount((c) => c + pageSize)}>
+              Show {Math.min(pageSize, left).toLocaleString('en-US')} more
+            </button>
+          )}
+          {left > pageSize && (
+            <button type="button" className="dt-toggle" onClick={() => setCount(sorted.length)}>Show all</button>
+          )}
+          {count > pageSize && (
+            <button type="button" className="dt-toggle" onClick={() => setCount(pageSize)}>Show first {pageSize}</button>
+          )}
         </p>
       )}
     </>

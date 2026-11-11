@@ -8,9 +8,10 @@ import { friendlyDbError, needDate, needInt, needText, recordId } from '../valid
 // "Delete" is a soft delete: IsActive = 0. The row stays, because tickets and memberships point at it.
 // Editing the record can turn a customer back on.
 
-const CAN_READ = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_WRITE = ['Admin', 'Manager', 'RetailManager', 'Cashier'];
-const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
+// Role matrix (TA fixes plan): the retail desk and the ticket booth own these records. The operations manager has no access.
+const CAN_READ = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_WRITE = ['Admin', 'RetailManager', 'Cashier'];
+const CAN_DELETE = ['Admin', 'RetailManager'];
 
 const SELECT_CUSTOMER = `
   SELECT CustomerID, FirstName, LastName, CONCAT(FirstName, ' ', LastName) AS FullName,
@@ -48,7 +49,11 @@ route(
     if (status !== undefined && status !== 'active' && status !== 'inactive') {
       throw new HttpError(400, 'Status must be active or inactive');
     }
-    const where = status === 'active' ? ' WHERE IsActive = 1' : status === 'inactive' ? ' WHERE IsActive = 0' : '';
+    // Dependents (children added by a parent, ParentCustomerID set) are not listed for staff.
+    const where =
+      status === 'active' ? ' WHERE IsActive = 1 AND ParentCustomerID IS NULL'
+      : status === 'inactive' ? ' WHERE IsActive = 0 AND ParentCustomerID IS NULL'
+      : ' WHERE ParentCustomerID IS NULL';
     const [rows] = await pool.query(`${SELECT_CUSTOMER}${where} ORDER BY CustomerID DESC LIMIT 500`);
     return rows;
   }),
@@ -56,6 +61,50 @@ route(
 
 // The form needs no dropdowns. Registered BEFORE /:id so "lookups" is not read as an id.
 route('GET', '/api/customers/lookups', requireRole(...CAN_READ)(async () => ({})));
+
+// Search rows return the membership that covers today (MembershipID, Tier, MembershipEnd, all NULL if none)
+// and when there is none the end date of their most recent expired membership (LastMembershipEnd).
+// Memberships can't overlap (trg_Membership_BI on insert, the membership route on edit),
+// so the join matches at most one membership and the same customer is never returned twice.
+const SELECT_CUSTOMER_SEARCH = `
+  SELECT c.CustomerID, c.FirstName, c.LastName, CONCAT(c.FirstName, ' ', c.LastName) AS FullName, c.DOB,
+         m.MembershipID, m.Tier, m.EndDate AS MembershipEnd,
+         (SELECT MAX(x.EndDate) FROM Membership x WHERE x.CustomerID = c.CustomerID AND x.EndDate < CURDATE()) AS LastMembershipEnd
+    FROM Customer c
+    LEFT JOIN Membership m ON m.CustomerID = c.CustomerID AND CURDATE() BETWEEN m.StartDate AND m.EndDate`;
+
+// GET /api/customers/search?name=...&dob=YYYY-MM-DD (either or both), plus hasLogin=1 for customers with an account. First 20 active customers that match.
+// Used by the "Find customer" box on the ticket forms. Workers are not in CAN_READ, so they get a 403.
+// Registered BEFORE /:id so "search" is not read as an id.
+route(
+  'GET',
+  '/api/customers/search',
+  requireRole(...CAN_READ)(async (ctx) => {
+    const name = typeof ctx.query.name === 'string' ? ctx.query.name.trim() : '';
+    const dob = ctx.query.dob ? needDate(ctx.query.dob, 'Date of birth') : null;
+    // browse=1 (the Sell Ticket drop-down) may search with nothing typed: the first 20 guests by last name.
+    if (!name && !dob && ctx.query.browse !== '1') throw new HttpError(400, 'Enter a name, a date of birth, or both');
+    if (name.length > 60) throw new HttpError(400, 'Name must be 60 characters or fewer');
+
+    const where = ['c.IsActive = 1', 'c.ParentCustomerID IS NULL']; // dependents are not searchable by staff
+    const args = [];
+    // hasLogin=1: only customers with a member account (the membership form uses this).
+    if (ctx.query.hasLogin === '1') where.push('EXISTS (SELECT 1 FROM AppUser a WHERE a.CustomerID = c.CustomerID)');
+    if (name) {
+      where.push("CONCAT(c.FirstName, ' ', c.LastName) LIKE ?");
+      args.push(`%${name.replace(/[\\%_]/g, '\\$&')}%`); // % and _ typed by the user are matched literally
+    }
+    if (dob) {
+      where.push('c.DOB = ?');
+      args.push(dob);
+    }
+    const [rows] = await pool.query(
+      `${SELECT_CUSTOMER_SEARCH} WHERE ${where.join(' AND ')} ORDER BY c.LastName, c.FirstName LIMIT 20`,
+      args,
+    );
+    return rows;
+  }),
+);
 
 route(
   'GET',
