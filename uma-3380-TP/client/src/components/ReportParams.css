@@ -1,0 +1,147 @@
+/* Parameter panel. Classes start with rpm-. */
+
+.rpm {
+  margin: 12px 0;
+  border: 1px solid var(--rule, #d5dde5);
+  border-radius: 8px;
+  background: var(--white, #fff);
+}
+
+.rpm > summary,
+.rpm-more > summary {
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rpm-more {
+  margin: 8px 14px 14px;
+  border-top: 1px solid var(--rule-soft, #e4eaf1);
+}
+
+.rpm-more > summary {
+  padding-left: 0;
+}
+
+.rpm-section {
+  padding: 4px 14px 10px;
+}
+
+.rpm-more .rpm-section {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.rpm h4 {
+  margin: 6px 0;
+}
+
+.rpm-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+}
+
+.rpm label,
+.rpm select,
+.rpm input[type='number'],
+.rpm input[type='text'] {
+  padding: 6px 8px;
+  border: 1px solid var(--rule, #d5dde5);
+  border-radius: 6px;
+  background: var(--white, #fff);
+  font: inherit;
+}
+
+.rpm-filter {
+  display: grid;
+  grid-template-columns: minmax(110px, 160px) 1fr auto;
+  align-items: start;
+  gap: 8px 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule-soft, #e4eaf1);
+}
+
+.rpm-col {
+  font-weight: 600;
+  padding-top: 6px;
+}
+
+.rpm-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rpm-range input {
+  width: 110px;
+}
+
+.rpm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rpm-chips button {
+  padding: 5px 10px;
+  border: 1px solid var(--rule, #d5dde5);
+  border-radius: 999px;
+  background: var(--white, #fff);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.rpm-chips button[aria-pressed='true'] {
+  background: var(--blue-deep, #0b3d91);
+  border-color: var(--blue-deep, #0b3d91);
+  color: #fff;
+}
+
+.rpm-x {
+  padding: 4px 8px;
+  border: 1px solid var(--rule, #d5dde5);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.rpm-link {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--blue-deep, #0b3d91);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.rpm-add {
+  margin-top: 8px;
+  max-width: 280px;
+}
+
+.rpm-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--ink-soft, #50617a);
+}
+
+@media (max-width: 640px) {
+  .rpm-filter {
+    grid-template-columns: 1fr auto;
+  }
+  .rpm-col {
+    grid-column: 1 / -1;
+    padding-top: 0;
+  }
+}
+
+.rpm-hint {
+  align-self: center;
+  font-size: 0.85rem;
+}

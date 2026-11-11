@@ -1,0 +1,4 @@
+Delete these files (no longer used):
+client/src/components/ReportSql.jsx
+client/src/components/DataSourceBadge.jsx
+client/src/components/DataSourceBadge.css

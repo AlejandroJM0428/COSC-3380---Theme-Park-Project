@@ -1,0 +1,75 @@
+/* Extras for DataTable: sortable headers, right-aligned numbers, the "Show all" footer. Every class starts with dt- so nothing else is affected. */
+
+.dt-sort {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.dt-sort:hover,
+.dt-sort:focus-visible {
+  text-decoration: underline;
+}
+
+.dt-arrow {
+  font-size: 0.7em;
+}
+
+th.dt-num,
+td.dt-num {
+  text-align: right;
+}
+
+.dt-more {
+  margin: 8px 0 0;
+}
+
+th.dt-detail,
+td.dt-detail {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+tr.dt-detail-row > td {
+  background: var(--paper, #f6faf8);
+  padding: 8px 10px 12px;
+}
+
+.dt-toggle {
+  margin-left: 10px;
+  padding: 4px 10px;
+  border: 1px solid var(--line, #d5e1dd);
+  border-radius: 6px;
+  background: var(--panel, #fff);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Rows a report flags as unusual (the Note column says why, so colour is never the only signal). */
+tr.dt-row-high td {
+  background: #e3f4ea;
+}
+
+tr.dt-row-low td {
+  background: #fde8e4;
+}
+
+/* Long tables scroll inside their own box so the page stays usable; the header row stays in view. */
+.table-wrap.dt-scroll {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.table-wrap.dt-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--panel, #fff);
+  box-shadow: 0 1px 0 var(--line, #d5e1dd);
+}
