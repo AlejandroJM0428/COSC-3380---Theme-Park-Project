@@ -18,16 +18,58 @@ export default function NotificationBar({ variant = 'default' }) {
   return variant === 'strip' ? <TopBanner /> : <NoticeList />
 }
 
+// Portal notices: ONE card at a time instead of a stack of boxes. "Next" steps through them and the last one
+// says "Got it". After the last one the card is gone. Each notice is remembered as read for this browser tab,
+// so a refresh does not bring them back, but a new or reworded notice shows up again.
+const SEEN_KEY = 'park.notices.seen'
+const seenKeyOf = (n) => `${n.NotificationID}|${n.CreatedAt}|${n.Message}`
+
+function readSeen() {
+  try {
+    const list = JSON.parse(sessionStorage.getItem(SEEN_KEY) || '[]')
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+
 function NoticeList() {
   const items = useNotices()
-  if (items.length === 0) return null
+  const [seen, setSeen] = useState(readSeen)
+  const markSeen = (keys) => {
+    setSeen((list) => {
+      const next = [...new Set([...list, ...keys])].slice(-100)
+      try { sessionStorage.setItem(SEEN_KEY, JSON.stringify(next)) } catch { /* private mode: fine */ }
+      return next
+    })
+  }
+
+  const unread = items.filter((n) => !seen.includes(seenKeyOf(n)))
+  if (unread.length === 0) return null
+
+  const current = unread[0]
+  const position = items.length - unread.length + 1
+  const isLast = unread.length === 1
+  const severity = String(current.Severity).toLowerCase()
+
   return (
-    <section className="notice-bar" aria-label="Park notices">
-      {items.slice(0, 5).map((n) => (
-        <p key={n.NotificationID} className={`notice notice-${String(n.Severity).toLowerCase()} notice-kind-${String(n.Kind).toLowerCase()}`}>
-          <strong>{n.Title}:</strong> {n.Message}
-        </p>
-      ))}
+    <section
+      className={`notice-card notice-${severity} notice-kind-${String(current.Kind).toLowerCase()}`}
+      aria-label="Park notices"
+    >
+      <div className="notice-card-body" aria-live="polite">
+        <p className="notice-card-title"><strong>{current.Title}</strong></p>
+        <p className="notice-card-message">{current.Message}</p>
+      </div>
+      <div className="notice-card-actions">
+        {items.length > 1 && <span className="notice-card-count">{position} of {items.length}</span>}
+        <button type="button" className="notice-card-next" onClick={() => markSeen([seenKeyOf(current)])}>
+          {isLast ? 'Got it' : 'Next'}
+        </button>
+        {!isLast && (
+          <button type="button" className="notice-card-close" aria-label="Dismiss all park notices" onClick={() => markSeen(unread.map(seenKeyOf))}>×</button>
+        )}
+      </div>
     </section>
   )
 }
