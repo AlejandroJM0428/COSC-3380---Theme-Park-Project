@@ -66,6 +66,20 @@ const TIER_TOTALS = [
   { label: 'Expiring in 30 days', expr: 'COALESCE(SUM(EndDate BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)), 0)', match: 'ExpiringIn30Days' },
 ];
 
+// Day tickets: the detail lists valid AND refunded tickets (Status column), so the totals split them the way v_DailyAttendance does.
+const DAY_TOTALS = [
+  { label: 'Valid tickets', expr: "COALESCE(SUM(Status = 'Valid'), 0)", match: 'ValidTickets' },
+  { label: 'Refunded tickets', expr: "COALESCE(SUM(Status = 'Refunded'), 0)", match: 'RefundedTickets' },
+  { label: 'Ticket revenue (valid only)', expr: "COALESCE(SUM(CASE WHEN Status = 'Valid' THEN TicketPrice ELSE 0 END), 0)", money: true, match: 'TicketRevenue' },
+];
+
+// Retail sales: one row per purchase line, so these equal the Orders, Units and Revenue of v_RetailSalesByVenue.
+const RETAIL_TOTALS = [
+  { label: 'Orders', expr: 'COUNT(*)', match: 'Orders' },
+  { label: 'Units', expr: 'COALESCE(SUM(Quantity), 0)', match: 'Units' },
+  { label: 'Revenue', expr: 'COALESCE(SUM(Quantity * UnitPrice), 0)', money: true, match: 'Revenue' },
+];
+
 function ticketsOnDay(date) {
   return pack(
     [TICKET, REFUND],
@@ -80,6 +94,7 @@ function ticketsOnDay(date) {
     [date],
     null,
     't.VisitDate',
+    DAY_TOTALS,
   );
 }
 
@@ -415,6 +430,7 @@ const PROFILES = {
       params,
       null,
       'p.PurchasedAt',
+      RETAIL_TOTALS,
     );
   },
   'membership-summary': (row) => byTier(row) ?? tablesOnly([MEMBERSHIP, TICKET], 'Click a tier to see its memberships.'),
