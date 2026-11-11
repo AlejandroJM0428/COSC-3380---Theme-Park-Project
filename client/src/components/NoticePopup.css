@@ -1,0 +1,24 @@
+/* Centered notice pop-up (components/NoticePopup.jsx). It sits above the banner and the portal headers. */
+.notice-popup-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(8, 20, 40, .55); animation: notice-popup-fade .18s ease-out; }
+.notice-popup { position: relative; width: min(440px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 26px 26px 22px; background: #fff; color: #12302f; border-radius: 10px; border-top: 8px solid #1c9aa8; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); animation: notice-popup-rise .2s ease-out; }
+.notice-popup-warning { border-top-color: #ffc233; }
+.notice-popup-alert { border-top-color: #a4161a; }
+.notice-popup-kind-rideadded { border-top-color: #2e9d57; }
+.notice-popup-kind-ridedeactivated { border-top-color: #6b7280; }
+.notice-popup-tag { margin: 0 0 6px; font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #5b6b6a; }
+.notice-popup h2 { margin: 0 34px 10px 0; font-size: 1.3rem; line-height: 1.25; }
+.notice-popup-message { margin: 0 0 14px; font-size: 1rem; line-height: 1.45; }
+.notice-popup-more { margin: 0 0 14px; font-size: .85rem; color: #5b6b6a; }
+.notice-popup-x { position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; display: grid; place-items: center; background: transparent; border: 0; border-radius: 6px; color: #12302f; font-size: 1.7rem; line-height: 1; cursor: pointer; }
+.notice-popup .notice-popup-x:hover:not(:disabled), .notice-popup .notice-popup-x:focus-visible { background: #e8eef0; color: #12302f; }
+.notice-popup-ok { min-height: 44px; padding: 0 22px; border: 0; border-radius: 6px; background: var(--navy, #0a2a52); color: #fff; font-weight: 800; cursor: pointer; }
+.notice-popup .notice-popup-ok:hover:not(:disabled), .notice-popup .notice-popup-ok:focus-visible { background: #17407a; color: #fff; }
+.notice-popup :focus-visible { outline: 3px solid #4b92db; outline-offset: 2px; }
+
+@keyframes notice-popup-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes notice-popup-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* No motion: it simply appears. */
+@media (prefers-reduced-motion: reduce) {
+  .notice-popup-backdrop, .notice-popup { animation: none; }
+}

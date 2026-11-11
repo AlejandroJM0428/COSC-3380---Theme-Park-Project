@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import NotificationBar from './NotificationBar.jsx'
+import NoticePopup from './NoticePopup.jsx'
 import Wordmark from './Wordmark.jsx'
 import Footer from './home/Footer.jsx'
 import { BRAND } from '../config/brand.js'
@@ -26,6 +27,7 @@ export default function PublicLayout() {
   return (
     <div className="pub" id="top">
       <NotificationBar variant="strip" />
+      <NoticePopup />
 
       <header className="pub-header">
         <div className="pub-header-inner">

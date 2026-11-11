@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import { NAV_SECTIONS, PARK_SHORT, ROLE_INFO } from '../config/nav.js'
+import NoticePopup from './NoticePopup.jsx'
 import '../pages/AdminOnePage.css'
 
 // The shell for the staff portal (and the older admin pages): the same look as the one-page admin.
@@ -52,6 +53,7 @@ export default function Layout({ base = '/staff', sections = NAV_SECTIONS, brand
 
   return (
     <div className="onepage" data-role={user.role}>
+      <NoticePopup />
       <header className="onepage-top">
         <div className="onepage-brand">
           <span className="onepage-logo" aria-hidden="true">
