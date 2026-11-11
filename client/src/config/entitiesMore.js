@@ -76,6 +76,7 @@ export const MEMBERSHIPS = {
   resource: 'memberships',
   idKey: 'MembershipID',
   noun: 'membership',
+  writeRoles: ['Admin', 'RetailManager', 'Cashier'], // same as CAN_WRITE in server/routes/memberships.js
   deleteRoles: ['Admin', 'RetailManager'],
   deleteNote: 'Memberships that already have tickets cannot be deleted.',
   filters: [

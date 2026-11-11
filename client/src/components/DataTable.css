@@ -51,6 +51,11 @@ tr.dt-detail-row > td {
   cursor: pointer;
 }
 
+.dt-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Rows a report flags as unusual (the Note column says why, so colour is never the only signal). */
 tr.dt-row-high td {
   background: #e3f4ea;

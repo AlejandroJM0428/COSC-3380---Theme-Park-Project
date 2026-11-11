@@ -50,6 +50,20 @@ function compareValues(a, b) {
   return String(a).localeCompare(String(b), undefined, { numeric: true })
 }
 
+// One cell of the Actions column. The tooltip sits on a wrapper because a disabled button shows none in some browsers.
+function ActionCell({ action }) {
+  if (!action) return <td className="dt-detail" />
+  return (
+    <td className="dt-detail">
+      <span title={action.title || undefined}>
+        <button type="button" className="dt-toggle" disabled={action.disabled} onClick={action.onClick}>
+          {action.label}
+        </button>
+      </span>
+    </td>
+  )
+}
+
 const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-low' : undefined)
 
 // <DataTable rows={[...]} columns={['A','B']} rowClass={(row) => 'high' | 'low' | undefined} labelOf={(column) => 'Header text'} />   (columns optional: defaults to every key;
@@ -58,7 +72,10 @@ const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-l
 // Click a column header to sort: first click ascending, second descending, third back to the original order.
 // onDetail, when passed, adds a Details button on each row. detailKey is the open row (JSON.stringify of that row).
 // pageSize, when passed, draws only that many rows at first and adds a "Show more" button (sorting still covers every row).
-export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, detailKey, detailSlot, pageSize }) {
+// rowAction(row), when passed, adds a last, non-sortable Actions column. It returns null (no button on that row) or
+// { label, onClick, disabled, title }; a disabled button is greyed and shows title as its tooltip (for example "Insufficient privileges").
+// The column is left out altogether when no row returns an action. The cell is not part of the row data, so search boxes never see it.
+export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, detailKey, detailSlot, pageSize, rowAction }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
   const [visible, setVisible] = useState(pageSize ?? Infinity)
 
@@ -73,6 +90,7 @@ export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, 
 
   if (!rows || rows.length === 0) return <p className="muted">No data to show.</p>
   const cols = columns ?? Object.keys(rows[0])
+  const hasAction = Boolean(rowAction) && rows.some((r) => rowAction(r))
 
   // A column is a number column when its first filled cell is a number (reports turn DECIMAL text into numbers in prepare()).
   const numeric = new Set(
@@ -113,6 +131,7 @@ export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, 
                 )
               })}
               {onDetail && <th className="dt-detail">Details</th>}
+              {hasAction && <th className="dt-detail">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -136,10 +155,11 @@ export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, 
                       </button>
                     </td>
                   )}
+                  {hasAction && <ActionCell action={rowAction(row)} />}
                 </tr>
                 {onDetail && detailSlot && detailKey === JSON.stringify(row) && (
                   <tr className="dt-detail-row">
-                    <td colSpan={cols.length + 1}>{detailSlot}</td>
+                    <td colSpan={cols.length + 1 + (hasAction ? 1 : 0)}>{detailSlot}</td>
                   </tr>
                 )}
               </Fragment>

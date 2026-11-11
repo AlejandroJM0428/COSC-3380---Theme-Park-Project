@@ -9,7 +9,11 @@ import DataTable from '../components/DataTable.jsx'
 import DateRangePicker from '../components/DateRangePicker.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 import ReportParams, { emptySpec, isCustom, toRequest } from '../components/ReportParams.jsx'
+import RecordEditDialog from '../components/RecordEditDialog.jsx'
 import ReportEditLinks from '../components/ReportEditLinks.jsx'
+import { EDIT_ROLES } from '../config/reportEdits.js'
+import { editTargetFor } from '../config/reportRowEdits.js'
+import { canEditRow } from '../config/rowEditAccess.js'
 import { makeLabeler } from '../config/labels.js'
 import { REPORTS } from '../config/reports.js'
 import NotFound from './NotFound.jsx'
@@ -175,6 +179,8 @@ function ReportBody({ report, csvName }) {
   const [names, setNames] = useState([]) // the names offered in the search box's drop-down
   const [detail, setDetail] = useState(null) // { key, loading, error, data } for the open Details row
   const [viewAll, setViewAll] = useState(null) // { title, loading, error, data } for the View all pop-up
+  const { user } = useAuth()
+  const [editing, setEditing] = useState(null) // { entity, id } for the open Edit pop-up (config/reportRowEdits.js says which record a row is)
 
   // The list of columns is cheap (no report data is read), so it loads when the report opens.
   // The report itself still loads only when Run report is pressed.
@@ -268,7 +274,7 @@ function ReportBody({ report, csvName }) {
       .join(' · ')
   }
   function detailRange() {
-    let saved = null
+    let saved
     try {
       saved = JSON.parse(ranRequest)
     } catch {
@@ -296,6 +302,15 @@ function ReportBody({ report, csvName }) {
     allReq.current++ // an answer still on its way is ignored
     setViewAll(null)
   }
+  // The Edit button on a detail row. null = no button (not a manager role, or an aggregate row with no single record behind it).
+  // Greyed with the reason as its tooltip when this person may not edit that record. The server checks the role again on save.
+  function rowActionFor(row) {
+    if (!EDIT_ROLES.includes(user?.role)) return null
+    const target = editTargetFor(row)
+    if (!target) return null
+    const { allowed, reason } = canEditRow(target.entity, row, user)
+    return { label: 'Edit', disabled: !allowed, title: allowed ? `Edit ${target.entity.noun} #${target.id}` : reason, onClick: () => setEditing(target) }
+  }
   function openDetail(row) {
     const key = JSON.stringify(row)
     closeViewAll()
@@ -312,6 +327,22 @@ function ReportBody({ report, csvName }) {
       })
       .catch((err) => {
         if (mine === detailReq.current) setDetail({ key, title: detailTitle(row), loading: false, error: err.message, data: null })
+      })
+  }
+  // Reload the open Details line after a record was saved, keeping the tab, date range and open row.
+  // Quiet on purpose: no loading flash, the old rows stay until the new ones arrive. It shares detailReq with openDetail, so
+  // a slower older answer never overwrites a newer one, and a panel the person closed meanwhile stays closed.
+  function refreshDetail() {
+    if (!detail) return
+    const { key, title } = detail
+    const mine = ++detailReq.current
+    reportDetail(report.endpoint || report.query, parseRow(key), detailRange())
+      .then((data) => {
+        if (mine === detailReq.current) setDetail((cur) => (cur && cur.key === key ? { key, title, loading: false, error: '', data } : cur))
+      })
+      .catch((err) => {
+        // Keep the rows that are already shown and say the refresh failed.
+        if (mine === detailReq.current) setDetail((cur) => (cur && cur.key === key ? { ...cur, error: `Saved, but the list could not be refreshed: ${err.message}` } : cur))
       })
   }
   function run() {
@@ -526,9 +557,13 @@ function ReportBody({ report, csvName }) {
             labelOf={label}
             onDetail={report.endpoint || report.query ? openDetail : undefined}
             detailKey={detail?.key ?? null}
-            detailSlot={detail ? <ReportDetail state={detail} onClose={() => setDetail(null)} onViewAll={openViewAll} /> : null}
+            detailSlot={detail ? <ReportDetail state={detail} onClose={() => setDetail(null)} onViewAll={openViewAll} rowAction={rowActionFor} /> : null}
           />
-          {viewAll && <DetailModal state={viewAll} onClose={closeViewAll} />}
+          {viewAll && <DetailModal state={viewAll} onClose={closeViewAll} rowAction={rowActionFor} />}
+          {editing && <RecordEditDialog entity={editing.entity} id={editing.id} onSaved={() => {
+              setEditing(null)
+              refreshDetail()
+            }} onClose={() => setEditing(null)} />}
         </>
       )}
     </div>

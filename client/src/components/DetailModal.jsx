@@ -5,17 +5,25 @@ import './DetailModal.css'
 // "View all" pop-up for one report line: every matching row, with a search box that filters as you type.
 // state = { title, loading, error, data } where data is the answer of the detail endpoint in 'all' mode.
 // Search is words: "2025-04 4.50" keeps rows that contain both pieces (case does not matter, any column).
+// rowAction(row), when passed, puts an Edit button on each row (same prop as DataTable; see ReportPage.rowActionFor).
 const PAGE = 100
 
-export default function DetailModal({ state, onClose }) {
+export default function DetailModal({ state, onClose, rowAction }) {
   const [query, setQuery] = useState('')
   const search = useRef(null)
+  const closeRef = useRef(onClose)
   const rows = state.data?.rows
 
   useEffect(() => {
+    closeRef.current = onClose // the Escape handler below always calls the latest onClose
+  })
+
+  // Runs once, on open. It used to depend on onClose, which is a new function on every ReportPage render, so opening or
+  // closing the Edit pop-up re-ran it and pulled focus back to the search box instead of the row's Edit button.
+  useEffect(() => {
     search.current?.focus()
     function onKey(e) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') closeRef.current()
     }
     document.addEventListener('keydown', onKey)
     const before = document.body.style.overflow
@@ -24,7 +32,7 @@ export default function DetailModal({ state, onClose }) {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = before
     }
-  }, [onClose])
+  }, [])
 
   // One lower-case line of text per row, made once, so typing stays quick on thousands of rows.
   // The RowNo count is left out, so typing 12 does not match row 12.
@@ -85,7 +93,7 @@ export default function DetailModal({ state, onClose }) {
             <p className="muted dm-none">No rows match “{query.trim()}”.</p>
           ) : (
             <div className="dm-body">
-              <DataTable key={query} rows={shown} pageSize={PAGE} />
+              <DataTable key={query} rows={shown} pageSize={PAGE} rowAction={rowAction} />
             </div>
           ))}
       </section>

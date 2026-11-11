@@ -31,7 +31,8 @@ function DetailTotals({ totals, clicked }) {
 
 // The tables and matching rows behind one report line. `state` is { key, title, loading, error, data }.
 // Quick view: the totals and the first few rows only. When there are more, "View all" opens the searchable pop-up (onViewAll).
-export default function ReportDetail({ state, onClose, onViewAll }) {
+// rowAction(row) is passed straight to the rows' DataTable (the Edit button; see DataTable.jsx).
+export default function ReportDetail({ state, onClose, onViewAll, rowAction }) {
   const ref = useRef(null)
   const data = state.data
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function ReportDetail({ state, onClose, onViewAll }) {
   const from = data?.sources?.map((s) => s.table).join(', ')
   const total = Number(data?.total)
   // The row that was clicked (state.key is its JSON). A total can name the column it must equal.
-  let clicked = {}
+  let clicked
   try {
     clicked = JSON.parse(state.key) ?? {}
   } catch {
@@ -82,7 +83,7 @@ export default function ReportDetail({ state, onClose, onViewAll }) {
           ) : null}
           {data.note && <p className="muted">{data.note}</p>}
           {data.totals?.length > 0 && <DetailTotals totals={data.totals} clicked={clicked} />}
-          {data.rows?.length > 0 && <DataTable rows={data.rows} />}
+          {data.rows?.length > 0 && <DataTable rows={data.rows} rowAction={rowAction} />}
           {hasMore && onViewAll && (
             <p className="rd-viewall">
               <button type="button" className="dt-toggle rd-viewall-btn" onClick={onViewAll}>

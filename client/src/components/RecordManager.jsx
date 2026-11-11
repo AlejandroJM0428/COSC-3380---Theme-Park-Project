@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { createRecord, deleteRecord, reactivateRecord, getLookups, getRecord, listRecords, updateRecord } from '../api'
+import { getLookups, listRecords } from '../api'
 import { useAuth } from '../auth/context.js'
 import usePersistedState from '../hooks/usePersistedState.js'
+import useRecordDelete from '../hooks/useRecordDelete.jsx'
 import ErrorBanner from './ErrorBanner.jsx'
-import LookupField from './LookupField.jsx'
-import DateTimeField from './DateTimeField.jsx'
-import ReasonDialog from './ReasonDialog.jsx'
+import RecordEditor from './RecordEditor.jsx'
 import './RecordManager.css'
 
 // A table of records plus an add / edit / delete form, all driven by one config object
@@ -23,18 +22,13 @@ export default function RecordManager({ entity, refreshKey = 0, onChanged }) {
   const [rows, setRows] = useState(null)
   const [lookups, setLookups] = useState(null)
   const [reload, setReload] = useState(0)
-  const [form, setForm] = useState(null) // null = form closed
-  const [editingId, setEditingId] = useState(null)
-  const [saving, setSaving] = useState(false)
+  const [editor, setEditor] = useState(null) // null = form closed, or { mode: 'add' | 'edit', id, initial }
   const [error, setError] = useState('') // load failures
   const [notice, setNotice] = useState('')
   // What a database rule said about a save, delete or reactivate. Both stay through a refresh until closed.
   const [actionError, setActionError] = usePersistedState(`records.${entity.resource}.error`, '')
   const [toast, setToast] = usePersistedState(`records.${entity.resource}.toast`, null)
   const clearErrors = () => { setError(''); setActionError('') }
-  const [asking, setAsking] = useState(null) // { row, action: 'deactivate' | 'reactivate' } while the reason dialog is open
-  const [askBusy, setAskBusy] = useState(false)
-  const [askError, setAskError] = useState('')
   const [grouped, setGrouped] = useState(Boolean(entity.groupBy?.defaultOn)) // entity.groupBy: show the rows under a heading per group (groupBy.defaultOn starts it on)
 
   useEffect(() => {
@@ -61,251 +55,40 @@ export default function RecordManager({ entity, refreshKey = 0, onChanged }) {
   function openAdd() {
     clearErrors()
     setNotice('')
-    setEditingId(null)
-    setForm(entity.blank())
+    setEditor({ mode: 'add', initial: entity.blank() })
   }
 
   function openAddLogin(row) {
     clearErrors()
     setNotice('')
-    setEditingId(null)
-    setForm(entity.addLoginForm(row, lookups))
+    setEditor({ mode: 'add', initial: entity.addLoginForm(row, lookups) })
   }
 
-  async function openEdit(row) {
+  function openEdit(row) {
     clearErrors()
     setNotice('')
-    try {
-      const full = await getRecord(entity.resource, row[entity.idKey]) // the list has no crew, the single record does
-      setEditingId(row[entity.idKey])
-      setForm(entity.fromRecord(full))
-    } catch (err) {
-      setActionError(err.message)
-    }
+    setEditor({ mode: 'edit', id: row[entity.idKey] }) // RecordEditor loads the full record (the list has no crew, the single record does)
   }
 
   function closeForm() {
-    setForm(null)
-    setEditingId(null)
+    setEditor(null)
   }
 
-  async function submit(e) {
-    e.preventDefault()
-    clearErrors()
-    setNotice('')
-    const missing = entity.fields.find((f) => f.type === 'lookup' && f.required && !form[f.key] && (!f.show || f.show(form)))
-    if (missing) {
-      setActionError(`Choose the ${missing.pickLabel ?? missing.label.toLowerCase()} first.`)
-      return
-    }
-    setSaving(true)
-    setToast(null)
-    try {
-      const body = entity.toPayload(form)
-      const saved = editingId == null ? await createRecord(entity.resource, body) : await updateRecord(entity.resource, editingId, body)
-      const label = `${entity.noun[0].toUpperCase()}${entity.noun.slice(1)}`
-      setNotice(entity.hideIds ? `${label} saved.` : `${label} #${saved[entity.idKey]} saved.`)
-      const nextToast = entity.savedToast?.(saved)
-      if (nextToast) setToast(nextToast)
-      closeForm()
-      setReload((n) => n + 1)
-      onChanged?.()
-    } catch (err) {
-      const nextToast = entity.rejectToast?.(err.message)
-      if (nextToast) setToast(nextToast)
-      else setActionError(err.message) // the trigger's own text, for example "Park is at capacity for that date"
-    } finally {
-      setSaving(false)
-    }
+  function handleSaved(saved, savedNotice) {
+    setNotice(savedNotice)
+    closeForm()
+    setReload((n) => n + 1)
+    onChanged?.()
   }
 
-  // Optional entity settings: lockedNote (why Edit is turned off, shown under the intro), hideIds (never show record numbers), deleteLabel ('Void'), deletePast ('Voided'), askReason (prompt sent as ?reason=),
-  // canEditRow(row) and canDeleteRow(row) to hide the buttons on rows that are already finished.
-  const deleteLabel = entity.deleteLabel ?? 'Delete'
-  const deletePast = entity.deletePast ?? 'Deleted'
-
-  async function remove(row) {
-    if (entity.requireReason) {
-      setAskError('')
-      setAsking({ row, action: 'deactivate' })
-      return
-    }
-    let query = {}
-    if (entity.askReason) {
-      const reason = window.prompt(`${deleteLabel} ${entity.describe(row)}? Enter a reason (optional):`)
-      if (reason === null) return // pressed Cancel
-      query = { reason: reason.trim() }
-    } else if (!window.confirm(`${deleteLabel} ${entity.describe(row)}? ${entity.deleteNote ?? 'This cannot be undone.'}`)) {
-      return
-    }
-    clearErrors()
-    setNotice('')
-    try {
-      await deleteRecord(entity.resource, row[entity.idKey], query)
-      setNotice(`${deletePast} ${entity.describe(row)}.`)
-      setReload((n) => n + 1)
-      onChanged?.()
-    } catch (err) {
-      setActionError(err.message)
-    }
-  }
-
-  // Optional: reactivateLabel ('Reactivate') plus canReactivateRow(row) puts a deactivated row back on with one click.
-  async function reactivate(row) {
-    if (entity.requireReason) {
-      setAskError('')
-      setAsking({ row, action: 'reactivate' })
-      return
-    }
-    clearErrors()
-    setNotice('')
-    try {
-      await reactivateRecord(entity.resource, row[entity.idKey])
-      setNotice(`Reactivated ${entity.describe(row)}.`)
-      setReload((n) => n + 1)
-    } catch (err) {
-      setActionError(err.message)
-    }
-  }
-
-  // The reason dialog's Confirm: send the change together with the reason, then close the dialog.
-  async function confirmReason(reason) {
-    const { row, action } = asking
-    setAskBusy(true)
-    setAskError('')
-    try {
-      if (action === 'deactivate') {
-        await deleteRecord(entity.resource, row[entity.idKey], { reason })
-        setNotice(`${deletePast} ${entity.describe(row)}. Reason: ${reason}`)
-      } else {
-        await reactivateRecord(entity.resource, row[entity.idKey], reason)
-        setNotice(`Reactivated ${entity.describe(row)}. Reason: ${reason}`)
-      }
-      setAsking(null)
-      setReload((n) => n + 1)
-    } catch (err) {
-      setAskError(err.message)
-    } finally {
-      setAskBusy(false)
-    }
-  }
-
-  // An entity may add `onFieldChange(key, value, form, lookups)` to fill other fields when one changes (it returns the extra values, or null).
-  const set = (key, value) => setForm((f) => ({ ...f, [key]: value, ...(entity.onFieldChange?.(key, value, f, lookups) ?? {}) }))
-
-  function renderField(field) {
-    if (field.show && !field.show(form)) return null
-    const value = form[field.key]
-    const options = field.optionsFrom ? field.optionsFrom(form, lookups) : (field.options ?? [])
-    const id = `f-${field.key}`
-
-    if (field.type === 'multicheck') {
-      return (
-        <fieldset key={field.key} className={`rm-field rm-check-group ${field.wide ? 'rm-wide' : ''}`}>
-          <legend>{field.label}</legend>
-          {options.length === 0 && <span className="muted">None available.</span>}
-          {options.map(([v, label]) => (
-            <label key={v} className="rm-check">
-              <input
-                type="checkbox"
-                checked={value.includes(v)}
-                onChange={(e) => set(field.key, e.target.checked ? [...value, v] : value.filter((x) => x !== v))}
-              />
-              {label}
-            </label>
-          ))}
-        </fieldset>
-      )
-    }
-
-    let input
-    if (field.type === 'lookup') {
-      // Pick a guest, ticket or membership by what a person knows. The form keeps the ID, nobody sees or types it.
-      return (
-        <div key={field.key} className={`rm-field ${field.wide ?? true ? 'rm-wide' : ''}`}>
-          <span id={`${id}-label`}>{field.label}</span>
-          <LookupField
-            id={id}
-            kind={field.kind}
-            value={value}
-            required={field.required}
-            forCustomer={field.forCustomerKey ? form[field.forCustomerKey] : undefined}
-            needsLogin={field.needsLogin}
-            onChange={(v) => set(field.key, v)}
-          />
-        </div>
-      )
-    }
-    if (field.type === 'whenNow') {
-      // "Now" (empty, the server stamps the time) or a picked date and time. Opens on Now, so nobody touches the calendar.
-      const picked = (value ?? '') !== ''
-      const stamp = () => {
-        const d = new Date()
-        const p = (n) => String(n).padStart(2, '0')
-        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
-      }
-      return (
-        <div key={field.key} className="rm-field rm-wide">
-          <span id={`${id}-label`}>{field.label}</span>
-          <div className="rm-when" role="group" aria-labelledby={`${id}-label`}>
-            <button type="button" className={picked ? '' : 'rm-when-on'} aria-pressed={!picked} onClick={() => set(field.key, '')}>
-              Now
-            </button>
-            <button type="button" className={picked ? 'rm-when-on' : ''} aria-pressed={picked} onClick={() => !picked && set(field.key, stamp())}>
-              Pick a time
-            </button>
-            {picked && <DateTimeField id={id} value={value} onChange={(v) => set(field.key, v)} required />}
-          </div>
-        </div>
-      )
-    }
-    if (field.type === 'select') {
-      input = (
-        <select id={id} value={value} required={field.required} onChange={(e) => set(field.key, e.target.value)}>
-          {field.required && value === '' && <option value="">— choose —</option>}
-          {options.map(([v, label]) => (
-            <option key={v} value={v} disabled={Boolean(field.optionLock?.(v, user))}>
-              {label}
-            </option>
-          ))}
-        </select>
-      )
-    } else if (field.type === 'datetime') {
-      // Date and time in two quick clicks (see DateTimeField), instead of the browser's clunky date-time box.
-      return (
-        <div key={field.key} className={`rm-field ${field.wide ? 'rm-wide' : ''}`}>
-          <span id={`${id}-label`}>{field.label}</span>
-          <DateTimeField id={id} value={value} onChange={(v) => set(field.key, v)} required={field.required} />
-        </div>
-      )
-    } else {
-      const type = field.type
-      input = (
-        <input
-          id={id}
-          type={type}
-          value={value}
-          required={field.required}
-          maxLength={field.maxLength}
-          min={field.min}
-          step={field.step}
-          onChange={(e) => set(field.key, e.target.value)}
-        />
-      )
-    }
-    return (
-      <label key={field.key} htmlFor={id} className={`rm-field ${field.wide ? 'rm-wide' : ''}`}>
-        {field.label}
-        {input}
-      </label>
-    )
-  }
-
-  // Picking another kind (ride/game/venue) clears the chosen item, because the lists differ.
-  const kindFieldKey = 'facilityKind'
-  function onFormChange(e) {
-    if (e.target.id === `f-${kindFieldKey}`) setForm((f) => ({ ...f, facilityId: '' }))
-  }
+  // Delete, void and reactivate (with their reason prompts) live in hooks/useRecordDelete.jsx.
+  const { remove, reactivate, deleteLabel, reasonDialog } = useRecordDelete(entity, {
+    clearErrors,
+    setNotice,
+    setActionError,
+    onReload: () => setReload((n) => n + 1),
+    onDeleted: onChanged,
+  })
 
   // Grouped view: one heading row per group (for example per role), in the order the entity lists, with the group size.
   function buildGroups(list) {
@@ -331,22 +114,22 @@ export default function RecordManager({ entity, refreshKey = 0, onChanged }) {
         ))}
         <td className="rm-actions">
           {canWrite && entity.canAddLoginRow?.(row) && (
-            <button type="button" onClick={() => openAddLogin(row)} disabled={form !== null}>
+            <button type="button" onClick={() => openAddLogin(row)} disabled={editor !== null}>
               Add login
             </button>
           )}
           {canEdit && (entity.canEditRow?.(row) ?? true) && (
-            <button type="button" onClick={() => openEdit(row)} disabled={form !== null || Boolean(lock)} title={lock || undefined}>
+            <button type="button" onClick={() => openEdit(row)} disabled={editor !== null || Boolean(lock)} title={lock || undefined}>
               Edit
             </button>
           )}
           {canEdit && entity.canReactivateRow?.(row) && (
-            <button type="button" className="rm-reactivate" onClick={() => reactivate(row)} disabled={form !== null}>
+            <button type="button" className="rm-reactivate" onClick={() => reactivate(row)} disabled={editor !== null}>
               {entity.reactivateLabel ?? 'Reactivate'}
             </button>
           )}
           {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
-            <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null || Boolean(lock)} title={lock || undefined}>
+            <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={editor !== null || Boolean(lock)} title={lock || undefined}>
               {deleteLabel}
             </button>
           )}
@@ -373,7 +156,7 @@ export default function RecordManager({ entity, refreshKey = 0, onChanged }) {
 
       <div className="rm-toolbar">
         {canWrite && (
-          <button type="button" className="btn-primary" onClick={openAdd} disabled={form !== null}>
+          <button type="button" className="btn-primary" onClick={openAdd} disabled={editor !== null}>
             + Add {entity.noun}
           </button>
         )}
@@ -410,19 +193,19 @@ export default function RecordManager({ entity, refreshKey = 0, onChanged }) {
         )}
       </div>
 
-      {form && (
-        <form className="panel rm-form" onSubmit={submit} onChange={onFormChange}>
-          <h2>{editingId == null ? `Add ${entity.noun}` : entity.hideIds ? `Edit ${entity.noun}` : `Edit ${entity.noun} #${editingId}`}</h2>
-          <div className="rm-grid">{entity.fields.map(renderField)}</div>
-          <div className="button-row">
-            <button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-            <button type="button" onClick={closeForm} disabled={saving}>
-              Cancel
-            </button>
-          </div>
-        </form>
+      {editor && (
+        <RecordEditor
+          key={`${editor.mode}-${editor.id ?? 'new'}`}
+          entity={entity}
+          mode={editor.mode}
+          id={editor.id}
+          initial={editor.initial}
+          lookups={lookups}
+          onSaved={handleSaved}
+          onCancel={closeForm}
+          onError={(m) => (m ? setActionError(m) : clearErrors())}
+          onToast={setToast}
+        />
       )}
 
       {toast && (
@@ -437,23 +220,7 @@ export default function RecordManager({ entity, refreshKey = 0, onChanged }) {
         </div>
       )}
 
-      {asking && (
-        <ReasonDialog
-          title={`${asking.action === 'deactivate' ? deleteLabel : (entity.reactivateLabel ?? 'Reactivate')} ${entity.describe(asking.row)}?`}
-          message={
-            asking.action === 'deactivate'
-              ? (entity.deleteNote ?? 'The record is kept.')
-              : 'It will show as active again and guests can use it.'
-          }
-          choices={entity.reasonChoices?.[asking.action] ?? []}
-          confirmLabel={asking.action === 'deactivate' ? deleteLabel : (entity.reactivateLabel ?? 'Reactivate')}
-          danger={asking.action === 'deactivate'}
-          busy={askBusy}
-          error={askError}
-          onConfirm={confirmReason}
-          onCancel={() => setAsking(null)}
-        />
-      )}
+      {reasonDialog}
 
       {rows === null ? (
         <p className="muted">Loading…</p>

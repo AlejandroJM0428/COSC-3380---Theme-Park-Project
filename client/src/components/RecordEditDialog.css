@@ -1,0 +1,10 @@
+/* Edit-one-record pop-up (components/RecordEditDialog.jsx). z-index sits above DetailModal's backdrop (1000) and ReasonDialog (1000). */
+.red-backdrop { position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 16px; background: rgba(8, 20, 40, .55); }
+.red-box { position: relative; width: min(720px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 18px 20px 16px; background: var(--panel, #fff); color: inherit; border-radius: 10px; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); outline: none; }
+.red-box .rm-form { margin: 0; padding: 0; border: 0; box-shadow: none; background: transparent; }
+.red-x { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: inherit; font-size: 1.7rem; line-height: 1; cursor: pointer; }
+.red-x:hover, .red-x:focus-visible { background: rgba(128, 128, 128, .18); }
+.red-box :focus-visible { outline: 3px solid #4b92db; outline-offset: 2px; }
+.red-toast { margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line, #d5e1dd); border-radius: 6px; }
+.red-toast p { margin: 4px 0 0; }
+.red-toast-bad { border-color: #f0b4b0; background: var(--bad-bg); color: var(--bad); }
