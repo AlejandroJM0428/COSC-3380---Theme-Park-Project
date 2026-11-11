@@ -647,6 +647,12 @@ export function applyDetailRange(spec, from, to) {
   return { ...spec, sql, params };
 }
 
+// The same statement, limited to its first `n` rows. Any LIMIT already there is replaced. `n` is forced to a whole number here.
+export function limitDetailSql(sql, n) {
+  const count = Math.max(1, Math.min(Math.floor(Number(n)) || 1, 100000));
+  return `${sql.replace(/\s+LIMIT\s+\d+(\s+OFFSET\s+\d+)?\s*$/i, '')} LIMIT ${count}`;
+}
+
 // Full match count for the same statement.
 export function countDetailSql(sql) {
   const body = sql.replace(/\s+ORDER BY[\s\S]*$/i, '').replace(/\s+LIMIT\s+\d+\s*$/i, '');

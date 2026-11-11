@@ -391,6 +391,12 @@ export const FACILITIES = {
   deleteLabel: 'Deactivate',
   deletePast: 'Deactivated',
   deleteNote: 'The record is kept and can be turned back on with the Reactivate button.',
+  // Turning an attraction off or on asks for a reason first (a dialog with ready-made choices). It is saved in the audit log.
+  requireReason: true,
+  reasonChoices: {
+    deactivate: ['Permanently retired', 'Closed for the season', 'Safety concern', 'Being replaced', 'Added by mistake'],
+    reactivate: ['Repairs finished', 'Back in season', 'Safety check passed', 'Deactivated by mistake'],
+  },
   canDeleteRow: (row) => Number(row.IsActive) === 1,
   reactivateLabel: 'Reactivate',
   canReactivateRow: (row) => Number(row.IsActive) !== 1,

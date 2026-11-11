@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { getReportOptions, getReportParams, listQueries, reportDetail, runQuery, runReport } from '../api/index.js'
 import ReportDetail from '../components/ReportDetail.jsx'
+import DetailModal from '../components/DetailModal.jsx'
 import { useAuth } from '../auth/context.js'
 import DataTable from '../components/DataTable.jsx'
 import DateRangePicker from '../components/DateRangePicker.jsx'
@@ -43,6 +44,15 @@ function Chart({ chart, rows, label }) {
       </ResponsiveContainer>
     </div>
   )
+}
+
+// The clicked row is kept as JSON text (it is the Details key); turn it back into the row.
+function parseRow(key) {
+  try {
+    return JSON.parse(key) ?? {}
+  } catch {
+    return {}
+  }
 }
 
 // A report's own functions should never be able to blank the whole page.
@@ -163,6 +173,7 @@ function ReportBody({ report, csvName }) {
   const label = useMemo(() => makeLabeler(report.labels), [report.labels])
   const [names, setNames] = useState([]) // the names offered in the search box's drop-down
   const [detail, setDetail] = useState(null) // { key, loading, error, data } for the open Details row
+  const [viewAll, setViewAll] = useState(null) // { title, loading, error, data } for the View all pop-up
 
   // The list of columns is cheap (no report data is read), so it loads when the report opens.
   // The report itself still loads only when Run report is pressed.
@@ -246,6 +257,7 @@ function ReportBody({ report, csvName }) {
   // per report and tab, so a report you switch away from starts empty again and loads nothing until you press the button.
   const latest = useRef(0)
   const detailReq = useRef(0)
+  const allReq = useRef(0)
   function detailTitle(row) {
     const cols = (!ranCustom && report.columns) || Object.keys(row)
     return cols
@@ -268,8 +280,24 @@ function ReportBody({ report, csvName }) {
     }
     return { from, to }
   }
+  // View all: load every matching row of the open Details line and show them in the searchable pop-up.
+  function openViewAll() {
+    if (!detail) return
+    const row = parseRow(detail.key)
+    const mine = ++allReq.current
+    const title = detail.title
+    setViewAll({ title, loading: true, error: '', data: null })
+    reportDetail(report.endpoint || report.query, row, detailRange(), 'all')
+      .then((data) => mine === allReq.current && setViewAll({ title, loading: false, error: '', data }))
+      .catch((err) => mine === allReq.current && setViewAll({ title, loading: false, error: err.message, data: null }))
+  }
+  function closeViewAll() {
+    allReq.current++ // an answer still on its way is ignored
+    setViewAll(null)
+  }
   function openDetail(row) {
     const key = JSON.stringify(row)
+    closeViewAll()
     if (detail?.key === key) {
       setDetail(null)
       return
@@ -497,8 +525,9 @@ function ReportBody({ report, csvName }) {
             labelOf={label}
             onDetail={report.endpoint || report.query ? openDetail : undefined}
             detailKey={detail?.key ?? null}
-            detailSlot={detail ? <ReportDetail state={detail} onClose={() => setDetail(null)} /> : null}
+            detailSlot={detail ? <ReportDetail state={detail} onClose={() => setDetail(null)} onViewAll={openViewAll} /> : null}
           />
+          {viewAll && <DetailModal state={viewAll} onClose={closeViewAll} />}
         </>
       )}
     </div>

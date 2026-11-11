@@ -57,8 +57,10 @@ const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-l
 // rowClass is optional: 'high' shades the row green and 'low' shades it red, so unusual rows stand out.
 // Click a column header to sort: first click ascending, second descending, third back to the original order.
 // onDetail, when passed, adds a Details button on each row. detailKey is the open row (JSON.stringify of that row).
-export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, detailKey, detailSlot }) {
+// pageSize, when passed, draws only that many rows at first and adds a "Show more" button (sorting still covers every row).
+export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, detailKey, detailSlot, pageSize }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
+  const [visible, setVisible] = useState(pageSize ?? Infinity)
 
   const sorted = useMemo(() => {
     if (!sort || !rows) return rows
@@ -114,7 +116,7 @@ export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, 
             </tr>
           </thead>
           <tbody>
-            {sorted.map((row, i) => (
+            {(pageSize ? sorted.slice(0, visible) : sorted).map((row, i) => (
               <Fragment key={i}>
                 <tr className={rowClass ? markClass(rowClass(row)) : undefined}>
                   {cols.map((c) => (
@@ -145,6 +147,14 @@ export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, 
           </tbody>
         </table>
       </div>
+      {pageSize && sorted.length > visible && (
+        <p className="dt-more">
+          Showing {Math.min(visible, sorted.length).toLocaleString('en-US')} of {sorted.length.toLocaleString('en-US')} rows.{' '}
+          <button type="button" className="dt-toggle" onClick={() => setVisible((v) => v + pageSize)}>
+            Show {Math.min(pageSize, sorted.length - visible).toLocaleString('en-US')} more
+          </button>
+        </p>
+      )}
     </>
   )
 }

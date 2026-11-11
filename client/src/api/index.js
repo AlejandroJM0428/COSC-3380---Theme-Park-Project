@@ -19,6 +19,11 @@ export function getSessionUser() {
   return USE_MOCK ? Promise.resolve(null) : http('/auth/me')
 }
 
+// Ends the server session (the cookie stops working). The page signs out on its own even if this fails.
+export function logoutRequest() {
+  return USE_MOCK ? Promise.resolve() : http('/auth/logout', { method: 'POST' })
+}
+
 // Member self sign-up. Logs the new member in (server sets the session cookie).
 export function register(data) {
   return USE_MOCK ? mock.register(data) : http('/auth/register', { method: 'POST', body: data })
@@ -48,7 +53,8 @@ export async function runReport(endpoint, spec) {
 }
 
 // The tables and matching source rows behind one report line. Loaded only when that line's Details button is clicked.
-export function reportDetail(endpoint, row, range) {
+// mode 'preview' (default): the totals and the first few rows, quick. mode 'all': every matching row, for the View all pop-up.
+export function reportDetail(endpoint, row, range, mode = 'preview') {
   if (USE_MOCK) {
     return Promise.resolve({
       sources: [],
@@ -66,6 +72,7 @@ export function reportDetail(endpoint, row, range) {
     if (v === null || typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string') plain[k] = v
   }
   const body = { row: plain }
+  if (mode === 'all') body.mode = 'all'
   if (range?.from) body.from = range.from
   if (range?.to) body.to = range.to
   return http(`/reports/${endpoint}/detail`, { method: 'POST', body })
@@ -253,9 +260,9 @@ export function deleteRecord(resource, id, query = {}) {
 }
 
 // Turn a deactivated record back on (rides, games and venues).
-export function reactivateRecord(resource, id) {
+export function reactivateRecord(resource, id, reason = '') {
   needLive()
-  return http(`/${resource}/${id}/reactivate`, { method: 'POST' })
+  return http(`/${resource}/${id}/reactivate`, { method: 'POST', body: { reason } })
 }
 
 // Employee portal (Maintenance Worker, Restaurant Worker): the server uses the EmployeeID of the session.

@@ -4,6 +4,7 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, needInt, needText, oneOf } from '../validate.js';
 import { clearPublicSiteCache } from './publicSite.js';
+import { audit } from './admin.js';
 
 // Rides, Games & Venues (Admin only): list, get, add, edit, deactivate.
 // One page covers three tables, so each row has a key like "Ride-5" (kind + id).
@@ -158,6 +159,37 @@ async function writeRide(f, existingId) {
   }
 }
 
+
+// Turning an attraction off or on needs a reason. It is saved in AdminAudit with the change, in one transaction.
+function needReason(value) {
+  const reason = String(value ?? '').trim();
+  if (reason.length < 3) throw new HttpError(400, 'Give a reason (at least 3 characters)');
+  if (reason.length > 300) throw new HttpError(400, 'The reason is too long (300 characters at most)');
+  return reason;
+}
+
+// Sets IsActive and writes the AdminAudit row together: both commit, or neither does.
+async function setActive({ ctx, kind, id, active, reason, row }) {
+  const table = { Ride: ['Ride', 'RideID'], Game: ['Game', 'GameID'], Venue: ['Venue', 'VenueID'] }[kind];
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query(`UPDATE ${table[0]} SET IsActive = ? WHERE ${table[1]} = ?`, [active ? 1 : 0, id]);
+    await audit(
+      ctx,
+      active ? 'FACILITY_REACTIVATE' : 'FACILITY_DEACTIVATE',
+      { table: table[0], rowKey: `${kind}-${id}`, detail: { name: row.Name, reason } },
+      conn,
+    );
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback().catch(() => {});
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
 // GET /api/facilities?kind=Ride|Game|Venue&status=active|inactive (both optional). Sorted by kind, then name.
 route(
   'GET',
@@ -270,17 +302,17 @@ route(
   }),
 );
 
-// POST /api/facilities/:id/reactivate turns a deactivated ride, game or venue back on (IsActive = 1).
+// POST /api/facilities/:id/reactivate  { reason }  turns a deactivated ride, game or venue back on (IsActive = 1).
 // For a ride, the database trigger posts the "available again" notice, the same as an edit would.
 route(
   'POST',
   '/api/facilities/:id/reactivate',
   requireRole(...CAN_USE)(async (ctx) => {
     const { kind, id } = parseKey(ctx.params.id);
-    await loadFacility(kind, id); // 404 if missing
-    const table = { Ride: ['Ride', 'RideID'], Game: ['Game', 'GameID'], Venue: ['Venue', 'VenueID'] }[kind];
+    const reason = needReason(ctx.body?.reason);
+    const row = await loadFacility(kind, id); // 404 if missing
     try {
-      await pool.query(`UPDATE ${table[0]} SET IsActive = 1 WHERE ${table[1]} = ?`, [id]);
+      await setActive({ ctx, kind, id, active: true, reason, row });
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);
     }
@@ -289,15 +321,19 @@ route(
   }),
 );
 
-// DELETE deactivates (soft delete). Nothing is removed from Ride, Game or Venue.
+// DELETE /api/facilities/:id?reason=...  deactivates (soft delete). Nothing is removed from Ride, Game or Venue.
 route(
   'DELETE',
   '/api/facilities/:id',
   requireRole(...CAN_USE)(async (ctx) => {
     const { kind, id } = parseKey(ctx.params.id);
-    await loadFacility(kind, id);
-    const table = { Ride: ['Ride', 'RideID'], Game: ['Game', 'GameID'], Venue: ['Venue', 'VenueID'] }[kind];
-    await pool.query(`UPDATE ${table[0]} SET IsActive = 0 WHERE ${table[1]} = ?`, [id]);
+    const reason = needReason(ctx.query?.reason);
+    const row = await loadFacility(kind, id);
+    try {
+      await setActive({ ctx, kind, id, active: false, reason, row });
+    } catch (err) {
+      throw friendlyDbError(err, FRIENDLY);
+    }
     clearPublicSiteCache();
     return loadFacility(kind, id);
   }),

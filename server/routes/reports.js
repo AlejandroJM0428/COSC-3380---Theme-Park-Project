@@ -4,7 +4,7 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { audit } from './admin.js';
 import { DEFAULT_LIMIT, ROW_LIMITS, SUGGEST_CAP, columnOptions, describeSource, fixedRules, runReport, runSelect } from '../reportQuery.js';
-import { applyDetailRange, countDetailSql, describeDetail, totalsDetailSql } from '../reportDetail.js';
+import { applyDetailRange, countDetailSql, describeDetail, limitDetailSql, totalsDetailSql } from '../reportDetail.js';
 
 // Who may open which report. Keep these lists in step with `roles` in client/src/config/reports.js.
 // The server is what actually enforces access; the client only hides what you cannot open.
@@ -153,8 +153,12 @@ route(
   }),
 );
 
-// One clicked report row: the tables it came from, and at most 20 matching source rows.
+// One clicked report row: the tables it came from, the totals over every matching row, and the matching rows.
+//   mode 'preview' (the default, sent when Details is clicked): only the first PREVIEW_ROWS rows, so it opens at once.
+//   mode 'all' (sent by View all): up to ALL_ROWS_CAP rows for the searchable pop-up. `more` is true when there were more than that.
 // Query tabs (q1 to q5) use the same door. Their role lists match server/routes/queries.js.
+const PREVIEW_ROWS = 10;
+const ALL_ROWS_CAP = 50000;
 const QUERY_ROLES = { q1: RETAIL, q2: OPERATIONS, q3: MAINTENANCE, q4: RETAIL, q5: RETAIL };
 
 route(
@@ -172,10 +176,12 @@ route(
     if (!spec.sql) {
       return { sources: spec.sources, label: spec.label, note: spec.note, rows: [], shown: 0, total: 0, more: false };
     }
+    const all = ctx.body?.mode === 'all';
+    const rowLimit = all ? ALL_ROWS_CAP : PREVIEW_ROWS;
     const [{ rows }, count, sums] = await Promise.all([
-      runSelect(spec.sql, spec.params),
+      runSelect(limitDetailSql(spec.sql, rowLimit), spec.params),
       runSelect(countDetailSql(spec.sql), spec.params),
-      spec.totals ? runSelect(totalsDetailSql(spec.sql, spec.totals), spec.params) : null,
+      !all && spec.totals ? runSelect(totalsDetailSql(spec.sql, spec.totals), spec.params) : null,
     ]);
     const total = Number(count.rows[0]?.total ?? rows.length);
     const sumRow = sums?.rows?.[0] ?? null;
@@ -191,7 +197,7 @@ route(
       shown: rows.length,
       totals,
       total,
-      more: false,
+      more: total > rows.length,
     };
   }),
 );

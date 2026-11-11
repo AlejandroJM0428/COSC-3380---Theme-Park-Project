@@ -6,9 +6,11 @@ import { useAuth } from './context.js'
 // `redirects` sends a role to its own portal instead, e.g. { Admin: '/admin' } so an admin never lands in /staff.
 // `denyTo` sends a signed-in user whose role is not allowed to another page instead of showing a message.
 export default function RequireAuth({ roles, loginPath = '/login', redirects, denyTo }) {
-  const { user } = useAuth()
+  const { user, signedOut } = useAuth()
   const location = useLocation()
 
+  // Pressed Log out: go to the home page. Never signed in (or the session ran out): go to the sign-in page.
+  if (!user && signedOut) return <Navigate to="/" replace />
   if (!user) return <Navigate to={loginPath} replace state={{ from: location }} />
   if (redirects?.[user.role]) return <Navigate to={redirects[user.role]} replace />
   if (roles && !roles.includes(user.role)) {

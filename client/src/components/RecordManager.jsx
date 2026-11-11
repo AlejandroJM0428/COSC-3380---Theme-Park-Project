@@ -3,6 +3,8 @@ import { createRecord, deleteRecord, reactivateRecord, getLookups, getRecord, li
 import { useAuth } from '../auth/context.js'
 import ErrorBanner from './ErrorBanner.jsx'
 import LookupField from './LookupField.jsx'
+import DateTimeField from './DateTimeField.jsx'
+import ReasonDialog from './ReasonDialog.jsx'
 import './RecordManager.css'
 
 // A table of records plus an add / edit / delete form, all driven by one config object
@@ -23,6 +25,9 @@ export default function RecordManager({ entity }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [toast, setToast] = useState(null)
+  const [asking, setAsking] = useState(null) // { row, action: 'deactivate' | 'reactivate' } while the reason dialog is open
+  const [askBusy, setAskBusy] = useState(false)
+  const [askError, setAskError] = useState('')
   const [grouped, setGrouped] = useState(Boolean(entity.groupBy?.defaultOn)) // entity.groupBy: show the rows under a heading per group (groupBy.defaultOn starts it on)
 
   useEffect(() => {
@@ -117,6 +122,11 @@ export default function RecordManager({ entity }) {
   const deletePast = entity.deletePast ?? 'Deleted'
 
   async function remove(row) {
+    if (entity.requireReason) {
+      setAskError('')
+      setAsking({ row, action: 'deactivate' })
+      return
+    }
     let query = {}
     if (entity.askReason) {
       const reason = window.prompt(`${deleteLabel} ${entity.describe(row)}? Enter a reason (optional):`)
@@ -138,6 +148,11 @@ export default function RecordManager({ entity }) {
 
   // Optional: reactivateLabel ('Reactivate') plus canReactivateRow(row) puts a deactivated row back on with one click.
   async function reactivate(row) {
+    if (entity.requireReason) {
+      setAskError('')
+      setAsking({ row, action: 'reactivate' })
+      return
+    }
     setError('')
     setNotice('')
     try {
@@ -146,6 +161,28 @@ export default function RecordManager({ entity }) {
       setReload((n) => n + 1)
     } catch (err) {
       setError(err.message)
+    }
+  }
+
+  // The reason dialog's Confirm: send the change together with the reason, then close the dialog.
+  async function confirmReason(reason) {
+    const { row, action } = asking
+    setAskBusy(true)
+    setAskError('')
+    try {
+      if (action === 'deactivate') {
+        await deleteRecord(entity.resource, row[entity.idKey], { reason })
+        setNotice(`${deletePast} ${entity.describe(row)}. Reason: ${reason}`)
+      } else {
+        await reactivateRecord(entity.resource, row[entity.idKey], reason)
+        setNotice(`Reactivated ${entity.describe(row)}. Reason: ${reason}`)
+      }
+      setAsking(null)
+      setReload((n) => n + 1)
+    } catch (err) {
+      setAskError(err.message)
+    } finally {
+      setAskBusy(false)
     }
   }
 
@@ -213,7 +250,7 @@ export default function RecordManager({ entity }) {
             <button type="button" className={picked ? 'rm-when-on' : ''} aria-pressed={picked} onClick={() => !picked && set(field.key, stamp())}>
               Pick a time
             </button>
-            {picked && <input id={id} type="datetime-local" value={value} onChange={(e) => set(field.key, e.target.value)} />}
+            {picked && <DateTimeField id={id} value={value} onChange={(v) => set(field.key, v)} required />}
           </div>
         </div>
       )
@@ -229,8 +266,16 @@ export default function RecordManager({ entity }) {
           ))}
         </select>
       )
+    } else if (field.type === 'datetime') {
+      // Date and time in two quick clicks (see DateTimeField), instead of the browser's clunky date-time box.
+      return (
+        <div key={field.key} className={`rm-field ${field.wide ? 'rm-wide' : ''}`}>
+          <span id={`${id}-label`}>{field.label}</span>
+          <DateTimeField id={id} value={value} onChange={(v) => set(field.key, v)} required={field.required} />
+        </div>
+      )
     } else {
-      const type = field.type === 'datetime' ? 'datetime-local' : field.type
+      const type = field.type
       input = (
         <input
           id={id}
@@ -382,6 +427,24 @@ export default function RecordManager({ entity }) {
           <p>{toast.message}</p>
           {toast.footnote && <p className="muted">{toast.footnote}</p>}
         </div>
+      )}
+
+      {asking && (
+        <ReasonDialog
+          title={`${asking.action === 'deactivate' ? deleteLabel : (entity.reactivateLabel ?? 'Reactivate')} ${entity.describe(asking.row)}?`}
+          message={
+            asking.action === 'deactivate'
+              ? (entity.deleteNote ?? 'The record is kept.')
+              : 'It will show as active again and guests can use it.'
+          }
+          choices={entity.reasonChoices?.[asking.action] ?? []}
+          confirmLabel={asking.action === 'deactivate' ? deleteLabel : (entity.reactivateLabel ?? 'Reactivate')}
+          danger={asking.action === 'deactivate'}
+          busy={askBusy}
+          error={askError}
+          onConfirm={confirmReason}
+          onCancel={() => setAsking(null)}
+        />
       )}
 
       {rows === null ? (

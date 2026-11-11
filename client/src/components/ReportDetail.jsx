@@ -30,7 +30,8 @@ function DetailTotals({ totals, clicked }) {
 }
 
 // The tables and matching rows behind one report line. `state` is { key, title, loading, error, data }.
-export default function ReportDetail({ state, onClose }) {
+// Quick view: the totals and the first few rows only. When there are more, "View all" opens the searchable pop-up (onViewAll).
+export default function ReportDetail({ state, onClose, onViewAll }) {
   const ref = useRef(null)
   const data = state.data
   useEffect(() => {
@@ -46,9 +47,13 @@ export default function ReportDetail({ state, onClose }) {
   } catch {
     clicked = {}
   }
+  const listed = data?.rows?.length ?? 0
+  const hasMore = Number.isFinite(total) && total > listed
   const countLine =
     data && Number.isFinite(total)
-      ? `${total.toLocaleString('en-US')} matching rows.`
+      ? hasMore
+        ? `Showing the first ${listed.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} matching rows.`
+        : `${total.toLocaleString('en-US')} matching rows.`
       : ''
 
   return (
@@ -78,6 +83,14 @@ export default function ReportDetail({ state, onClose }) {
           {data.note && <p className="muted">{data.note}</p>}
           {data.totals?.length > 0 && <DetailTotals totals={data.totals} clicked={clicked} />}
           {data.rows?.length > 0 && <DataTable rows={data.rows} />}
+          {hasMore && onViewAll && (
+            <p className="rd-viewall">
+              <button type="button" className="dt-toggle rd-viewall-btn" onClick={onViewAll}>
+                View all {total.toLocaleString('en-US')} rows
+              </button>
+              <span className="muted"> Opens a pop-up where you can search them.</span>
+            </p>
+          )}
         </>
       )}
     </section>

@@ -8,3 +8,6 @@
 .rd-totals ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
 .rd-ok { color: #1b7a3a; }
 .rd-bad { color: #b3261e; font-weight: 600; }
+
+.rd-viewall { margin: 0.5rem 0 0; }
+.rd-viewall-btn { margin-left: 0; font-weight: 600; }

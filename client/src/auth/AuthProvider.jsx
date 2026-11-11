@@ -17,6 +17,10 @@ export default function AuthProvider({ children }) {
     }
   })
 
+  // True after the person pressed Log out. The route guards then send them to the home page instead of the sign-in page.
+  // It is turned off again by the next sign-in or sign-up.
+  const [signedOut, setSignedOut] = useState(false)
+
   // The tab only remembers who signed in while it stays open. A new tab or window starts empty even
   // though the session cookie is still valid, so ask the server once. `ready` is false until we know,
   // so pages do not flash "sign in / create an account" at someone who is already signed in.
@@ -72,6 +76,7 @@ export default function AuthProvider({ children }) {
 
   async function login(username, password) {
     const loggedIn = await api.login(username, password) // { username, role, name }
+    setSignedOut(false)
     setUser(loggedIn)
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(loggedIn))
     return loggedIn
@@ -79,15 +84,24 @@ export default function AuthProvider({ children }) {
 
   async function register(data) {
     const created = await api.register(data) // { username, role: 'Customer' }
+    setSignedOut(false)
     setUser(created)
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(created))
     return created
   }
 
+  // Log out: forget the person here AND end the server session (before, only this tab forgot, so a new tab or a refresh
+  // signed them straight back in). The guards send a signed-out person to the home page.
   function logout() {
+    setSignedOut(true)
     setUser(null)
-    sessionStorage.removeItem(STORAGE_KEY)
+    try {
+      sessionStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // storage blocked; the state above is enough
+    }
+    api.logoutRequest().catch(() => {}) // the page is already signed out even if the server cannot be reached
   }
 
-  return <AuthContext.Provider value={{ user, ready, login, register, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, ready, signedOut, login, register, logout }}>{children}</AuthContext.Provider>
 }
