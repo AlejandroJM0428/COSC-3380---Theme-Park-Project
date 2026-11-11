@@ -9,6 +9,7 @@ export default function ReportEditLinks({ reportKey }) {
   const { user } = useAuth()
   const role = user?.role
   if (!EDIT_ROLES.includes(role)) return null
+  const base = role === 'Admin' ? '/admin' : '/staff' // the portal each role works in (App.jsx)
 
   const pages = (REPORT_EDIT_PAGES[reportKey] ?? [])
     .map((path) => FORM_PAGES.find((f) => f.path === path && f.ready))
@@ -19,7 +20,7 @@ export default function ReportEditLinks({ reportKey }) {
     <nav className="rp-editlinks" aria-label="Edit the records behind this report">
       <span className="rp-editlinks-label">Edit the records behind this report:</span>
       {pages.map((page) => (
-        <Link key={page.path} to={`/${page.path}`} className="rp-editlinks-link">
+        <Link key={page.path} to={`${base}/${page.path}`} className="rp-editlinks-link">
           {page.label}
         </Link>
       ))}
