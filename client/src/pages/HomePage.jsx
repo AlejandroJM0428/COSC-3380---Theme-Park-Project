@@ -16,10 +16,15 @@ export default function HomePage() {
 
   // Today's facts under the headline. Hours come from the Park row; ride counts from the public ride list.
   const facts = []
-  if (park.openAt != null) {
+  if (park.reason === 'weather') {
+    facts.push({ key: 'hours', off: true, text: 'Closed now · Severe weather' })
+  } else if (park.openAt != null) {
     facts.push(park.mode === 'closed'
       ? { key: 'hours', off: true, text: `Closed now · Opens ${park.opensTomorrow ? 'tomorrow' : 'today'} at ${clockLabel(park.openAt)}` }
       : { key: 'hours', text: `Open today ${clockLabel(park.openAt)} – ${clockLabel(park.closeAt)}` })
+  }
+  if (park.mode !== 'closed' && park.weather?.closesOutdoorRides) {
+    facts.push({ key: 'weather', off: true, text: 'Outdoor rides closed due to weather' })
   }
   if (park.mode === 'happyhour') facts.push({ key: 'happy', text: `Happy Hour until ${clockLabel(BRAND.happyHour.end)}` })
   const rides = site?.rides ?? []

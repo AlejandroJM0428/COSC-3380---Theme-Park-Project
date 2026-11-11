@@ -4,7 +4,7 @@ import { pool } from '../db.js';
 // Public site data for the homepage and the public pages. No login needed, so it only ever
 // contains things any visitor may see: prices, hours, membership tiers for sale, rides (name,
 // zone, type, height rule, Open/Closed), venues and games (name, zone, price per play), and the
-// upcoming dates that are sold out (dates only, no counts).
+// upcoming dates that are sold out (dates only, no counts), and the weather closure going on right now (if any).
 //
 // It NEVER contains wait times: no RideLog query, no wait columns. Wait times are members only
 // and live in /api/visitor/dashboard. Notices come from the existing public /api/notifications.
@@ -31,7 +31,7 @@ function tierJson(r) {
 }
 
 async function loadSite() {
-  const [[parkRows], [tierRows], [rideRows], [venueRows], [gameRows], [soldOutRows]] = await Promise.all([
+  const [[parkRows], [tierRows], [rideRows], [venueRows], [gameRows], [soldOutRows], [weatherRows]] = await Promise.all([
     pool.query('SELECT DayPassPrice, ExpressAddOnPrice, OpeningTime, ClosingTime FROM Park WHERE ParkID = 1'),
     pool.query('SELECT Tier, AnnualPrice FROM MembershipTier WHERE IsForSale = 1 ORDER BY AnnualPrice'),
     pool.query(
@@ -66,14 +66,35 @@ async function loadSite() {
        HAVING COUNT(*) >= (SELECT MaxOccupancy FROM Park WHERE ParkID = 1)
         ORDER BY t.VisitDate`,
     ),
+    // The weather closure in effect now (SQL/migrations/27_weather_severity.sql). A park closure wins over an
+    // outdoor-only one. Same "in effect" test as v_RideAvailability.
+    pool.query(
+      `SELECT WeatherType, Severity, ClosesOutdoorRides, ClosesPark, EndedAt
+         FROM WeatherLog
+        WHERE ClosesOutdoorRides = 1
+          AND NOW() >= StartedAt
+          AND (EndedAt IS NULL OR NOW() < EndedAt)
+        ORDER BY ClosesPark DESC, StartedAt DESC
+        LIMIT 1`,
+    ),
   ]);
 
   const park = parkRows[0];
+  const weather = weatherRows[0];
   return {
     prices: park ? { dayPass: Number(park.DayPassPrice), expressAddOn: Number(park.ExpressAddOnPrice) } : null,
     hours: park ? { open: hhmm(park.OpeningTime), close: hhmm(park.ClosingTime) } : null,
     tiers: tierRows.map(tierJson),
     soldOutDates: soldOutRows.map((r) => r.VisitDay),
+    weather: weather
+      ? {
+          type: weather.WeatherType,
+          severity: weather.Severity,
+          closesPark: Boolean(weather.ClosesPark),
+          closesOutdoorRides: Boolean(weather.ClosesOutdoorRides),
+          endsAt: weather.EndedAt ?? null,
+        }
+      : null,
     rides: rideRows.map((r) => ({
       rideId: r.RideID,
       rideName: r.RideName,

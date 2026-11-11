@@ -64,10 +64,21 @@ export function readPreview() {
 
 // Works out what the park is doing right now.
 //   hours:   { open: 'HH:MM', close: 'HH:MM' } from the database (null until it loads)
+//   weather: the weather closure in effect now, from /api/public/site (null when there is none)
 //   now:     minutes after midnight, park time
 //   preview: '', 'closed' or 'happyhour'
 // mode is 'unknown' (hours not loaded yet), 'closed', 'happyhour' or 'open'.
-export function parkStatus({ hours, now, preview = '' }) {
+// reason is 'weather' when severe weather has closed a park that would otherwise be open, else null.
+export function parkStatus({ hours, weather = null, now, preview = '' }) {
+  const status = clockStatus({ hours, now, preview })
+  if (weather?.closesPark && status.mode !== 'closed') {
+    return { ...status, mode: 'closed', reason: 'weather', opensTomorrow: false, minutesToOpen: null, minutesLeft: null }
+  }
+  return { ...status, reason: null }
+}
+
+// The park's state from its hours alone (and the demo preview), ignoring weather.
+function clockStatus({ hours, now, preview }) {
   const openAt = toMinutes(hours?.open)
   const closeAt = toMinutes(hours?.close)
   const hhStart = toMinutes(BRAND.happyHour.start)

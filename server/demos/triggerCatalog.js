@@ -9,10 +9,6 @@ export const TRIGGER_CATALOG = [
     rule: 'When a ride status changes to Maintenance, inserts a New Maintenance Alert.',
   },
   {
-    name: 'trg_WeatherLog_BI', table: 'WeatherLog', timing: 'BEFORE', event: 'INSERT', kind: 'Automatic',
-    rule: 'Sets ClosesOutdoorRides from the reading and the park limits.',
-  },
-  {
     name: 'trg_Ticket_BI', table: 'Ticket', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
     rule: 'Checks capacity and membership, applies Express, and sets the ticket price (less the dependent discount for a child).',
     errors: [
@@ -81,10 +77,11 @@ export const TRIGGER_CATALOG = [
   },
   {
     name: 'trg_RideLog_BI', table: 'RideLog', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
-    rule: 'A boarding must have a valid ticket, and the ride must be open for that guest.',
+    rule: 'A boarding must have a valid ticket, and the ride must be open for that guest. Severe weather closes every ride; Medium or High closes the outdoor ones.',
     errors: [
       'Ride is no longer in service',
       'Ride was under maintenance',
+      'Weather has closed the park',
       'Weather has closed outdoor rides',
       'Guest is below the ride height requirement',
       'Ticket does not include Express',
@@ -117,10 +114,6 @@ export const TRIGGER_CATALOG = [
       'This guest already has a membership that overlaps with the selected dates.',
       'This membership tier is no longer sold',
     ],
-  },
-  {
-    name: 'trg_WeatherLog_BU', table: 'WeatherLog', timing: 'BEFORE', event: 'UPDATE', kind: 'Automatic',
-    rule: 'Recomputes ClosesOutdoorRides whenever a reading is edited.',
   },
   {
     name: 'trg_TicketRefund_BI', table: 'TicketRefund', timing: 'BEFORE', event: 'INSERT', kind: 'Check',
@@ -186,12 +179,16 @@ export const TRIGGER_CATALOG = [
   },
   {
     name: 'trg_WeatherLog_AI_Notify', table: 'WeatherLog', timing: 'AFTER', event: 'INSERT', kind: 'Notification',
-    rule: 'A reading that closes outdoor rides posts a weather notice.',
+    rule: 'A weather event that closes something posts a notice: "Park closed" for Severe, "Outdoor rides closed" for Medium or High.',
+  },
+  {
+    name: 'trg_WeatherLog_AU_Notify', table: 'WeatherLog', timing: 'AFTER', event: 'UPDATE', kind: 'Notification',
+    rule: 'When an ongoing weather event\'s severity or type is edited, its notice is posted, reworded, or switched off to match.',
   },
   {
     name: 'trg_RideLog_BU', table: 'RideLog', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
     rule: 'An edited boarding gets the same checks as a new one (maintenance, weather, height, Express) when its ride, ticket, time or Express use changes. A changed wait time needs no check.',
-    errors: ['Ride is no longer in service', 'Ride was under maintenance', 'Weather has closed outdoor rides', 'Guest is below the ride height requirement', 'Ticket does not include Express', 'Ride is not Express eligible'],
+    errors: ['Ride is no longer in service', 'Ride was under maintenance', 'Weather has closed the park', 'Weather has closed outdoor rides', 'Guest is below the ride height requirement', 'Ticket does not include Express', 'Ride is not Express eligible'],
   },
   {
     name: 'trg_GamePlay_BU', table: 'GamePlay', timing: 'BEFORE', event: 'UPDATE', kind: 'Check',
