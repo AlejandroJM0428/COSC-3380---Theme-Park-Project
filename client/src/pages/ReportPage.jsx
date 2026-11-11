@@ -158,7 +158,7 @@ function featuredColumns(report, meta) {
   return wanted.filter((k) => k !== report.dateFilter?.key && k !== report.search?.key && meta.columns.some((c) => c.name === k)).slice(0, 3)
 }
 
-function ReportBody({ report, csvName }) {
+function ReportBody({ report, csvName, addRequest, onAddHandled }) {
   const [rows, setRows] = useState([])
   const [loaded, setLoaded] = useState(false) // nothing is fetched until the user presses Run report
   const [loading, setLoading] = useState(false)
@@ -180,7 +180,14 @@ function ReportBody({ report, csvName }) {
   const [detail, setDetail] = useState(null) // { key, loading, error, data } for the open Details row
   const [viewAll, setViewAll] = useState(null) // { title, loading, error, data } for the View all pop-up
   const { user } = useAuth()
-  const [editing, setEditing] = useState(null) // { entity, id } for the open Edit pop-up (config/reportRowEdits.js says which record a row is)
+  const [editing, setEditing] = useState(null) // { entity, id, row, mode } for the open Edit / Add pop-up (config/reportRowEdits.js says which record a row is)
+  // The "Add record" menu lives above the tabs, so it asks and this body opens the blank form (then tells the page it was taken).
+  useEffect(() => {
+    if (!addRequest) return
+    setEditing({ entity: addRequest.entity, id: null, row: null, mode: 'add' })
+    onAddHandled()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addRequest])
 
   // The list of columns is cheap (no report data is read), so it loads when the report opens.
   // The report itself still loads only when Run report is pressed.
@@ -263,6 +270,12 @@ function ReportBody({ report, csvName }) {
   // Only the Run report button fetches. A newer press makes an older, slower answer be ignored. The component is remounted
   // per report and tab, so a report you switch away from starts empty again and loads nothing until you press the button.
   const latest = useRef(0)
+  const [notice, setNotice] = useState('') // short "saved" message, shown as a toast above any pop-up
+  useEffect(() => {
+    if (!notice) return undefined
+    const t = setTimeout(() => setNotice(''), 5000)
+    return () => clearTimeout(t)
+  }, [notice])
   const detailReq = useRef(0)
   const allReq = useRef(0)
   function detailTitle(row) {
@@ -309,7 +322,7 @@ function ReportBody({ report, csvName }) {
     const target = editTargetFor(row)
     if (!target) return null
     const { allowed, reason } = canEditRow(target.entity, row, user)
-    return { label: 'Edit', disabled: !allowed, title: allowed ? `Edit ${target.entity.noun} #${target.id}` : reason, onClick: () => setEditing(target) }
+    return { label: 'Edit', disabled: !allowed, title: allowed ? `Edit ${target.entity.noun} #${target.id}` : reason, onClick: () => setEditing({ ...target, row }) }
   }
   function openDetail(row) {
     const key = JSON.stringify(row)
@@ -338,11 +351,53 @@ function ReportBody({ report, csvName }) {
     const mine = ++detailReq.current
     reportDetail(report.endpoint || report.query, parseRow(key), detailRange())
       .then((data) => {
-        if (mine === detailReq.current) setDetail((cur) => (cur && cur.key === key ? { key, title, loading: false, error: '', data } : cur))
+        if (mine !== detailReq.current) return
+        if (!(data.rows?.length > 0)) {
+          // Nothing is left on this line (the last record was removed or moved elsewhere): close the panel instead of showing an empty one.
+          closeViewAll()
+          setDetail(null)
+          setNotice('No records are left on that line.')
+          return
+        }
+        setDetail((cur) => (cur && cur.key === key ? { key, title, loading: false, error: '', data } : cur))
       })
       .catch((err) => {
         // Keep the rows that are already shown and say the refresh failed.
         if (mine === detailReq.current) setDetail((cur) => (cur && cur.key === key ? { ...cur, error: `Saved, but the list could not be refreshed: ${err.message}` } : cur))
+      })
+  }
+  // Reload the report's own numbers (table, ticks and crosses, chart) after a record was saved. Uses the request of the last Run, not
+  // the filters on screen now, so half-edited filters are not applied. Quiet: no loading flash, no closing the open Details line.
+  // A newer Run press (latest) or a newer refresh wins over this answer; on failure the old numbers stay.
+  const refreshReq = useRef(0)
+  function refreshReport() {
+    if (!loaded) return
+    let saved
+    try {
+      saved = JSON.parse(ranRequest)
+    } catch {
+      return
+    }
+    const base = latest.current
+    const mine = ++refreshReq.current
+    ;(isQuery ? runQuery(report.query, saved ?? qvals) : runReport(report.endpoint, saved ?? undefined))
+      .then(({ rows: data }) => {
+        if (mine !== refreshReq.current || base !== latest.current) return
+        setRows(report.prepare && !ranCustom ? report.prepare(data) : data)
+      })
+      .catch(() => {})
+  }
+  // Reload the open View all pop-up after a save (same shape as openViewAll, but keeps the old rows until the new ones arrive).
+  function refreshViewAll() {
+    if (!viewAll || !detail) return
+    const { title } = viewAll
+    const mine = ++allReq.current
+    reportDetail(report.endpoint || report.query, parseRow(detail.key), detailRange(), 'all')
+      .then((data) => {
+        if (mine === allReq.current) setViewAll((cur) => (cur ? { title, loading: false, error: '', data } : cur))
+      })
+      .catch((err) => {
+        if (mine === allReq.current) setViewAll((cur) => (cur ? { ...cur, error: `Saved, but the list could not be refreshed: ${err.message}` } : cur))
       })
   }
   function run() {
@@ -559,10 +614,20 @@ function ReportBody({ report, csvName }) {
             detailKey={detail?.key ?? null}
             detailSlot={detail ? <ReportDetail state={detail} onClose={() => setDetail(null)} onViewAll={openViewAll} rowAction={rowActionFor} /> : null}
           />
+          {notice && <p className="rp-toast" role="status">{notice}</p>}
           {viewAll && <DetailModal state={viewAll} onClose={closeViewAll} rowAction={rowActionFor} />}
-          {editing && <RecordEditDialog entity={editing.entity} id={editing.id} onSaved={() => {
+          {editing && <RecordEditDialog entity={editing.entity} mode={editing.mode} id={editing.id} row={editing.row} onDeleted={(message) => {
               setEditing(null)
+              if (message) setNotice(message)
+              refreshReport()
               refreshDetail()
+              refreshViewAll()
+            }} onSaved={(_saved, message) => {
+              setEditing(null)
+              if (message) setNotice(message)
+              refreshReport()
+              refreshDetail()
+              refreshViewAll()
             }} onClose={() => setEditing(null)} />}
         </>
       )}
@@ -580,6 +645,7 @@ export default function ReportPage({ reportKey }) {
   const report = REPORTS.find((r) => r.key === key)
   const allowed = Boolean(report) && (!report.roles || report.roles.includes(user.role))
   const [tab, setTab] = useState('')
+  const [addRequest, setAddRequest] = useState(null) // { entity } from the Add record menu, passed down to the body
 
   if (!report) return <NotFound />
   if (!allowed) return <p className="page-note">Your role ({user.role}) cannot open this report.</p>
@@ -591,7 +657,7 @@ export default function ReportPage({ reportKey }) {
     <div>
       <h1>{report.title}</h1>
       <p className="muted">{report.description}</p>
-      <ReportEditLinks reportKey={report.key} />
+      <ReportEditLinks reportKey={report.key} onAdd={(entity) => setAddRequest({ entity })} />
       {sections && (
         <div className="rp-tabs" role="tablist">
           {sections.map((s) => (
@@ -608,7 +674,7 @@ export default function ReportPage({ reportKey }) {
           ))}
         </div>
       )}
-      <ReportBody key={`${report.key}/${active.key}`} report={active} csvName={sections ? `${report.key}-${active.key}` : report.key} />
+      <ReportBody key={`${report.key}/${active.key}`} report={active} csvName={sections ? `${report.key}-${active.key}` : report.key} addRequest={addRequest} onAddHandled={() => setAddRequest(null)} />
     </div>
   )
 }

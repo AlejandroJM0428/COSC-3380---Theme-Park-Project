@@ -4,7 +4,7 @@ import ReasonDialog from '../components/ReasonDialog.jsx'
 
 // The delete / void / reactivate flow for one entity (config/entities.js), moved out of RecordManager.
 // callbacks: clearErrors(), setNotice(text), setActionError(text), onReload() (refetch the list), onDeleted() (after a direct delete only)
-// returns: remove(row), reactivate(row), deleteLabel, deletePast, reasonDialog (an element to render, or null)
+// returns: remove(row), reactivate(row), deleteLabel, deletePast, reasonDialog (an element to render, or null), cancelAsk() (close the reason dialog)
 export default function useRecordDelete(entity, { clearErrors, setNotice, setActionError, onReload, onDeleted }) {
   const [asking, setAsking] = useState(null) // { row, action: 'deactivate' | 'reactivate' } while the reason dialog is open
   const [askBusy, setAskBusy] = useState(false)
@@ -80,6 +80,10 @@ export default function useRecordDelete(entity, { clearErrors, setNotice, setAct
     }
   }
 
+  const cancelAsk = () => {
+    if (!askBusy) setAsking(null)
+  }
+
   const reasonDialog = asking ? (
     <ReasonDialog
       title={`${asking.action === 'deactivate' ? deleteLabel : (entity.reactivateLabel ?? 'Reactivate')} ${entity.describe(asking.row)}?`}
@@ -98,5 +102,5 @@ export default function useRecordDelete(entity, { clearErrors, setNotice, setAct
     />
   ) : null
 
-  return { remove, reactivate, deleteLabel, deletePast, reasonDialog }
+  return { remove, reactivate, deleteLabel, deletePast, reasonDialog, cancelAsk }
 }

@@ -223,7 +223,7 @@ function byItem(row) {
     return pack(
       [PURCHASE, ITEM, VENUE],
       `Sales of ${name}`,
-      `SELECT i.ItemName, v.VenueName, DATE(p.PurchasedAt) AS PurchasedAt, p.Quantity, p.UnitPrice
+      `SELECT p.PurchaseID, i.ItemName, v.VenueName, DATE(p.PurchasedAt) AS PurchasedAt, p.Quantity, p.UnitPrice
          FROM Item i
          JOIN Venue v ON v.VenueID = i.VenueID
          LEFT JOIN Purchase p ON p.ItemID = i.ItemID
@@ -238,7 +238,7 @@ function byItem(row) {
     return pack(
       [PURCHASE, ITEM],
       `Sales in ${category}`,
-      `SELECT i.ItemName, DATE(p.PurchasedAt) AS PurchasedAt, p.Quantity, p.UnitPrice
+      `SELECT p.PurchaseID, i.ItemName, DATE(p.PurchasedAt) AS PurchasedAt, p.Quantity, p.UnitPrice
          FROM Purchase p
          JOIN Item i ON i.ItemID = p.ItemID
         WHERE i.Category = ?
@@ -519,7 +519,7 @@ const PROFILES = {
     return pack(
       [RIDELOG, RIDE, ZONE],
       `Recent boardings in ${zone}`,
-      `SELECT r.RideName, l.LoggedAt
+      `SELECT l.RideLogID, r.RideName, l.LoggedAt
          FROM RideLog l
          JOIN Ride r ON r.RideID = l.RideID
          JOIN Zone z ON z.ZoneID = r.ZoneID
@@ -604,7 +604,7 @@ const PROFILES = {
     return pack(
       [WEATHER, REFUND, TICKET],
       `Refunds for weather event ${id}`,
-      `SELECT t.TicketID, t.VisitDate, t.TicketPrice
+      `SELECT t.TicketID, t.VisitDate, t.TicketPrice, 'Refunded' AS Status
          FROM TicketRefund rf
          JOIN Ticket t ON t.TicketID = rf.TicketID
         WHERE rf.WeatherID = ?

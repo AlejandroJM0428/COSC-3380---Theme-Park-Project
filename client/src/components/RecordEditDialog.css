@@ -8,3 +8,6 @@
 .red-toast { margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line, #d5e1dd); border-radius: 6px; }
 .red-toast p { margin: 4px 0 0; }
 .red-toast-bad { border-color: #f0b4b0; background: var(--bad-bg); color: var(--bad); }
+/* Delete sits under the form, apart from Save and Cancel. The reason prompt opens above this dialog. */
+.red-foot { margin: 14px 0 0; padding: 12px 0 0; border-top: 1px solid var(--line, #d5e1dd); }
+.reason-backdrop { z-index: 1200; }

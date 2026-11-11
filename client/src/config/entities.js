@@ -197,6 +197,7 @@ export const SHIFTS = {
   resource: 'shifts',
   idKey: 'ShiftID',
   noun: 'shift',
+  writeRoles: ['Admin', 'HRManager'], // same as CAN_WRITE in server/routes/shifts.js
   deleteRoles: ['Admin', 'HRManager'],
   filters: [
     {
