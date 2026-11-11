@@ -142,9 +142,20 @@
 
 .rd-head {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 12px;
+}
+
+.rd-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.rd-from {
+  margin: 6px 0;
+  color: var(--muted, #4a6663);
+  font-size: 0.85rem;
 }
 
 .rd-sources {

@@ -246,6 +246,28 @@ function ReportBody({ report, csvName }) {
   // per report and tab, so a report you switch away from starts empty again and loads nothing until you press the button.
   const latest = useRef(0)
   const detailReq = useRef(0)
+  function detailTitle(row) {
+    const cols = (!ranCustom && report.columns) || Object.keys(row)
+    return cols
+      .filter((c) => c !== 'Note' && !String(c).startsWith('_') && row[c] !== null && row[c] !== undefined && row[c] !== '')
+      .slice(0, 4)
+      .map((c) => `${label(c)} ${row[c]}`)
+      .join(' · ')
+  }
+  function detailRange() {
+    let saved = null
+    try {
+      saved = JSON.parse(ranRequest)
+    } catch {
+      saved = null
+    }
+    if (isQuery) return { from: saved?.start || '', to: saved?.end || '' }
+    if (dateOnServer) {
+      const hit = (saved?.filters ?? []).find((f) => f.column === dateKey)
+      return { from: hit?.from || '', to: hit?.to || '' }
+    }
+    return { from, to }
+  }
   function openDetail(row) {
     const key = JSON.stringify(row)
     if (detail?.key === key) {
@@ -254,13 +276,13 @@ function ReportBody({ report, csvName }) {
     }
     const id = report.endpoint || report.query
     const mine = ++detailReq.current
-    setDetail({ key, loading: true, error: '', data: null })
-    reportDetail(id, row)
+    setDetail({ key, title: detailTitle(row), loading: true, error: '', data: null })
+    reportDetail(id, row, detailRange())
       .then((data) => {
-        if (mine === detailReq.current) setDetail({ key, loading: false, error: '', data })
+        if (mine === detailReq.current) setDetail({ key, title: detailTitle(row), loading: false, error: '', data })
       })
       .catch((err) => {
-        if (mine === detailReq.current) setDetail({ key, loading: false, error: err.message, data: null })
+        if (mine === detailReq.current) setDetail({ key, title: detailTitle(row), loading: false, error: err.message, data: null })
       })
   }
   function run() {
@@ -476,8 +498,8 @@ function ReportBody({ report, csvName }) {
             labelOf={label}
             onDetail={report.endpoint || report.query ? openDetail : undefined}
             detailKey={detail?.key ?? null}
+            detailSlot={detail ? <ReportDetail state={detail} onClose={() => setDetail(null)} /> : null}
           />
-          {detail && <ReportDetail state={detail} onClose={() => setDetail(null)} />}
         </>
       )}
     </div>

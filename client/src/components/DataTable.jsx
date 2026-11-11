@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import './DataTable.css'
 
 // Long tables show the first rows, then "Show N more" and "Show all" buttons, so a big view does not freeze the page.
@@ -55,7 +55,7 @@ const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-l
 // rowClass is optional: 'high' shades the row green and 'low' shades it red, so unusual rows stand out.
 // Click a column header to sort: first click ascending, second descending, third back to the original order.
 // onDetail, when passed, adds a Details button on each row. detailKey is the open row (JSON.stringify of that row).
-export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT, labelOf, onDetail, detailKey }) {
+export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT, labelOf, onDetail, detailKey, detailSlot }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
   const [count, setCount] = useState(pageSize) // how many rows are showing
 
@@ -117,25 +117,32 @@ export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMI
           </thead>
           <tbody>
             {visible.map((row, i) => (
-              <tr key={i} className={rowClass ? markClass(rowClass(row)) : undefined}>
-                {cols.map((c) => (
-                  <td key={c} className={numeric.has(c) ? 'dt-num' : undefined}>
-                    {formatCell(row[c], c)}
-                  </td>
-                ))}
-                {onDetail && (
-                  <td className="dt-detail">
-                    <button
-                      type="button"
-                      className="dt-toggle"
-                      aria-expanded={detailKey === JSON.stringify(row)}
-                      onClick={() => onDetail(row)}
-                    >
-                      {detailKey === JSON.stringify(row) ? 'Hide' : 'Details'}
-                    </button>
-                  </td>
+              <Fragment key={i}>
+                <tr className={rowClass ? markClass(rowClass(row)) : undefined}>
+                  {cols.map((c) => (
+                    <td key={c} className={numeric.has(c) ? 'dt-num' : undefined}>
+                      {formatCell(row[c], c)}
+                    </td>
+                  ))}
+                  {onDetail && (
+                    <td className="dt-detail">
+                      <button
+                        type="button"
+                        className="dt-toggle"
+                        aria-expanded={detailKey === JSON.stringify(row)}
+                        onClick={() => onDetail(row)}
+                      >
+                        {detailKey === JSON.stringify(row) ? 'Hide' : 'Details'}
+                      </button>
+                    </td>
+                  )}
+                </tr>
+                {onDetail && detailSlot && detailKey === JSON.stringify(row) && (
+                  <tr className="dt-detail-row">
+                    <td colSpan={cols.length + 1}>{detailSlot}</td>
+                  </tr>
                 )}
-              </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>

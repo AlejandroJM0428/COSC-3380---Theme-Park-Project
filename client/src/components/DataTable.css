@@ -36,6 +36,11 @@ td.dt-detail {
   text-align: right;
 }
 
+tr.dt-detail-row > td {
+  background: var(--paper, #f6faf8);
+  padding: 8px 10px 12px;
+}
+
 .dt-toggle {
   margin-left: 10px;
   padding: 4px 10px;

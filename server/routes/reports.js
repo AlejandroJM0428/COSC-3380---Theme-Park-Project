@@ -4,7 +4,7 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { audit } from './admin.js';
 import { DEFAULT_LIMIT, ROW_LIMITS, SUGGEST_CAP, columnOptions, describeSource, fixedRules, runReport, runSelect } from '../reportQuery.js';
-import { DETAIL_CAP, describeDetail } from '../reportDetail.js';
+import { DETAIL_CAP, applyDetailRange, countDetailSql, describeDetail } from '../reportDetail.js';
 
 // Who may open which report. Keep these lists in step with `roles` in client/src/config/reports.js.
 // The server is what actually enforces access; the client only hides what you cannot open.
@@ -165,19 +165,26 @@ route(
     const roles = REPORTS[name]?.roles ?? QUERY_ROLES[name];
     if (!roles) throw new HttpError(404, 'Unknown report');
     if (!roles.includes(ctx.session.role)) throw new HttpError(403, 'Your role cannot open this report');
-    const spec = describeDetail(name, ctx.body?.row);
+    const from = ctx.body?.from;
+    const to = ctx.body?.to;
+    const spec = applyDetailRange(describeDetail(name, ctx.body?.row), from, to);
     if (!spec) throw new HttpError(404, 'This report has no source lookup');
     if (!spec.sql) {
-      return { sources: spec.sources, label: spec.label, note: spec.note, rows: [], shown: 0, more: false };
+      return { sources: spec.sources, label: spec.label, note: spec.note, rows: [], shown: 0, total: 0, more: false };
     }
-    const { rows } = await runSelect(spec.sql, spec.params);
-    const more = rows.length > DETAIL_CAP;
+    const [{ rows }, count] = await Promise.all([
+      runSelect(spec.sql, spec.params),
+      runSelect(countDetailSql(spec.sql), spec.params),
+    ]);
+    const total = Number(count.rows[0]?.total ?? rows.length);
+    const more = total > DETAIL_CAP;
     return {
       sources: spec.sources,
       label: spec.label,
       note: spec.note,
       rows: more ? rows.slice(0, DETAIL_CAP) : rows,
       shown: Math.min(rows.length, DETAIL_CAP),
+      total,
       more,
     };
   }),

@@ -41,8 +41,8 @@ const monthStart = (row) => (/^\d{4}-\d{2}$/.test(String(row.Month ?? '')) ? `${
 const day = (row, key) => (/^\d{4}-\d{2}-\d{2}$/.test(String(row[key] ?? '').slice(0, 10)) ? String(row[key]).slice(0, 10) : null);
 const text = (row, key) => (typeof row[key] === 'string' ? row[key] : null);
 
-function pack(sources, label, sql, params, note = null) {
-  return { sources, label, sql, params, note };
+function pack(sources, label, sql, params, note = null, rangeColumn = null) {
+  return { sources, label, sql, params, note, rangeColumn };
 }
 function tablesOnly(sources, note) {
   return pack(sources, 'Source tables', null, [], note);
@@ -62,6 +62,8 @@ function ticketsOnDay(date) {
       ORDER BY t.TicketID
       LIMIT ${LIM}`,
     [date],
+    null,
+    't.VisitDate',
   );
 }
 
@@ -77,6 +79,8 @@ function ticketsInMonth(start, extra = '') {
       ORDER BY t.VisitDate, t.TicketID
       LIMIT ${LIM}`,
     [start, start],
+    null,
+    't.VisitDate',
   );
 }
 
@@ -99,6 +103,8 @@ function facilityJobs(name, start) {
       ORDER BY m.StartDate DESC
       LIMIT ${LIM}`,
     params,
+    null,
+    'm.StartDate',
   );
 }
 
@@ -116,6 +122,8 @@ function jobsInMonth(start) {
       ORDER BY m.StartDate DESC
       LIMIT ${LIM}`,
     [start, start],
+    null,
+    'm.StartDate',
   );
 }
 
@@ -136,6 +144,8 @@ function boardings(name, start) {
       ORDER BY l.LoggedAt DESC
       LIMIT ${LIM}`,
     params,
+    null,
+    'l.LoggedAt',
   );
 }
 
@@ -152,6 +162,8 @@ function byTier(row) {
         ORDER BY t.VisitDate DESC
         LIMIT ${LIM}`,
       [],
+      null,
+      't.VisitDate',
     );
   }
   return pack(
@@ -164,6 +176,8 @@ function byTier(row) {
       ORDER BY m.StartDate DESC
       LIMIT ${LIM}`,
     [tier],
+    null,
+    'm.StartDate',
   );
 }
 
@@ -194,6 +208,8 @@ function byItem(row) {
         ORDER BY p.PurchasedAt DESC
         LIMIT ${LIM}`,
       params,
+      null,
+      'p.PurchasedAt',
     );
   }
   if (category) {
@@ -207,6 +223,8 @@ function byItem(row) {
         ORDER BY p.PurchasedAt DESC
         LIMIT ${LIM}`,
       [category],
+      null,
+      'p.PurchasedAt',
     );
   }
   return null;
@@ -235,6 +253,8 @@ function byRevenue(row) {
         ORDER BY t.VisitDate, t.TicketID
         LIMIT ${LIM}`,
       range.params,
+      null,
+      't.VisitDate',
     );
   }
   if (source === 'Memberships') {
@@ -248,6 +268,8 @@ function byRevenue(row) {
         ORDER BY m.StartDate, m.MembershipID
         LIMIT ${LIM}`,
       range.params,
+      null,
+      'm.StartDate',
     );
   }
   if (source === 'Food' || source === 'Shop') {
@@ -264,6 +286,8 @@ function byRevenue(row) {
         ORDER BY p.PurchasedAt DESC
         LIMIT ${LIM}`,
       range.params,
+      null,
+      'p.PurchasedAt',
     );
   }
   if (source === 'Games') {
@@ -277,6 +301,8 @@ function byRevenue(row) {
         ORDER BY g.PlayedAt DESC
         LIMIT ${LIM}`,
       range.params,
+      null,
+      'g.PlayedAt',
     );
   }
   return null;
@@ -304,6 +330,8 @@ const PROFILES = {
         ORDER BY t.VisitDate DESC, t.TicketID DESC
         LIMIT ${LIM}`,
       [dow],
+      null,
+      't.VisitDate',
     );
   },
   'revenue-by-source': (row) => byRevenue(row) ?? tablesOnly([TICKET, MEMBERSHIP, PURCHASE, GAME], 'Pick a row that has a source or a month.'),
@@ -336,6 +364,8 @@ const PROFILES = {
         ORDER BY p.PurchasedAt DESC
         LIMIT ${LIM}`,
       [start, start],
+      null,
+      'p.PurchasedAt',
     );
   },
   'item-sales': (row) => byItem(row) ?? tablesOnly([PURCHASE, ITEM, VENUE], 'Click a row with an item or a category.'),
@@ -365,6 +395,8 @@ const PROFILES = {
         ORDER BY p.PurchasedAt DESC
         LIMIT ${LIM}`,
       params,
+      null,
+      'p.PurchasedAt',
     );
   },
   'membership-summary': (row) => byTier(row) ?? tablesOnly([MEMBERSHIP, TICKET], 'Click a tier to see its memberships.'),
@@ -390,6 +422,8 @@ const PROFILES = {
           ORDER BY m.StartDate DESC
           LIMIT ${LIM}`,
         params,
+        null,
+        'm.StartDate',
       );
     }
     const window = ENDS[text(row, 'EndsIn') ?? ''];
@@ -412,6 +446,8 @@ const PROFILES = {
           ORDER BY m.EndDate
           LIMIT ${LIM}`,
         params,
+        null,
+        'm.EndDate',
       );
     }
     return byTier(row) ?? tablesOnly([MEMBERSHIP, TICKET, PURCHASE], 'Click a tier or a guest to see the membership rows.');
@@ -439,6 +475,8 @@ const PROFILES = {
         ORDER BY m.StartDate
         LIMIT ${LIM}`,
       [name],
+      null,
+      'm.StartDate',
     );
   },
   'maintenance-cost': (row) => PROFILES['maintenance-history'](row),
@@ -478,6 +516,8 @@ const PROFILES = {
         ORDER BY l.LoggedAt DESC
         LIMIT ${LIM}`,
       [zone],
+      null,
+      'l.LoggedAt',
     );
   },
   'wait-time-by-ride': (row) => {
@@ -493,6 +533,8 @@ const PROFILES = {
         ORDER BY l.LoggedAt DESC
         LIMIT ${LIM}`,
       [name],
+      null,
+      'l.LoggedAt',
     );
   },
   'ride-availability': (row) => {
@@ -522,6 +564,8 @@ const PROFILES = {
         ORDER BY s.ClockIn DESC
         LIMIT ${LIM}`,
       [name],
+      null,
+      's.ClockIn',
     );
   },
   'staff-by-zone': (row) => {
@@ -560,15 +604,47 @@ const PROFILES = {
         ORDER BY t.VisitDate
         LIMIT ${LIM}`,
       [id],
+      null,
+      't.VisitDate',
     );
   },
 };
 
-// { sources, label, sql, params, note } or null when this report has no drill-down.
+// { sources, label, sql, params, note, rangeColumn } or null when this report has no drill-down.
 export function describeDetail(name, rawRow) {
   const profile = PROFILES[name];
   if (!profile) return null;
   return profile(clean(rawRow ?? {}));
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const RANGE_COL = /^[A-Za-z][A-Za-z0-9]*\.[A-Za-z][A-Za-z0-9]*$/;
+
+// Keep the from/to dates the report was run with. Values are bound, and the column name comes from this file.
+export function applyDetailRange(spec, from, to) {
+  const start = ISO_DATE.test(String(from ?? '')) ? String(from) : '';
+  const end = ISO_DATE.test(String(to ?? '')) ? String(to) : '';
+  if (!spec?.sql || !RANGE_COL.test(spec.rangeColumn ?? '') || (!start && !end)) return spec;
+  const params = [...spec.params];
+  let clause = '';
+  if (start) {
+    clause += ` AND ${spec.rangeColumn} >= ?`;
+    params.push(start);
+  }
+  if (end) {
+    clause += ` AND ${spec.rangeColumn} < DATE_ADD(?, INTERVAL 1 DAY)`;
+    params.push(end);
+  }
+  const sql = /\s+(ORDER BY|LIMIT)\b/i.test(spec.sql)
+    ? spec.sql.replace(/\s+(ORDER BY|LIMIT)\b/i, `${clause} $1`)
+    : `${spec.sql}${clause}`;
+  return { ...spec, sql, params };
+}
+
+// Full match count for the same statement, without the 20-row cap.
+export function countDetailSql(sql) {
+  const body = sql.replace(/\s+ORDER BY[\s\S]*$/i, '').replace(/\s+LIMIT\s+\d+\s*$/i, '');
+  return `SELECT COUNT(*) AS total FROM (${body}) detail_rows`;
 }
 
 export const DETAIL_CAP = CAP;
