@@ -2,6 +2,9 @@
 .notice { margin: 0; padding: 9px 14px; border-radius: 6px; border: 1px solid #b9d8dc; border-left: 6px solid #1c9aa8; background: #eaf6f7; color: #12302f; }
 .notice-warning { border-color: #f0d27a; border-left-color: #ffc233; background: #fff7dc; }
 .notice-alert { border-color: #e7b3b0; border-left-color: #a4161a; background: #fdecea; }
+/* Ride notices (SQL/rules/30): a new or returning ride is good news, a retired ride is a heads-up. */
+.notice-kind-rideadded { border-color: #b7dfc3; border-left-color: #2e9d57; background: #eaf7ee; }
+.notice-kind-ridedeactivated { border-left-color: #6b7280; }
 
 /* Public site banner: one notice at a time. Navy always (red is kept for "Buy Tickets"). */
 .notice-strip { background: var(--navy); color: #fff; font-size: .86rem; }

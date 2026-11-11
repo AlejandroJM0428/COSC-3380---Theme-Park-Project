@@ -3,6 +3,7 @@ import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { friendlyDbError, needId, needInt, needText, oneOf } from '../validate.js';
+import { clearPublicSiteCache } from './publicSite.js';
 
 // Rides, Games & Venues (Admin only): list, get, add, edit, deactivate.
 // One page covers three tables, so each row has a key like "Ride-5" (kind + id).
@@ -207,6 +208,7 @@ route(
       let result;
       if (kind === 'Ride') {
         const written = await writeRide(f, null);
+        clearPublicSiteCache(); // the homepage ride list updates at once
         ctx.status = 201;
         const row = await loadFacility(kind, written.id);
         return { ...row, notification: written.notification };
@@ -223,6 +225,7 @@ route(
           [f.zoneId, f.name, f.venueType, f.serviceType, f.isActive],
         );
       }
+      clearPublicSiteCache();
       ctx.status = 201;
       return await loadFacility(kind, result.insertId);
     } catch (err) {
@@ -242,6 +245,7 @@ route(
     try {
       if (kind === 'Ride') {
         const written = await writeRide(f, id);
+        clearPublicSiteCache();
         const row = await loadFacility(kind, id);
         return { ...row, notification: written.notification };
       } else if (kind === 'Game') {
@@ -261,6 +265,7 @@ route(
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);
     }
+    clearPublicSiteCache();
     return loadFacility(kind, id);
   }),
 );
@@ -274,6 +279,7 @@ route(
     await loadFacility(kind, id);
     const table = { Ride: ['Ride', 'RideID'], Game: ['Game', 'GameID'], Venue: ['Venue', 'VenueID'] }[kind];
     await pool.query(`UPDATE ${table[0]} SET IsActive = 0 WHERE ${table[1]} = ?`, [id]);
+    clearPublicSiteCache();
     return loadFacility(kind, id);
   }),
 );

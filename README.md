@@ -109,6 +109,10 @@ Closing the park for weather
 ----------------------------
 Admin and the Operations desk (Manager) can close and reopen the park in one click from the **Weather Log** page. Closing logs a Severe weather event: the homepage shows the closed ticker, and the database refuses ride boardings, ticket sales for today, purchases and game plays until the park is reopened. Every close and reopen is saved in the admin audit log. On an existing database, apply `SQL/rules/29_sales_blocked_when_park_closed.sql` first (the command is in the file header).
 
+Ride notices
+------------
+Adding a ride, or taking one out of service (deactivating it), posts a notice on the homepage banner. Putting it back clears the notice and posts "available again". The notices are saved in the database for 7 days, so they survive a reload and a server restart. The homepage checks for new notices every 10 seconds (it pauses while the tab is hidden) and the ride list updates as soon as an admin saves the change. On an existing database, apply `SQL/rules/30_ride_added_deactivated.sql` (the command is in the file header).
+
 Demo
 ----
 

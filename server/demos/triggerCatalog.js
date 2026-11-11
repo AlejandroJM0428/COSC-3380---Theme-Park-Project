@@ -271,6 +271,14 @@ export const TRIGGER_CATALOG = [
     rule: 'No game play is recorded while a Severe weather event has closed the park.',
     errors: ['Games are closed: weather has closed the park'],
   },
+  {
+    name: 'trg_Ride_AI_Notify', table: 'Ride', timing: 'AFTER', event: 'INSERT', kind: 'Notification',
+    rule: 'When an active ride is added, posts "New ride: <name>" for 7 days (one per ride, keyed by RideID).',
+  },
+  {
+    name: 'trg_Ride_AU_ActiveNotify', table: 'Ride', timing: 'AFTER', event: 'UPDATE', kind: 'Notification',
+    rule: 'When a ride is deactivated, posts "<name> is no longer available" for 7 days and switches off its other notices. When it is reactivated, clears that notice and posts that the ride is available again.',
+  },
 ];
 
 // The catalog entry (without the long error list) for a trigger name, or null.

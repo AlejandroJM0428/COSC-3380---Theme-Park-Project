@@ -24,7 +24,7 @@ function NoticeList() {
   return (
     <section className="notice-bar" aria-label="Park notices">
       {items.slice(0, 5).map((n) => (
-        <p key={n.NotificationID} className={`notice notice-${String(n.Severity).toLowerCase()}`}>
+        <p key={n.NotificationID} className={`notice notice-${String(n.Severity).toLowerCase()} notice-kind-${String(n.Kind).toLowerCase()}`}>
           <strong>{n.Title}:</strong> {n.Message}
         </p>
       ))}
