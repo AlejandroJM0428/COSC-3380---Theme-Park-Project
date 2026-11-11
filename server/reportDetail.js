@@ -1,8 +1,5 @@
 // Drill-down for one report row. The SQL is fixed here; the clicked row only supplies bound values.
-// Each lookup stops after CAP + 1 rows so a busy day never returns the whole table.
-
-const CAP = 20;
-const LIM = CAP + 1;
+// Every matching row is returned (no row cap).
 
 const TICKET = { table: 'Ticket', note: 'One row per ticket sold.' };
 const REFUND = { table: 'TicketRefund', note: 'Refunded tickets. Reports that say "valid" leave these out.' };
@@ -89,8 +86,7 @@ function ticketsOnDay(date) {
        FROM Ticket t
        LEFT JOIN TicketRefund rf ON rf.TicketID = t.TicketID
       WHERE t.VisitDate = ?
-      ORDER BY t.TicketID
-      LIMIT ${LIM}`,
+      ORDER BY t.TicketID`,
     [date],
     null,
     't.VisitDate',
@@ -107,8 +103,7 @@ function ticketsInMonth(start, extra = '') {
       WHERE t.VisitDate >= ? AND t.VisitDate < DATE_ADD(?, INTERVAL 1 MONTH)
         AND ${notRefunded}
         ${extra}
-      ORDER BY t.VisitDate, t.TicketID
-      LIMIT ${LIM}`,
+      ORDER BY t.VisitDate, t.TicketID`,
     [start, start],
     null,
     't.VisitDate',
@@ -131,8 +126,7 @@ function facilityJobs(name, start) {
        LEFT JOIN Game g ON g.GameID = m.GameID
        LEFT JOIN Venue v ON v.VenueID = m.VenueID
       WHERE COALESCE(r.RideName, g.GameName, v.VenueName) = ?${month}
-      ORDER BY m.StartDate DESC
-      LIMIT ${LIM}`,
+      ORDER BY m.StartDate DESC`,
     params,
     null,
     'm.StartDate',
@@ -150,8 +144,7 @@ function jobsInMonth(start) {
        LEFT JOIN Game g ON g.GameID = m.GameID
        LEFT JOIN Venue v ON v.VenueID = m.VenueID
       WHERE m.StartDate >= ? AND m.StartDate < DATE_ADD(?, INTERVAL 1 MONTH)
-      ORDER BY m.StartDate DESC
-      LIMIT ${LIM}`,
+      ORDER BY m.StartDate DESC`,
     [start, start],
     null,
     'm.StartDate',
@@ -172,8 +165,7 @@ function boardings(name, start) {
        FROM RideLog l
        JOIN Ride r ON r.RideID = l.RideID
       WHERE r.RideName = ? AND l.EventType = 'Boarding'${month}
-      ORDER BY l.LoggedAt DESC
-      LIMIT ${LIM}`,
+      ORDER BY l.LoggedAt DESC`,
     params,
     null,
     'l.LoggedAt',
@@ -190,8 +182,7 @@ function byTier(row) {
       `SELECT t.TicketID, t.CustomerID, t.VisitDate, t.TicketPrice
          FROM Ticket t
         WHERE t.MembershipID IS NULL AND ${notRefunded}
-        ORDER BY t.VisitDate DESC
-        LIMIT ${LIM}`,
+        ORDER BY t.VisitDate DESC`,
       [],
       null,
       't.VisitDate',
@@ -205,8 +196,7 @@ function byTier(row) {
        FROM Membership m
        JOIN Customer c ON c.CustomerID = m.CustomerID
       WHERE m.Tier = ?
-      ORDER BY m.StartDate DESC
-      LIMIT ${LIM}`,
+      ORDER BY m.StartDate DESC`,
     [tier],
     null,
     'm.StartDate',
@@ -238,8 +228,7 @@ function byItem(row) {
          JOIN Venue v ON v.VenueID = i.VenueID
          LEFT JOIN Purchase p ON p.ItemID = i.ItemID
         WHERE ${where}
-        ORDER BY p.PurchasedAt DESC
-        LIMIT ${LIM}`,
+        ORDER BY p.PurchasedAt DESC`,
       params,
       null,
       'p.PurchasedAt',
@@ -253,8 +242,7 @@ function byItem(row) {
          FROM Purchase p
          JOIN Item i ON i.ItemID = p.ItemID
         WHERE i.Category = ?
-        ORDER BY p.PurchasedAt DESC
-        LIMIT ${LIM}`,
+        ORDER BY p.PurchasedAt DESC`,
       [category],
       null,
       'p.PurchasedAt',
@@ -283,8 +271,7 @@ function byRevenue(row) {
       `SELECT t.TicketID, t.VisitDate, t.TicketPrice
          FROM Ticket t
         WHERE ${range.sql} AND ${notRefunded}
-        ORDER BY t.VisitDate, t.TicketID
-        LIMIT ${LIM}`,
+        ORDER BY t.VisitDate, t.TicketID`,
       range.params,
       null,
       't.VisitDate',
@@ -298,8 +285,7 @@ function byRevenue(row) {
       `SELECT m.MembershipID, m.CustomerID, m.Tier, m.StartDate, m.Price
          FROM Membership m
         WHERE ${range.sql}
-        ORDER BY m.StartDate, m.MembershipID
-        LIMIT ${LIM}`,
+        ORDER BY m.StartDate, m.MembershipID`,
       range.params,
       null,
       'm.StartDate',
@@ -316,8 +302,7 @@ function byRevenue(row) {
          JOIN Item i ON i.ItemID = p.ItemID
          JOIN Venue v ON v.VenueID = i.VenueID
         WHERE ${kind} AND ${range.sql}
-        ORDER BY p.PurchasedAt DESC
-        LIMIT ${LIM}`,
+        ORDER BY p.PurchasedAt DESC`,
       range.params,
       null,
       'p.PurchasedAt',
@@ -331,8 +316,7 @@ function byRevenue(row) {
       `SELECT g.GamePlayID, g.TicketID, g.PlayedAt, g.AmountPaid
          FROM GamePlay g
         WHERE ${range.sql}
-        ORDER BY g.PlayedAt DESC
-        LIMIT ${LIM}`,
+        ORDER BY g.PlayedAt DESC`,
       range.params,
       null,
       'g.PlayedAt',
@@ -360,8 +344,7 @@ const PROFILES = {
          FROM Ticket t
          LEFT JOIN TicketRefund rf ON rf.TicketID = t.TicketID
         WHERE DAYOFWEEK(t.VisitDate) = ?
-        ORDER BY t.VisitDate DESC, t.TicketID DESC
-        LIMIT ${LIM}`,
+        ORDER BY t.VisitDate DESC, t.TicketID DESC`,
       [dow],
       null,
       't.VisitDate',
@@ -380,8 +363,7 @@ const PROFILES = {
           UNION ALL
          SELECT 'Game', NULL, NULL, g.AmountPaid, g.PlayedAt
            FROM GamePlay g
-          WHERE g.TicketID = ?
-          LIMIT ${LIM}`,
+          WHERE g.TicketID = ?`,
         [id, id],
       );
     }
@@ -394,8 +376,7 @@ const PROFILES = {
          FROM Purchase p
          JOIN Item i ON i.ItemID = p.ItemID
         WHERE p.PurchasedAt >= ? AND p.PurchasedAt < DATE_ADD(?, INTERVAL 1 MONTH)
-        ORDER BY p.PurchasedAt DESC
-        LIMIT ${LIM}`,
+        ORDER BY p.PurchasedAt DESC`,
       [start, start],
       null,
       'p.PurchasedAt',
@@ -425,8 +406,7 @@ const PROFILES = {
          JOIN Item i ON i.ItemID = p.ItemID
          JOIN Venue v ON v.VenueID = i.VenueID
         WHERE ${where.join(' AND ')}
-        ORDER BY p.PurchasedAt DESC
-        LIMIT ${LIM}`,
+        ORDER BY p.PurchasedAt DESC`,
       params,
       null,
       'p.PurchasedAt',
@@ -453,8 +433,7 @@ const PROFILES = {
            FROM Membership m
            JOIN Customer c ON c.CustomerID = m.CustomerID
           WHERE c.FirstName = ? AND c.LastName = ?${endSql}
-          ORDER BY m.StartDate DESC
-          LIMIT ${LIM}`,
+          ORDER BY m.StartDate DESC`,
         params,
         null,
         'm.StartDate',
@@ -477,8 +456,7 @@ const PROFILES = {
            JOIN Customer c ON c.CustomerID = m.CustomerID
           WHERE CURDATE() BETWEEN m.StartDate AND m.EndDate
             AND DATEDIFF(m.EndDate, CURDATE()) BETWEEN ? AND ?${tierSql}
-          ORDER BY m.EndDate
-          LIMIT ${LIM}`,
+          ORDER BY m.EndDate`,
         params,
         null,
         'm.EndDate',
@@ -506,8 +484,7 @@ const PROFILES = {
          LEFT JOIN Game g ON g.GameID = m.GameID
          LEFT JOIN Venue v ON v.VenueID = m.VenueID
         WHERE m.EndDate IS NULL AND COALESCE(r.RideName, g.GameName, v.VenueName) = ?
-        ORDER BY m.StartDate
-        LIMIT ${LIM}`,
+        ORDER BY m.StartDate`,
       [name],
       null,
       'm.StartDate',
@@ -547,8 +524,7 @@ const PROFILES = {
          JOIN Ride r ON r.RideID = l.RideID
          JOIN Zone z ON z.ZoneID = r.ZoneID
         WHERE z.ZoneName = ? AND l.EventType = 'Boarding'
-        ORDER BY l.LoggedAt DESC
-        LIMIT ${LIM}`,
+        ORDER BY l.LoggedAt DESC`,
       [zone],
       null,
       'l.LoggedAt',
@@ -564,8 +540,7 @@ const PROFILES = {
          FROM RideLog l
          JOIN Ride r ON r.RideID = l.RideID
         WHERE r.RideName = ? AND l.EventType = 'Wait Reading'
-        ORDER BY l.LoggedAt DESC
-        LIMIT ${LIM}`,
+        ORDER BY l.LoggedAt DESC`,
       [name],
       null,
       'l.LoggedAt',
@@ -595,8 +570,7 @@ const PROFILES = {
          FROM Shift s
          JOIN Employee e ON e.EmployeeID = s.EmployeeID
         WHERE CONCAT(e.FirstName, ' ', e.LastName) = ?
-        ORDER BY s.ClockIn DESC
-        LIMIT ${LIM}`,
+        ORDER BY s.ClockIn DESC`,
       [name],
       null,
       's.ClockIn',
@@ -620,8 +594,7 @@ const PROFILES = {
          JOIN EmployeeZone ez ON ez.EmployeeID = e.EmployeeID
          JOIN Zone z ON z.ZoneID = ez.ZoneID
         WHERE z.ZoneName = ?${titleSql}
-        ORDER BY e.LastName, e.FirstName
-        LIMIT ${LIM}`,
+        ORDER BY e.LastName, e.FirstName`,
       params,
     );
   },
@@ -635,8 +608,7 @@ const PROFILES = {
          FROM TicketRefund rf
          JOIN Ticket t ON t.TicketID = rf.TicketID
         WHERE rf.WeatherID = ?
-        ORDER BY t.VisitDate
-        LIMIT ${LIM}`,
+        ORDER BY t.VisitDate`,
       [id],
       null,
       't.VisitDate',
@@ -675,7 +647,7 @@ export function applyDetailRange(spec, from, to) {
   return { ...spec, sql, params };
 }
 
-// Full match count for the same statement, without the 20-row cap.
+// Full match count for the same statement.
 export function countDetailSql(sql) {
   const body = sql.replace(/\s+ORDER BY[\s\S]*$/i, '').replace(/\s+LIMIT\s+\d+\s*$/i, '');
   return `SELECT COUNT(*) AS total FROM (${body}) detail_rows`;
@@ -689,4 +661,3 @@ export function totalsDetailSql(sql, totals) {
   return `SELECT ${picks} FROM (${body}) detail_rows`;
 }
 
-export const DETAIL_CAP = CAP;

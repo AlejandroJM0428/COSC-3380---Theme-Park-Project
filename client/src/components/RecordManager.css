@@ -45,3 +45,8 @@
 .rm-when { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .rm-when button { font: inherit; padding: 7px 16px; border: 1.5px solid var(--line); border-radius: 4px; background: #fff; cursor: pointer; }
 .rm-when button.rm-when-on { background: #0c2340; border-color: #0c2340; color: #fff; }
+
+.rm-reactivate {
+  border-color: var(--green, #1a7f4b);
+  color: var(--green, #1a7f4b);
+}

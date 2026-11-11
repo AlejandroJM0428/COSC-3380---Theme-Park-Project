@@ -4,7 +4,7 @@ import { makeLabeler } from '../config/labels.js'
 import DateRangePicker from './DateRangePicker.jsx'
 import './ReportParams.css'
 
-// The "Search options" panel of a report, chosen BEFORE pressing Run report and sent to the server, which builds the SQL.
+// The "Narrow it down" panel of a report, chosen BEFORE pressing Run report and sent to the server, which builds the SQL.
 // Everything is a click: pick a column to filter on, then dates from the calendar, values from a list, yes/no buttons.
 // Typing is only for number limits and for searching a text column that has too many values to list.
 // The panel starts open with the report's key fields already on it (`featured`), and shows plain labels instead of column names.
@@ -33,7 +33,6 @@ export const emptySpec = (meta, featured = []) => ({
     .map((c) => newFilter(c)),
   sort: '',
   dir: 'asc',
-  limit: meta?.defaultLimit ?? 1000,
   groupBy: '',
   bucket: 'month',
   measures: [{ fn: 'count' }],
@@ -69,7 +68,7 @@ export function toRequest(spec) {
       filters.push({ column: f.column, contains: f.contains })
     }
   }
-  const body = { filters, limit: spec.limit }
+  const body = { filters }
   if (spec.sort) {
     body.sort = spec.sort
     body.dir = spec.dir
@@ -137,6 +136,7 @@ function TextControl({ endpoint, filter, onChange, label }) {
           {v}
         </button>
       ))}
+      <span className="muted rpm-hint">{filter.values.length === 0 ? 'None picked = all' : `${filter.values.length} picked`}</span>
     </div>
   )
 }
@@ -186,7 +186,6 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
   const numbers = meta.columns.filter((c) => c.kind === 'number' || c.kind === 'flag')
   const groupable = meta.columns.filter((c) => c.kind !== 'other')
   const groupKind = meta.columns.find((c) => c.name === spec.groupBy)?.kind
-  const names = outputNames(spec, meta)
   const activeCount = shown.filter(isFilterSet).length + (spec.groupBy ? 1 : 0) + (spec.columns.length ? 1 : 0)
 
   const changeFilter = (i, next) => set({ filters: spec.filters.map((f, k) => (k === i ? next : f)) })
@@ -195,20 +194,23 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
   return (
     <details className="rpm" open>
       <summary>
-        Search options{activeCount > 0 ? ` (${activeCount} set)` : ''} <span className="muted">set these, then press Run report</span>
+        Narrow it down{activeCount > 0 ? ` (${activeCount} applied)` : ''} <span className="muted">optional: leave everything blank to see all rows</span>
       </summary>
 
       <div className="rpm-section">
-        <h4>Filters</h4>
-        {shown.length === 0 && <p className="muted">No filters: every row is included.</p>}
         {spec.filters.map((f, i) =>
           hidden.has(f.column) ? null : (
             <FilterRow key={f.column} endpoint={endpoint} label={label} filter={f} onChange={(next) => changeFilter(i, next)} onRemove={() => set({ filters: spec.filters.filter((_, k) => k !== i) })} />
           ),
         )}
+        {activeCount > 0 && (
+          <button type="button" className="rpm-link" onClick={() => onChange({ ...spec, filters: spec.filters.map((f) => (hidden.has(f.column) ? f : newFilter({ name: f.column, kind: f.kind }))), groupBy: '', columns: [], measures: [{ fn: 'count' }] })}>
+            Clear everything
+          </button>
+        )}
         {addable.length > 0 && (
           <label className="rpm-add">
-            <span>Add another filter</span>
+            <span>+ Narrow by something else</span>
             <select
               value=""
               onChange={(e) => {
@@ -216,7 +218,7 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
                 if (col) set({ filters: [...spec.filters, newFilter(col)] })
               }}
             >
-              <option value="">Choose what to filter on…</option>
+              <option value="">Choose…</option>
               {addable.map((c) => (
                 <option key={c.name} value={c.name}>
                   {label(c.name)}
@@ -227,41 +229,9 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
         )}
       </div>
 
-      <div className="rpm-section rpm-row">
-        <label>
-          <span>Sort by</span>
-          <select value={names.includes(spec.sort) ? spec.sort : ''} onChange={(e) => set({ sort: e.target.value })}>
-            <option value="">Default order</option>
-            {names.map((n) => (
-              <option key={n} value={n}>
-                {label(n)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="rpm-chips" role="group" aria-label="Sort direction">
-          <button type="button" aria-pressed={spec.dir === 'asc'} onClick={() => set({ dir: 'asc' })}>
-            Low to high
-          </button>
-          <button type="button" aria-pressed={spec.dir === 'desc'} onClick={() => set({ dir: 'desc' })}>
-            High to low
-          </button>
-        </div>
-        <div className="rpm-limit">
-          <span>Rows</span>
-          <div className="rpm-chips" role="group" aria-label="Row limit">
-            {meta.limits.map((n) => (
-              <button key={n} type="button" aria-pressed={spec.limit === n} onClick={() => set({ limit: n })}>
-                {n.toLocaleString('en-US')}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       <details className="rpm-more" open={spec.groupBy || spec.columns.length ? true : undefined}>
-        <summary>Summarize, or choose which columns to show</summary>
-        <p className="muted">These replace the report&apos;s own charts and headline numbers with a plain table of what you ask for.</p>
+        <summary>Advanced: totals by group, or pick columns</summary>
+        <p className="muted">Switches the page to a plain table of what you pick here. The report&apos;s own charts and headline numbers are hidden while this is on.</p>
         <div className="rpm-section rpm-row">
           <label>
             <span>Group by</span>
@@ -269,7 +239,7 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
               value={spec.groupBy}
               onChange={(e) => set({ groupBy: e.target.value, sort: '', columns: [], measures: spec.measures.length ? spec.measures : [{ fn: 'count' }] })}
             >
-              <option value="">No grouping (list the rows)</option>
+              <option value="">No grouping (show every row)</option>
               {groupable.map((c) => (
                 <option key={c.name} value={c.name}>
                   {label(c.name)}
@@ -329,7 +299,7 @@ export default function ReportParams({ endpoint, meta, spec, onChange, hideColum
 
         {!spec.groupBy && (
           <div className="rpm-section">
-            <span className="rpm-label">Show only these columns (none picked = all)</span>
+            <span className="rpm-label">Columns to show (none picked = all of them)</span>
             <div className="rpm-chips">
               {meta.columns.map((c) => (
                 <button

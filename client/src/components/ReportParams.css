@@ -1,4 +1,4 @@
-/* Parameter panel and "How this was calculated" box. Classes start with rpm- (parameters) and rs- (SQL). */
+/* Parameter panel. Classes start with rpm-. */
 
 .rpm {
   margin: 12px 0;
@@ -44,14 +44,6 @@
 }
 
 .rpm label,
-.rpm-limit {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
-  color: var(--ink-soft, #50617a);
-}
-
 .rpm select,
 .rpm input[type='number'],
 .rpm input[type='text'] {
@@ -149,85 +141,7 @@
   }
 }
 
-/* How this was calculated */
-.rs-box {
-  margin: 12px 0;
-}
-
-.rs-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-}
-
-.rs-toggle,
-.rs-copy {
-  padding: 6px 12px;
-  border: 1px solid var(--blue-deep, #0b3d91);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--blue-deep, #0b3d91);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.rs-panel {
-  margin-top: 10px;
-  padding: 12px 16px;
-  border: 1px solid var(--rule, #d5dde5);
-  border-radius: 8px;
-  background: var(--white, #fff);
-}
-
-.rs-panel h3 {
-  margin: 0 0 6px;
-}
-
-.rs-sqlhead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.rs-sql {
-  margin: 6px 0;
-  padding: 10px 12px;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  border: 1px solid var(--rule-soft, #e4eaf1);
-  border-radius: 6px;
-  background: var(--wash, #eef3fa);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.82rem;
-}
-
-.rs-facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px 16px;
-  margin: 10px 0;
-}
-
-.rs-facts dt {
-  font-size: 0.8rem;
-  color: var(--ink-soft, #50617a);
-}
-
-.rs-facts dd {
-  margin: 0;
-  font-weight: 700;
-}
-
-.rs-warn {
-  margin: 8px 0;
-  padding: 8px 12px;
-  border: 1px solid var(--warn-line, #f0e2b0);
-  border-radius: 6px;
-  background: var(--warn-bg, #fff3c4);
-  color: var(--warn, #6b5200);
+.rpm-hint {
+  align-self: center;
+  font-size: 0.85rem;
 }

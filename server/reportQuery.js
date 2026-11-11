@@ -14,8 +14,9 @@ import { HttpError } from './errors.js';
 //   The response carries `evidence`: the exact statement that ran (with ? and with the values filled in),
 //   the bound values, the row count, the run time and a hash of the rows. The page shows it under "How this was calculated".
 
-export const ROW_LIMITS = [100, 500, 1000, 5000];
-export const DEFAULT_LIMIT = 1000;
+// Reports return every matching row. There is no row cap (the time limit below still protects the database).
+export const ROW_LIMITS = [];
+export const DEFAULT_LIMIT = null;
 export const SUGGEST_CAP = 500; // the name search box offers up to this many names in its drop-down
 
 const TIMEOUT_MS = 15000;
@@ -51,7 +52,7 @@ export async function runSelect(sql, params = []) {
     }
     return { rows, ms: Date.now() - started };
   } catch (err) {
-    if (err?.errno === 3024) throw new HttpError(504, 'That took too long. Narrow the filters or lower the row limit and run it again.');
+    if (err?.errno === 3024) throw new HttpError(504, 'That took too long. Narrow the filters (for example a shorter date range) and run it again.');
     throw err;
   } finally {
     await conn.query('SET SESSION max_execution_time = 0').catch(() => {
@@ -228,11 +229,8 @@ export function buildQuery(report, meta, spec = {}) {
   };
 
   // limit
-  let limit = DEFAULT_LIMIT;
-  if (given(spec.limit)) {
-    limit = Number(spec.limit);
-    if (!ROW_LIMITS.includes(limit)) throw bad(`Row limit must be one of ${ROW_LIMITS.join(', ')}`);
-  }
+  // No row cap: every matching row is returned. A `limit` sent by an old client is ignored.
+  const limit = null;
 
   // filters
   const rawFilters = spec.filters ?? [];
@@ -358,7 +356,7 @@ export function buildQuery(report, meta, spec = {}) {
   const orderCols = first ? [first, ...output.filter((c) => c !== first)] : output;
   const orderSql = ` ORDER BY ${orderCols.map((c, i) => (i === 0 && first ? `?? ${dir}` : '??')).join(', ')}`;
 
-  const sql = `SELECT ${selectSql} FROM ${src.from}${whereSql}${groupSql}${orderSql} LIMIT ${limit + 1}`;
+  const sql = `SELECT ${selectSql} FROM ${src.from}${whereSql}${groupSql}${orderSql}`;
   const params = [...selectParams, ...src.params, ...whereParams, ...groupParams, ...orderCols];
   return { sql, params, limit, spec: cleanSpec, output };
 }
@@ -368,8 +366,8 @@ export async function runReport(name, report, spec = {}) {
   const meta = await describeSource(name, report);
   const q = buildQuery(report, meta, spec);
   const { rows: all, ms } = await runSelect(q.sql, q.params);
-  const truncated = all.length > q.limit;
-  const rows = truncated ? all.slice(0, q.limit) : all;
+  const truncated = false;
+  const rows = all;
   return {
     rows,
     evidence: makeEvidence({ source: report.view ?? name, sql: q.sql, params: q.params, rows, ms, limit: q.limit, truncated, spec: q.spec, rules: fixedRules(report) }),

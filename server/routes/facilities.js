@@ -270,6 +270,25 @@ route(
   }),
 );
 
+// POST /api/facilities/:id/reactivate turns a deactivated ride, game or venue back on (IsActive = 1).
+// For a ride, the database trigger posts the "available again" notice, the same as an edit would.
+route(
+  'POST',
+  '/api/facilities/:id/reactivate',
+  requireRole(...CAN_USE)(async (ctx) => {
+    const { kind, id } = parseKey(ctx.params.id);
+    await loadFacility(kind, id); // 404 if missing
+    const table = { Ride: ['Ride', 'RideID'], Game: ['Game', 'GameID'], Venue: ['Venue', 'VenueID'] }[kind];
+    try {
+      await pool.query(`UPDATE ${table[0]} SET IsActive = 1 WHERE ${table[1]} = ?`, [id]);
+    } catch (err) {
+      throw friendlyDbError(err, FRIENDLY);
+    }
+    clearPublicSiteCache();
+    return loadFacility(kind, id);
+  }),
+);
+
 // DELETE deactivates (soft delete). Nothing is removed from Ride, Game or Venue.
 route(
   'DELETE',

@@ -252,6 +252,12 @@ export function deleteRecord(resource, id, query = {}) {
   return http(`/${resource}/${id}${qs ? `?${qs}` : ''}`, { method: 'DELETE' })
 }
 
+// Turn a deactivated record back on (rides, games and venues).
+export function reactivateRecord(resource, id) {
+  needLive()
+  return http(`/${resource}/${id}/reactivate`, { method: 'POST' })
+}
+
 // Employee portal (Maintenance Worker, Restaurant Worker): the server uses the EmployeeID of the session.
 export function getMyWork() {
   needLive()

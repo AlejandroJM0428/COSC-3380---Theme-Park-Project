@@ -1,9 +1,7 @@
 import { Fragment, useMemo, useState } from 'react'
 import './DataTable.css'
 
-// Long tables show the first rows, then "Show N more" and "Show all" buttons, so a big view does not freeze the page.
-// `pageSize` is how many rows to show first and how many each "Show more" adds (reports pass 10; other pages keep 100).
-const ROW_LIMIT = 100
+// Every row is shown (no paging). A long table scrolls inside its own box and the header row stays in view.
 
 const isEmpty = (v) => v === null || v === undefined || v === ''
 
@@ -59,10 +57,8 @@ const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-l
 // rowClass is optional: 'high' shades the row green and 'low' shades it red, so unusual rows stand out.
 // Click a column header to sort: first click ascending, second descending, third back to the original order.
 // onDetail, when passed, adds a Details button on each row. detailKey is the open row (JSON.stringify of that row).
-// totalRows, when passed, is the real number of matching rows (the table may only hold the first 20 of them).
-export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT, labelOf, onDetail, detailKey, detailSlot, totalRows }) {
+export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, detailKey, detailSlot }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
-  const [count, setCount] = useState(pageSize) // how many rows are showing
 
   const sorted = useMemo(() => {
     if (!sort || !rows) return rows
@@ -84,9 +80,6 @@ export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMI
     }),
   )
 
-  const visible = sorted.slice(0, count)
-  const left = sorted.length - visible.length
-
   function toggleSort(key) {
     setSort((s) => {
       if (s?.key !== key) return { key, dir: 'asc' }
@@ -96,7 +89,7 @@ export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMI
 
   return (
     <>
-      <div className="table-wrap">
+      <div className="table-wrap dt-scroll">
         <table>
           <thead>
             <tr>
@@ -121,7 +114,7 @@ export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMI
             </tr>
           </thead>
           <tbody>
-            {visible.map((row, i) => (
+            {sorted.map((row, i) => (
               <Fragment key={i}>
                 <tr className={rowClass ? markClass(rowClass(row)) : undefined}>
                   {cols.map((c) => (
@@ -152,22 +145,6 @@ export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMI
           </tbody>
         </table>
       </div>
-      {sorted.length > pageSize && (
-        <p className="dt-more muted">
-          Showing {visible.length.toLocaleString('en-US')} of {Math.max(totalRows ?? 0, sorted.length).toLocaleString('en-US')} rows
-          {left > 0 && (
-            <button type="button" className="dt-toggle" onClick={() => setCount((c) => c + pageSize)}>
-              Show {Math.min(pageSize, left).toLocaleString('en-US')} more
-            </button>
-          )}
-          {left > pageSize && (
-            <button type="button" className="dt-toggle" onClick={() => setCount(sorted.length)}>Show all</button>
-          )}
-          {count > pageSize && (
-            <button type="button" className="dt-toggle" onClick={() => setCount(pageSize)}>Show first {pageSize}</button>
-          )}
-        </p>
-      )}
     </>
   )
 }

@@ -382,7 +382,7 @@ export const WEATHER = {
 export const FACILITIES = {
   title: 'Rides, Games & Venues',
   intro:
-    'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Edit one to turn it back on. Set a ride to Maintenance and save: MySQL adds a notice, a toast appears in the corner, and the notice stays on Promos & Notices.',
+    'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Press Reactivate on a deactivated one to turn it back on. Set a ride to Maintenance and save: MySQL adds a notice, a toast appears in the corner, and the notice stays on Promos & Notices.',
   resource: 'facilities',
   idKey: 'FacilityKey',
   hideIds: true, // the page never shows internal keys
@@ -390,8 +390,10 @@ export const FACILITIES = {
   deleteRoles: ['Admin'],
   deleteLabel: 'Deactivate',
   deletePast: 'Deactivated',
-  deleteNote: 'The record is kept and can be turned back on by editing it.',
+  deleteNote: 'The record is kept and can be turned back on with the Reactivate button.',
   canDeleteRow: (row) => Number(row.IsActive) === 1,
+  reactivateLabel: 'Reactivate',
+  canReactivateRow: (row) => Number(row.IsActive) !== 1,
   filters: [
     {
       key: 'kind',

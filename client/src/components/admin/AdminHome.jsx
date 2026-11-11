@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { getReport, listRecords } from '../../api'
+import ParkClosurePanel from '../ParkClosurePanel.jsx'
 import './AdminHome.css'
 
 // The admin Home screen. Layout: four number cards, a wide chart with a side panel, then a row of three cards.
@@ -44,6 +45,11 @@ export default function AdminHome({ goTo }) {
   const [months, setMonths] = useState(null)
   const [monthsBusy, setMonthsBusy] = useState(false)
   const [error, setError] = useState('')
+
+  // Closing or reopening the park changes ride availability, so refresh the facility numbers.
+  function reloadPlaces() {
+    listRecords('facilities').then(setPlaces).catch(() => {})
+  }
 
   useEffect(() => {
     let alive = true
@@ -89,6 +95,8 @@ export default function AdminHome({ goTo }) {
   return (
     <div className="ah">
       {error && <p className="muted">Some numbers are unavailable: {error}</p>}
+
+      <ParkClosurePanel onChanged={reloadPlaces} />
 
       <div className="ah-kpis">
         <Kpi tone="a" value={activeUsers?.length} label="Active staff accounts" note={staffUsers ? `${staffUsers.length - activeUsers.length} deactivated · ${noLogin.length} active staff with no login` : ''} />
@@ -169,7 +177,14 @@ export default function AdminHome({ goTo }) {
           </button>
         </Card>
 
-        <Card title="Jump to">
+        <Card title="Quick access">
+          <strong className="ah-sub">Park setup</strong>
+          <ul className="ah-list">
+            <li><button type="button" onClick={() => goTo('park', 'facilities')}>Rides, games &amp; venues</button></li>
+            <li><button type="button" onClick={() => goTo('park', 'notifications')}>Promos &amp; notices</button></li>
+            <li><button type="button" onClick={() => goTo('daily', 'weather')}>Weather log</button></li>
+          </ul>
+          <strong className="ah-sub">Everything else</strong>
           <ul className="ah-list">
             <li><button type="button" onClick={() => goTo('reports')}>Reports</button></li>
             <li><button type="button" onClick={() => goTo('daily')}>Daily records</button></li>

@@ -39,7 +39,6 @@ export default function ReportDetail({ state, onClose }) {
 
   const from = data?.sources?.map((s) => s.table).join(', ')
   const total = Number(data?.total)
-  const shown = Number(data?.shown ?? 0)
   // The row that was clicked (state.key is its JSON). A total can name the column it must equal.
   let clicked = {}
   try {
@@ -49,7 +48,7 @@ export default function ReportDetail({ state, onClose }) {
   }
   const countLine =
     data && Number.isFinite(total)
-      ? `Showing ${shown.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} matching rows.`
+      ? `${total.toLocaleString('en-US')} matching rows.`
       : ''
 
   return (
@@ -78,7 +77,7 @@ export default function ReportDetail({ state, onClose }) {
           ) : null}
           {data.note && <p className="muted">{data.note}</p>}
           {data.totals?.length > 0 && <DetailTotals totals={data.totals} clicked={clicked} />}
-          {data.rows?.length > 0 && <DataTable rows={data.rows} pageSize={10} totalRows={Number.isFinite(total) ? total : undefined} />}
+          {data.rows?.length > 0 && <DataTable rows={data.rows} />}
         </>
       )}
     </section>

@@ -2,9 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../auth/context.js'
 import { closePark, getParkClosure, reopenPark } from '../api/index.js'
 import { OPS_ROLES } from '../config/nav.js'
+import useParkClock from '../hooks/useParkClock.js'
+import { clockLabel } from '../utils/parkTime.js'
 import './ParkClosurePanel.css'
 
-// One-click "Close park for weather" / "Reopen park" for Admin and the Operations desk (Manager).
+// Park status banner with one-click "Close park for weather" / "Reopen park" for Admin and the Operations desk (Manager).
+// Green "Park is in operation" while the park is open; red "Park is closed" when it is closed (outside opening hours, or closed for weather).
 // It is a shortcut over the weather form below it: closing logs a Severe weather event, reopening ends it.
 // The server checks the role again, so hiding this panel is only for tidiness.
 const TYPES = ['Storm', 'Rain', 'Heat', 'Cold']
@@ -19,6 +22,7 @@ export default function ParkClosurePanel({ onChanged }) {
   const [weatherType, setWeatherType] = useState('Storm')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  const clock = useParkClock() // opening hours + weather, refreshed every 10 seconds
 
   const load = useCallback(
     () =>
@@ -31,13 +35,37 @@ export default function ParkClosurePanel({ onChanged }) {
     [],
   )
 
+  // Check on load, then every 15 seconds, so a closure made by someone else shows up here too.
   useEffect(() => {
-    if (allowed) load()
+    if (!allowed) return undefined
+    load()
+    const timer = setInterval(load, 15000)
+    return () => clearInterval(timer)
   }, [allowed, load])
 
   if (!allowed) return null
 
-  const closed = Boolean(status?.closed)
+  const closed = Boolean(status?.closed) // closed for weather (the button decides on this)
+  const hoursKnown = clock.mode !== 'unknown'
+  const afterHours = !closed && clock.mode === 'closed'
+  const operating = !closed && (clock.mode === 'open' || clock.mode === 'happyhour')
+  const stateClass = closed || afterHours ? 'pcp-closed' : operating ? 'pcp-open' : ''
+  let headline = 'Checking the park status...'
+  let detail = ''
+  if (closed) {
+    headline = 'Park is closed'
+    detail = `Closed for weather (${status.weatherType}) since ${String(status.since ?? '').slice(0, 16).replace('T', ' ')}. Sales and ride boardings are blocked.`
+  } else if (status != null && hoursKnown) {
+    if (afterHours) {
+      headline = 'Park is closed'
+      detail = clock.openAt != null ? `Outside opening hours. ${clock.opensTomorrow ? 'Opens tomorrow at' : 'Opens today at'} ${clockLabel(clock.openAt)}.` : 'Outside opening hours.'
+    } else {
+      headline = 'Park is in operation'
+      detail = clock.closeAt != null ? `Open until ${clockLabel(clock.closeAt)}.` : ''
+    }
+  } else if (status != null) {
+    headline = closed ? 'Park is closed' : 'Park is in operation'
+  }
 
   async function confirm() {
     setBusy(true)
@@ -62,9 +90,15 @@ export default function ParkClosurePanel({ onChanged }) {
   }
 
   return (
-    <section className={`pcp ${closed ? 'pcp-closed' : ''}`} aria-label="Close or reopen the park for weather">
+    <section className={`pcp ${stateClass}`} aria-label="Park status: close or reopen the park for weather">
       <div className="pcp-head">
-        <strong>{status == null ? 'Checking the park status...' : closed ? `Park closed for weather (${status.weatherType}, since ${String(status.since ?? '').slice(0, 16)})` : 'Park open'}</strong>
+        <div className="pcp-state">
+          <span className="pcp-dot" aria-hidden="true" />
+          <div>
+            <strong className="pcp-title">{headline}</strong>
+            {detail && <div className="pcp-detail">{detail}</div>}
+          </div>
+        </div>
         {status != null && !confirming && (
           <button type="button" className="pt-btn pt-btn-sm" onClick={() => { setMessage(''); setConfirming(true) }}>
             {closed ? 'Reopen park' : 'Close park for weather'}

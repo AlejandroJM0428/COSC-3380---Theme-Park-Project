@@ -21,3 +21,5 @@
 @media (max-width: 820px) {
   .ah-main, .ah-row, .ah-kpis { grid-template-columns: minmax(0, 1fr); }
 }
+
+.ah-sub { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft, #50617a); }

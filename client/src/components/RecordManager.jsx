@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createRecord, deleteRecord, getLookups, getRecord, listRecords, updateRecord } from '../api'
+import { createRecord, deleteRecord, reactivateRecord, getLookups, getRecord, listRecords, updateRecord } from '../api'
 import { useAuth } from '../auth/context.js'
 import ErrorBanner from './ErrorBanner.jsx'
 import LookupField from './LookupField.jsx'
@@ -130,6 +130,19 @@ export default function RecordManager({ entity }) {
     try {
       await deleteRecord(entity.resource, row[entity.idKey], query)
       setNotice(`${deletePast} ${entity.describe(row)}.`)
+      setReload((n) => n + 1)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  // Optional: reactivateLabel ('Reactivate') plus canReactivateRow(row) puts a deactivated row back on with one click.
+  async function reactivate(row) {
+    setError('')
+    setNotice('')
+    try {
+      await reactivateRecord(entity.resource, row[entity.idKey])
+      setNotice(`Reactivated ${entity.describe(row)}.`)
       setReload((n) => n + 1)
     } catch (err) {
       setError(err.message)
@@ -275,6 +288,11 @@ export default function RecordManager({ entity }) {
           {canEdit && (entity.canEditRow?.(row) ?? true) && (
             <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
               Edit
+            </button>
+          )}
+          {canEdit && entity.canReactivateRow?.(row) && (
+            <button type="button" className="rm-reactivate" onClick={() => reactivate(row)} disabled={form !== null}>
+              {entity.reactivateLabel ?? 'Reactivate'}
             </button>
           )}
           {canDelete && (entity.canDeleteRow?.(row) ?? true) && (

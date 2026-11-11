@@ -50,7 +50,7 @@ async function samplesFor(name, report, meta, today) {
   }
   if (date) list.push({ label: `${date.name} in the last 90 days`, spec: { filters: [{ column: date.name, from: ago(today, 90), to: today }] } });
   if (text) list.push({ label: `${text.name} = ${firstValue}`, spec: { filters: [{ column: text.name, values: [firstValue] }] } });
-  if (num) list.push({ label: `sorted by ${num.name}, high to low, 100 rows`, spec: { sort: num.name, dir: 'desc', limit: 100 } });
+  if (num) list.push({ label: `sorted by ${num.name}, high to low`, spec: { sort: num.name, dir: 'desc' } });
   if (text && num) list.push({ label: `summary: count and sum of ${num.name} per ${text.name}`, spec: { groupBy: text.name, measures: [{ fn: 'count' }, { fn: 'sum', column: num.name }] } });
   if (date && num) list.push({ label: `summary: average ${num.name} per month of ${date.name}`, spec: { groupBy: date.name, bucket: 'month', measures: [{ fn: 'avg', column: num.name }] } });
   return list;
@@ -92,7 +92,7 @@ async function main() {
       try {
         const { rows, evidence } = await runReport(name, report, sample.spec);
         const [again] = await raw.query(evidence.sql); // the statement exactly as shown, on its own connection
-        const same = again.slice(0, evidence.limit);
+        const same = again;
         const sameHash = hashRows(same);
         const ok = sameHash === evidence.hash && same.length === evidence.rowCount && rows.length === evidence.rowCount;
         if (ok) pass++;
@@ -123,8 +123,6 @@ async function main() {
       ['an unknown column', { filters: [{ column: 'NoSuchColumn', values: ['x'] }] }],
       ['SQL in a column name', { sort: `${first}; DROP TABLE Ticket` }],
       ['SQL in a column name (group by)', { groupBy: `${first}\` ; DROP TABLE Ticket; -- ` }],
-      ['a row limit that is not offered', { limit: 999999 }],
-      ['a negative row limit', { limit: -1 }],
       ['a bad sort direction', { sort: first, dir: 'sideways' }],
       ['filters that are not a list', { filters: 'all' }],
       ['too many filters', { filters: Array.from({ length: 40 }, () => ({ column: first, values: ['x'] })) }],

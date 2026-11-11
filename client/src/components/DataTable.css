@@ -59,3 +59,17 @@ tr.dt-row-high td {
 tr.dt-row-low td {
   background: #fde8e4;
 }
+
+/* Long tables scroll inside their own box so the page stays usable; the header row stays in view. */
+.table-wrap.dt-scroll {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.table-wrap.dt-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--panel, #fff);
+  box-shadow: 0 1px 0 var(--line, #d5e1dd);
+}
