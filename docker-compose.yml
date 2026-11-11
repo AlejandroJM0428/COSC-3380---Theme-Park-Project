@@ -39,6 +39,8 @@ services:
       - ./SQL/views/18_ride_traffic_by_month.sql:/docker-entrypoint-initdb.d/18_ride_traffic_by_month.sql:ro
       - ./SQL/rules/19_editable_records.sql:/docker-entrypoint-initdb.d/19_editable_records.sql:ro
       - ./SQL/schema/20_employee_termination.sql:/docker-entrypoint-initdb.d/20_employee_termination.sql:ro
+      # 27: weather severity (Medium+ closes outdoor rides, Severe closes the park). Runs after the seed data.
+      - ./SQL/migrations/27_weather_severity.sql:/docker-entrypoint-initdb.d/27_weather_severity.sql:ro
     # No "ports:" on purpose: MySQL is reachable only from the app container.
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
