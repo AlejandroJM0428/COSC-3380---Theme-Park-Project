@@ -310,11 +310,11 @@ export const RIDE_LOG = {
 export const WEATHER = {
   title: 'Weather Log',
   intro:
-    'Weather readings. On insert, the database decides whether a reading closes outdoor rides. An edit uses the same rule.',
+    'Weather events. The severity decides what closes while the event is going on: Low closes nothing, Medium or High closes the outdoor rides, and Severe closes the whole park. Leave the end time empty while the weather is still going on.',
   resource: 'weather',
   idKey: 'WeatherID',
   noun: 'weather entry',
-  deleteRoles: ['Admin', 'Manager'],
+  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
   deleteNote: 'Entries that a refund uses cannot be deleted.',
   filters: [
     {
@@ -330,12 +330,11 @@ export const WEATHER = {
   columns: [
     { key: 'WeatherID', label: 'Entry #' },
     { key: 'WeatherType', label: 'Weather' },
+    { key: 'Severity', label: 'Severity' },
     { key: 'StartedAt', label: 'Started', format: shortDate },
     { key: 'EndedAt', label: 'Ended', format: (v) => (v ? shortDate(v) : 'Ongoing') },
-    { key: 'TemperatureF', label: 'Temp (F)' },
-    { key: 'WindMph', label: 'Wind (mph)' },
-    { key: 'LightningMiles', label: 'Lightning', format: (v) => (Number(v) >= 99.9 ? 'None detected' : `${v} mi`) },
     { key: 'ClosesOutdoorRides', label: 'Outdoor rides', format: (v) => (Number(v) ? 'Closed' : 'Open') },
+    { key: 'ClosesPark', label: 'Park', format: (v) => (Number(v) ? 'Closed' : 'Open') },
   ],
   fields: [
     {
@@ -345,30 +344,36 @@ export const WEATHER = {
       required: true,
       options: ['Clear', 'Cloudy', 'Rain', 'Storm', 'Heat', 'Cold'].map((t) => [t, t]),
     },
+    {
+      key: 'severity',
+      label: 'Severity',
+      type: 'select',
+      required: true,
+      // What each level closes is decided by the database (SQL/migrations/27_weather_severity.sql).
+      options: [
+        ['Low', 'Low (nothing closes)'],
+        ['Medium', 'Medium (outdoor rides close)'],
+        ['High', 'High (outdoor rides close)'],
+        ['Severe', 'Severe (the whole park closes)'],
+      ],
+    },
     { key: 'startedAt', label: 'Started', type: 'datetime', required: true },
     { key: 'endedAt', label: 'Ended (leave empty while it is ongoing)', type: 'datetime' },
-    { key: 'temperatureF', label: 'Temperature (F)', type: 'number', required: true, step: '1' },
-    { key: 'windMph', label: 'Wind (mph)', type: 'number', required: true, min: 0, step: '1' },
-    { key: 'lightningMiles', label: 'Lightning distance (miles, 99.9 = none detected)', type: 'number', required: true, min: 0, step: '0.1' },
   ],
-  blank: () => ({ weatherType: 'Clear', startedAt: '', endedAt: '', temperatureF: '', windMph: '', lightningMiles: '99.9' }),
+  blank: () => ({ weatherType: 'Clear', severity: 'Low', startedAt: '', endedAt: '' }),
   fromRecord: (rec) => ({
     weatherType: rec.WeatherType,
+    severity: rec.Severity,
     startedAt: toInput(rec.StartedAt),
     endedAt: toInput(rec.EndedAt),
-    temperatureF: String(rec.TemperatureF),
-    windMph: String(rec.WindMph),
-    lightningMiles: String(rec.LightningMiles),
   }),
   toPayload: (form) => ({
     weatherType: form.weatherType,
+    severity: form.severity,
     startedAt: form.startedAt,
     endedAt: form.endedAt || null,
-    temperatureF: num(form.temperatureF),
-    windMph: num(form.windMph),
-    lightningMiles: num(form.lightningMiles),
   }),
-  describe: (row) => `weather entry #${row.WeatherID} (${row.WeatherType}, ${row.StartedAt?.slice(0, 16)})`,
+  describe: (row) => `weather entry #${row.WeatherID} (${row.WeatherType}, ${row.Severity}, ${row.StartedAt?.slice(0, 16)})`,
 }
 
 // ---- Rides, Games & Venues (Admin): add / edit / deactivate -----------------------------------------------

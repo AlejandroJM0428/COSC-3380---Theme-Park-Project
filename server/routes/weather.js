@@ -2,20 +2,23 @@ import { route } from '../router.js';
 import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
-import { friendlyDbError, needDecimal, needInt, needDateTime, oneOf, optDateTime, recordId } from '../validate.js';
+import { friendlyDbError, needDateTime, oneOf, optDateTime, recordId } from '../validate.js';
 
 // Weather log (data entry, not a report): list, get, add, edit, delete.
-// The browser never sends ClosesOutdoorRides. trg_WeatherLog_BI sets it on insert.
-// An edit sets it with fn_WeatherCloses, the same function the insert trigger uses.
+// The form sends the weather type, a severity and the times. The database decides what closes
+// (SQL/migrations/27_weather_severity.sql): ClosesOutdoorRides (Medium or worse) and ClosesPark (Severe) are
+// generated columns, so they are never sent. Old readings (temperature, wind, lightning) are kept but not edited here.
 // Delete is a real delete (WeatherLog has no IsActive). The database refuses it when a refund uses the event.
 
-const CAN_READ = ['Admin', 'Manager'];
-const CAN_WRITE = ['Admin', 'Manager'];
-const CAN_DELETE = ['Admin', 'Manager'];
+const CAN_READ = ['Admin', 'Manager', 'RetailManager'];
+const CAN_WRITE = ['Admin', 'Manager', 'RetailManager'];
+const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
 const TYPES = ['Clear', 'Cloudy', 'Rain', 'Storm', 'Heat', 'Cold'];
+const SEVERITIES = ['Low', 'Medium', 'High', 'Severe'];
 
 const SELECT_WEATHER = `
-  SELECT WeatherID, WeatherType, StartedAt, EndedAt, TemperatureF, WindMph, LightningMiles, ClosesOutdoorRides
+  SELECT WeatherID, WeatherType, Severity, StartedAt, EndedAt, TemperatureF, WindMph, LightningMiles,
+         ClosesOutdoorRides, ClosesPark
     FROM WeatherLog`;
 
 async function loadWeather(id) {
@@ -31,18 +34,16 @@ export function parseWeather(body) {
   if (endedAt && endedAt < startedAt) throw new HttpError(400, 'The end time cannot be before the start time');
   return {
     weatherType: oneOf(b.weatherType, 'Weather type', TYPES),
+    severity: oneOf(b.severity, 'Severity', SEVERITIES),
     startedAt,
     endedAt,
-    temperatureF: needInt(b.temperatureF, 'Temperature (F)', -60, 150),
-    windMph: needInt(b.windMph, 'Wind (mph)', 0, 300),
-    lightningMiles: needDecimal(b.lightningMiles, 'Lightning distance (miles)', 0, 99.9), // 99.9 = none detected
   };
 }
 
 const FRIENDLY = {
   1062: 'There is already a weather entry that starts at that time',
   1451: 'A refund uses this weather event, so it cannot be deleted',
-  3819: 'The end time cannot be before the start time, and lightning distance cannot be negative',
+  3819: 'The end time cannot be before the start time',
 };
 
 // GET /api/weather?status=ongoing|closing (optional). Newest first, first 200.
@@ -76,9 +77,9 @@ route(
     const w = parseWeather(ctx.body);
     try {
       const [result] = await pool.query(
-        `INSERT INTO WeatherLog (ParkID, WeatherType, StartedAt, EndedAt, TemperatureF, WindMph, LightningMiles, ClosesOutdoorRides)
-         VALUES ((SELECT ParkID FROM Park ORDER BY ParkID LIMIT 1), ?, ?, ?, ?, ?, ?, 0)`,
-        [w.weatherType, w.startedAt, w.endedAt, w.temperatureF, w.windMph, w.lightningMiles],
+        `INSERT INTO WeatherLog (ParkID, WeatherType, Severity, StartedAt, EndedAt)
+         VALUES ((SELECT ParkID FROM Park ORDER BY ParkID LIMIT 1), ?, ?, ?, ?)`,
+        [w.weatherType, w.severity, w.startedAt, w.endedAt],
       );
       ctx.status = 201;
       return await loadWeather(result.insertId);
@@ -98,10 +99,9 @@ route(
     try {
       await pool.query(
         `UPDATE WeatherLog
-            SET WeatherType = ?, StartedAt = ?, EndedAt = ?, TemperatureF = ?, WindMph = ?, LightningMiles = ?,
-                ClosesOutdoorRides = fn_WeatherCloses(ParkID, ?, ?, ?)
+            SET WeatherType = ?, Severity = ?, StartedAt = ?, EndedAt = ?
           WHERE WeatherID = ?`,
-        [w.weatherType, w.startedAt, w.endedAt, w.temperatureF, w.windMph, w.lightningMiles, w.temperatureF, w.windMph, w.lightningMiles, id],
+        [w.weatherType, w.severity, w.startedAt, w.endedAt, id],
       );
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);

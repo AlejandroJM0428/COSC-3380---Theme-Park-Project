@@ -41,8 +41,9 @@ function TopBanner() {
 
   const showTicker = park.mode === 'closed' || park.mode === 'happyhour'
   // Closing the banner is remembered for this browser tab, for this mode and this exact set of notices.
-  // When the park goes from closed to open, or Happy Hour starts, the new mode shows again.
-  const signature = `${showTicker ? park.mode : 'notices'}:${notices.slice(0, 3).map((n) => n.NotificationID).join(',')}`
+  // When the park goes from closed to open, Happy Hour starts, or weather closes the park, the new mode shows again.
+  const mode = park.reason === 'weather' ? 'closed-weather' : park.mode
+  const signature = `${showTicker ? mode : 'notices'}:${notices.slice(0, 3).map((n) => n.NotificationID).join(',')}`
   const dismiss = () => {
     setDismissed(signature)
     try { sessionStorage.setItem(DISMISS_KEY, signature) } catch { /* private mode: fine */ }
@@ -50,6 +51,12 @@ function TopBanner() {
   if (dismissed === signature) return null
 
   const noticeLines = notices.slice(0, 3).map((n) => `${n.Title}: ${n.Message}`)
+
+  // Severe weather (SQL/migrations/27_weather_severity.sql). The weather notice itself is already in noticeLines.
+  if (park.reason === 'weather') {
+    const lines = [`${BRAND.name} is closed right now due to severe weather`, 'Every ride is closed until the weather clears']
+    return <Ticker mode="closed" tag="Weather" lines={[...lines, ...noticeLines, BRAND.tagline]} onDismiss={dismiss} />
+  }
 
   if (park.mode === 'closed') {
     const lines = [`${BRAND.name} is closed right now`]
