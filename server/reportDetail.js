@@ -41,14 +41,30 @@ const monthStart = (row) => (/^\d{4}-\d{2}$/.test(String(row.Month ?? '')) ? `${
 const day = (row, key) => (/^\d{4}-\d{2}-\d{2}$/.test(String(row[key] ?? '').slice(0, 10)) ? String(row[key]).slice(0, 10) : null);
 const text = (row, key) => (typeof row[key] === 'string' ? row[key] : null);
 
-function pack(sources, label, sql, params, note = null, rangeColumn = null) {
-  return { sources, label, sql, params, note, rangeColumn };
+function pack(sources, label, sql, params, note = null, rangeColumn = null, totals = null) {
+  return { sources, label, sql, params, note, rangeColumn, totals };
 }
 function tablesOnly(sources, note) {
   return pack(sources, 'Source tables', null, [], note);
 }
 
 const notRefunded = 'NOT EXISTS (SELECT 1 FROM TicketRefund r WHERE r.TicketID = t.TicketID)';
+
+// Same definitions as v_MembershipSummary: Active = today is inside the term, Expiring = it ends within 30 days.
+// So "Active now" in the report = the Active + Expiring rows here.
+const MEMBERSHIP_STATUS = `CASE WHEN m.EndDate < CURDATE() THEN 'Expired'
+        WHEN m.StartDate > CURDATE() THEN 'Upcoming'
+        WHEN m.EndDate <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 'Expiring'
+        ELSE 'Active' END`;
+
+// Totals over ALL matching rows, as one SQL statement (see totalsDetailSql). The expressions are fixed text and
+// read the columns of the detail query. `match` is the report column the total must equal (checked on screen).
+const TIER_TOTALS = [
+  { label: 'Memberships', expr: 'COUNT(*)', match: 'Memberships' },
+  { label: 'Price paid', expr: 'COALESCE(SUM(Price), 0)', money: true, match: 'MembershipRevenue' },
+  { label: 'Active now', expr: 'COALESCE(SUM(CURDATE() BETWEEN StartDate AND EndDate), 0)', match: 'ActiveNow' },
+  { label: 'Expiring in 30 days', expr: 'COALESCE(SUM(EndDate BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)), 0)', match: 'ExpiringIn30Days' },
+];
 
 function ticketsOnDay(date) {
   return pack(
@@ -169,7 +185,8 @@ function byTier(row) {
   return pack(
     [MEMBERSHIP, CUSTOMER],
     `${tier} memberships`,
-    `SELECT m.MembershipID, c.FirstName, c.LastName, m.StartDate, m.EndDate, m.Price, m.AutoRenew
+    `SELECT m.MembershipID, c.FirstName, c.LastName, m.StartDate, m.EndDate, m.Price, m.AutoRenew,
+            ${MEMBERSHIP_STATUS} AS Status
        FROM Membership m
        JOIN Customer c ON c.CustomerID = m.CustomerID
       WHERE m.Tier = ?
@@ -178,6 +195,7 @@ function byTier(row) {
     [tier],
     null,
     'm.StartDate',
+    TIER_TOTALS,
   );
 }
 
@@ -645,6 +663,14 @@ export function applyDetailRange(spec, from, to) {
 export function countDetailSql(sql) {
   const body = sql.replace(/\s+ORDER BY[\s\S]*$/i, '').replace(/\s+LIMIT\s+\d+\s*$/i, '');
   return `SELECT COUNT(*) AS total FROM (${body}) detail_rows`;
+}
+
+// One statement that works out the totals over ALL matching rows. Each expression is fixed text from this file
+// (see TIER_TOTALS) that reads the detail query's columns; the clicked row only supplies bound values.
+export function totalsDetailSql(sql, totals) {
+  const body = sql.replace(/\s+ORDER BY[\s\S]*$/i, '').replace(/\s+LIMIT\s+\d+\s*$/i, '');
+  const picks = totals.map((t, i) => `${t.expr} AS t${i}`).join(', ');
+  return `SELECT ${picks} FROM (${body}) detail_rows`;
 }
 
 export const DETAIL_CAP = CAP;

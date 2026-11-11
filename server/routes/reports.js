@@ -4,7 +4,7 @@ import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { audit } from './admin.js';
 import { DEFAULT_LIMIT, ROW_LIMITS, SUGGEST_CAP, columnOptions, describeSource, fixedRules, runReport, runSelect } from '../reportQuery.js';
-import { DETAIL_CAP, applyDetailRange, countDetailSql, describeDetail } from '../reportDetail.js';
+import { DETAIL_CAP, applyDetailRange, countDetailSql, describeDetail, totalsDetailSql } from '../reportDetail.js';
 
 // Who may open which report. Keep these lists in step with `roles` in client/src/config/reports.js.
 // The server is what actually enforces access; the client only hides what you cannot open.
@@ -172,18 +172,25 @@ route(
     if (!spec.sql) {
       return { sources: spec.sources, label: spec.label, note: spec.note, rows: [], shown: 0, total: 0, more: false };
     }
-    const [{ rows }, count] = await Promise.all([
+    const [{ rows }, count, sums] = await Promise.all([
       runSelect(spec.sql, spec.params),
       runSelect(countDetailSql(spec.sql), spec.params),
+      spec.totals ? runSelect(totalsDetailSql(spec.sql, spec.totals), spec.params) : null,
     ]);
     const total = Number(count.rows[0]?.total ?? rows.length);
     const more = total > DETAIL_CAP;
+    const sumRow = sums?.rows?.[0] ?? null;
+    const totals =
+      spec.totals && sumRow
+        ? spec.totals.map((t, i) => ({ label: t.label, value: Number(sumRow[`t${i}`] ?? 0), money: Boolean(t.money), match: t.match ?? null }))
+        : null;
     return {
       sources: spec.sources,
       label: spec.label,
       note: spec.note,
       rows: more ? rows.slice(0, DETAIL_CAP) : rows,
       shown: Math.min(rows.length, DETAIL_CAP),
+      totals,
       total,
       more,
     };

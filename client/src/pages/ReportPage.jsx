@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { getReportOptions, getReportParams, listQueries, reportDetail, runQuery, runReport } from '../api/index.js'
 import ReportDetail from '../components/ReportDetail.jsx'
+import DataSourceBadge from '../components/DataSourceBadge.jsx'
+import ReportSql from '../components/ReportSql.jsx'
 import { useAuth } from '../auth/context.js'
 import DataTable from '../components/DataTable.jsx'
 import DateRangePicker from '../components/DateRangePicker.jsx'
@@ -163,6 +165,7 @@ function ReportBody({ report, csvName }) {
   const label = useMemo(() => makeLabeler(report.labels), [report.labels])
   const [names, setNames] = useState([]) // the names offered in the search box's drop-down
   const [detail, setDetail] = useState(null) // { key, loading, error, data } for the open Details row
+  const [evidence, setEvidence] = useState(null) // proof from the server for the last run: the SQL, row count, run time
 
   // The list of columns is cheap (no report data is read), so it loads when the report opens.
   // The report itself still loads only when Run report is pressed.
@@ -293,11 +296,12 @@ function ReportBody({ report, csvName }) {
     setError('')
     setDetail(null)
     ;(isQuery ? runQuery(report.query, qvals) : runReport(report.endpoint, request))
-      .then(({ rows: data }) => {
+      .then(({ rows: data, evidence: proof }) => {
         if (mine !== latest.current) return
         setRows(report.prepare && !custom ? report.prepare(data) : data)
         setRanCustom(custom)
         setRanRequest(JSON.stringify(request ?? null))
+        setEvidence(proof ?? null)
         setLoaded(true)
       })
       .catch((err) => {
@@ -445,6 +449,14 @@ function ReportBody({ report, csvName }) {
             </div>
           )}
 
+          <DataSourceBadge evidence={evidence} calculatedHere={ranCustom ? [] : (report.calculated ?? [])} />
+          <ReportSql
+            evidence={evidence}
+            after={[
+              ...(!ranCustom && report.tableRows ? ['Summary rows, totals and shares are worked out in the browser'] : []),
+              ...(filtersOn ? ['Page filters are applied to the loaded rows'] : []),
+            ]}
+          />
           {ranCustom && <p className="muted">Custom result: a summary or a column choice, so the report&apos;s own charts and headline numbers are left out.</p>}
 
           {kpis.length > 0 && (

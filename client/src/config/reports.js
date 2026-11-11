@@ -772,6 +772,7 @@ const ALL_REPORTS = [
           })
         },
         columns: ['Tier', 'CurrentPrice', 'Memberships', 'ActiveNow', 'ExpiringIn30Days', 'MembershipRevenue', 'ShareOfRevenue', 'VisitsPerMembership', 'Note'],
+        calculated: ['Share of revenue', 'Note', 'the headline numbers above the table'],
         rowClass: markOf,
       },
       {

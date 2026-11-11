@@ -1,0 +1,17 @@
+.dsb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+  margin: 0.5rem 0;
+  padding: 0.35rem 0.6rem;
+  border-left: 4px solid currentColor;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+.dsb-live { color: #1b7a3a; background: rgba(27, 122, 58, 0.08); }
+.dsb-mock { color: #a15c00; background: rgba(161, 92, 0, 0.1); }
+.dsb-none { color: #b3261e; background: rgba(179, 38, 30, 0.08); }
+.dsb strong { white-space: nowrap; }
+.dsb span { color: inherit; opacity: 0.85; }
+.dsb-calc { font-style: italic; }

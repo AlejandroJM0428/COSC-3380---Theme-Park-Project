@@ -1,0 +1,10 @@
+.rd-totals {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.rd-totals ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
+.rd-ok { color: #1b7a3a; }
+.rd-bad { color: #b3261e; font-weight: 600; }

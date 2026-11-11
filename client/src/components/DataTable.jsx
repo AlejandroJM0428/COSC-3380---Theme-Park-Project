@@ -15,9 +15,13 @@ const PLAIN_NUMBER = /(^|[a-z])(Year|Month|Day|ID|Id|Key|Rank)$|^(Year|Month|Ran
 
 const isMoneyColumn = (key) => MONEY_COLUMN.test(key) && !NOT_MONEY.test(key)
 
+// MySQL sends BOOL columns as 0/1. These flag columns read better as Yes / No.
+const YES_NO_COLUMN = /^(AutoRenew|IsActive|IsIndoor|HasExpress)$/
+
 function formatCell(value, key = '') {
   if (value === null || value === undefined) return '—'
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (YES_NO_COLUMN.test(key) && (value === 0 || value === 1)) return value ? 'Yes' : 'No'
   // Money columns sometimes arrive as DECIMAL text ("1234.5"); turn those into numbers so they format too.
   if (typeof value === 'string' && isMoneyColumn(key) && /^-?\d+(\.\d+)?$/.test(value)) value = Number(value)
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -55,7 +59,8 @@ const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-l
 // rowClass is optional: 'high' shades the row green and 'low' shades it red, so unusual rows stand out.
 // Click a column header to sort: first click ascending, second descending, third back to the original order.
 // onDetail, when passed, adds a Details button on each row. detailKey is the open row (JSON.stringify of that row).
-export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT, labelOf, onDetail, detailKey, detailSlot }) {
+// totalRows, when passed, is the real number of matching rows (the table may only hold the first 20 of them).
+export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMIT, labelOf, onDetail, detailKey, detailSlot, totalRows }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
   const [count, setCount] = useState(pageSize) // how many rows are showing
 
@@ -149,7 +154,7 @@ export default function DataTable({ rows, columns, rowClass, pageSize = ROW_LIMI
       </div>
       {sorted.length > pageSize && (
         <p className="dt-more muted">
-          Showing {visible.length.toLocaleString('en-US')} of {sorted.length.toLocaleString('en-US')} rows
+          Showing {visible.length.toLocaleString('en-US')} of {Math.max(totalRows ?? 0, sorted.length).toLocaleString('en-US')} rows
           {left > 0 && (
             <button type="button" className="dt-toggle" onClick={() => setCount((c) => c + pageSize)}>
               Show {Math.min(pageSize, left).toLocaleString('en-US')} more
