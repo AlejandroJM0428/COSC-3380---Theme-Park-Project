@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { USE_MOCK } from '../api/index.js'
 import { useAuth } from '../auth/context.js'
 import AuthShell from '../components/AuthShell.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
@@ -58,7 +57,6 @@ export default function SignIn() {
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
         </label>
         <button type="submit" className="auth-submit" disabled={!canSubmit}>{busy ? 'Signing in…' : 'Sign in'}</button>
-        {USE_MOCK && <p className="muted auth-note">Demo mode: sign in as customer, avery0001, blake0002 or casey0003 with the password &quot;password&quot;.</p>}
         <p className="auth-links">New here? <Link to="/member/register">Create an account</Link></p>
       </form>
     </AuthShell>

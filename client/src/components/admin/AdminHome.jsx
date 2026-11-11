@@ -53,7 +53,7 @@ export default function AdminHome({ goTo }) {
 
   useEffect(() => {
     let alive = true
-    // Starting inside .then() turns an immediate throw (mock mode) into a rejection the .catch below shows as a note.
+    // Starting inside .then() turns an immediate throw into a rejection the .catch below shows as a note.
     Promise.resolve()
       .then(() => Promise.all([listRecords('users'), listRecords('facilities')]))
       .then(([u, f]) => {

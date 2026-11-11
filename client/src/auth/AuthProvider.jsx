@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import * as api from '../api/index.js'
-import { USE_MOCK } from '../api/index.js'
 import { SESSION_EXPIRED } from '../api/http.js'
 import { AuthContext } from './context.js'
 
@@ -24,7 +23,7 @@ export default function AuthProvider({ children }) {
   // The tab only remembers who signed in while it stays open. A new tab or window starts empty even
   // though the session cookie is still valid, so ask the server once. `ready` is false until we know,
   // so pages do not flash "sign in / create an account" at someone who is already signed in.
-  const [ready, setReady] = useState(() => user != null || USE_MOCK)
+  const [ready, setReady] = useState(() => user != null)
   useEffect(() => {
     if (ready) return undefined
     let alive = true
@@ -41,7 +40,7 @@ export default function AuthProvider({ children }) {
   }, [ready])
 
   // A tab that was signed in before names were sent has no name stored. Ask the server once so the top bar shows the person's name.
-  const needsName = !USE_MOCK && user != null && !user.name
+  const needsName = user != null && !user.name
   useEffect(() => {
     if (!needsName) return undefined
     let alive = true

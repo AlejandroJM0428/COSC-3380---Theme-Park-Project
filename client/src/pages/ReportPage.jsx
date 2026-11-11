@@ -161,7 +161,7 @@ function ReportBody({ report, csvName }) {
   const [selects, setSelects] = useState({}) // filter key -> chosen value ('' = all); only for columns the database does not have (see localKeys)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [meta, setMeta] = useState(null) // the columns a person can choose parameters on; null in mock mode or if it cannot be loaded
+  const [meta, setMeta] = useState(null) // the columns a person can choose parameters on; null if it cannot be loaded
   const [spec, setSpec] = useState(() => emptySpec(null)) // parameters chosen before running (sent to the server)
   const [ranCustom, setRanCustom] = useState(false) // the last run was a summary or a column choice
   const [ranRequest, setRanRequest] = useState('')
@@ -169,7 +169,7 @@ function ReportBody({ report, csvName }) {
   const isQuery = Boolean(report.query)
   const [queryDef, setQueryDef] = useState(null) // { id, title, params: [{ name, label, type, default, choices? }] }
   const [qvals, setQvals] = useState({}) // parameter name -> chosen value
-  const [searchText, setSearchText] = useState('') // the name search when the database cannot do it (mock mode); otherwise it lives in spec.filters
+  const [searchText, setSearchText] = useState('') // the name search when the report's column list could not be loaded; otherwise it lives in spec.filters
   const label = useMemo(() => makeLabeler(report.labels), [report.labels])
   const [names, setNames] = useState([]) // the names offered in the search box's drop-down
   const [detail, setDetail] = useState(null) // { key, loading, error, data } for the open Details row
@@ -211,7 +211,7 @@ function ReportBody({ report, csvName }) {
   // The date picker next to Run report sends its range to the database when that column exists there.
   const dateOnServer = Boolean(meta) && Boolean(dateKey) && meta.columns.some((c) => c.name === dateKey && c.kind === 'date')
   // The name search box next to Run report. It is a "contains" filter on one text column, sent to the server like any other
-  // filter (a bound LIKE, never pasted into the SQL). Without a database (mock mode) the loaded rows are searched instead.
+  // filter (a bound LIKE, never pasted into the SQL). If the column list could not be loaded, the loaded rows are searched instead.
   const searchKey = report.search?.key
   const searchOnServer = Boolean(meta) && Boolean(searchKey) && meta.columns.some((c) => c.name === searchKey && c.kind === 'text')
   const searchValue = searchOnServer ? (spec.filters.find((f) => f.column === searchKey)?.contains ?? '') : searchText

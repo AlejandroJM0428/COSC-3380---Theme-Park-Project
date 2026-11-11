@@ -84,7 +84,7 @@ export default function CancellationsPage() {
   const [notice, setNotice] = useState('')
   const [busyId, setBusyId] = useState(null)
 
-  // Promise.resolve().then(...) turns the "mock mode is on" error into a normal rejection that the banner can show.
+  // Promise.resolve().then(...) turns an immediate throw into a normal rejection that the banner can show.
   const load = useCallback(() => {
     return Promise.resolve()
       .then(() => listCancellations())
