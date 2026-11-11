@@ -193,7 +193,9 @@ route(
       sources: spec.sources,
       label: spec.label,
       note: spec.note,
-      rows,
+      // RowNo is the row's position in the result (1, 2, 3 ...), assigned here as the rows are generated,
+      // so it always matches the order the database returned them in.
+      rows: rows.map((r, i) => ({ RowNo: i + 1, ...r })),
       shown: rows.length,
       totals,
       total,

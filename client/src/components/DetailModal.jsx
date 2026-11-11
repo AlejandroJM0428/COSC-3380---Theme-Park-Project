@@ -27,7 +27,8 @@ export default function DetailModal({ state, onClose }) {
   }, [onClose])
 
   // One lower-case line of text per row, made once, so typing stays quick on thousands of rows.
-  const haystack = useMemo(() => (rows ?? []).map((r) => Object.values(r).map((v) => (v === null || v === undefined ? '' : String(v))).join(' ').toLowerCase()), [rows])
+  // The RowNo count is left out, so typing 12 does not match row 12.
+  const haystack = useMemo(() => (rows ?? []).map((r) => Object.entries(r).filter(([k]) => k !== 'RowNo').map(([, v]) => (v === null || v === undefined ? '' : String(v))).join(' ').toLowerCase()), [rows])
 
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean)
   const shown = useMemo(() => {

@@ -14,3 +14,7 @@
 .dm-body { min-height: 0; overflow: auto; }
 .dm-body .table-wrap.dt-scroll { max-height: none; overflow: visible; } /* the pop-up body scrolls, not the table box */
 .dm :focus-visible { outline: 3px solid #4b92db; outline-offset: 2px; }
+
+/* Column names stay in view while the rows scroll. Without an explicit colour the global `th` rule makes the text white,
+   and the sticky header's background is white, so the names looked blank. */
+.dm-body .table-wrap.dt-scroll thead th { color: var(--ink, #1b2a41); background: var(--panel, #fff); z-index: 2; }
