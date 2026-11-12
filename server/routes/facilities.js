@@ -149,9 +149,15 @@ async function writeRide(f, existingId) {
         [f.zoneId, f.name, f.rideType, f.seatCapacity, f.minHeightCm, f.isIndoor, f.isExpressEligible, f.rideStatus, f.isActive, id],
       );
     }
+    // A repeat (the ride was already down once) updates the old notice in place, so its id does not grow.
     const [notes] = await conn.query(
-      'SELECT Title, Message FROM Notification WHERE NotificationID > ? ORDER BY NotificationID DESC LIMIT 1',
-      [before],
+      `SELECT Title, Message FROM Notification
+        WHERE IsActive = 1
+          AND CreatedAt >= NOW() - INTERVAL 5 SECOND
+          AND (NotificationID > ? OR DedupeKey IN (CONCAT('Maintenance:', ?), CONCAT('RideAdded:', ?), CONCAT('RideBack:', ?)))
+        ORDER BY CreatedAt DESC
+        LIMIT 1`,
+      [before, id, id, id],
     );
     return { id, notification: notes[0] ?? null };
   } finally {

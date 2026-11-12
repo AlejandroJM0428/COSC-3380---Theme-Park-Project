@@ -23,9 +23,11 @@ const ANY_REPORT_ROLE = ['Admin', 'Manager', 'RetailManager', 'HRManager', 'Main
 export const REPORTS = {
   // Future-dated data rule: a visit date after today is only ever a PRE-ORDER (a ticket booked ahead).
   //   preorder: keep those days, flag them PreOrdered = 1 and blank the revenue and fill figures (only the booking count stays).
-  //   dropFuture: leave days after today out completely (revenue, spending and customer counts only cover days that have happened).
+  //   dropFuture: leave days after today out completely (spending and customer counts only cover days that have happened).
+  //   preorder: keep days after today, flag them PreOrdered = 1, and blank the columns in `blank` (ticket sales stay visible).
   //   sql: replaces SELECT * FROM view when the view itself cannot be told to skip future days (list its columns in sqlColumns).
-  //   blank: with preorder, the columns that are left empty for a pre-order day.
+  //   blank: with preorder, the columns that are left empty for a pre-order day. Empty list = keep the amounts, but the page
+  //          still leaves those rows out of the headline totals.
   'customers-per-month': {
     view: 'v_CustomersPerMonth',
     roles: ATTENDANCE,
@@ -47,7 +49,9 @@ export const REPORTS = {
   'ride-availability': { view: 'v_RideAvailability', roles: OPERATIONS },
   'zone-ride-traffic': { view: 'v_ZoneRideTraffic', roles: OPERATIONS },
   'wait-time-by-ride': { view: 'v_WaitTimeByRide', roles: OPERATIONS },
-  'revenue-by-source': { view: 'v_RevenueBySource', roles: RETAIL, dropFuture: 'RevenueDate' },
+  // Future visit days stay in the result (PreOrdered = 1) so a ticket sold ahead still shows. Amounts stay on the row;
+  // the page keeps them out of Total revenue. Visit spending still drops those days: the guest has not spent yet.
+  'revenue-by-source': { view: 'v_RevenueBySource', roles: RETAIL, preorder: 'RevenueDate', blank: [] },
   'visit-spending': { view: 'v_VisitSpending', roles: RETAIL, dropFuture: 'VisitDate' },
   'membership-summary': { view: 'v_MembershipSummary', roles: RETAIL },
   'staff-by-zone': { view: 'v_StaffByZone', roles: HR },
@@ -68,11 +72,13 @@ export function applyFutureRule(rows, report, today) {
   const key = report.preorder ?? report.dropFuture;
   const isFuture = (r) => String(r[key]).slice(0, 10) > today;
   if (report.dropFuture) return rows.filter((r) => !isFuture(r));
-  return rows.map((r) =>
-    isFuture(r)
-      ? { ...r, PreOrdered: 1, PctOfCapacity: null, TicketRevenue: null }
-      : { ...r, PreOrdered: 0 },
-  );
+  const blank = report.blank ?? ['PctOfCapacity', 'TicketRevenue'];
+  return rows.map((r) => {
+    if (!isFuture(r)) return { ...r, PreOrdered: 0 };
+    const out = { ...r, PreOrdered: 1 };
+    for (const col of blank) out[col] = null;
+    return out;
+  });
 }
 
 route(
