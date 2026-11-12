@@ -9,7 +9,7 @@ const REFRESH_MS = 10 * 1000
 let infoRequest = null
 let loadedAt = 0
 function loadParkInfo() {
-  if (!infoRequest || Date.now() - loadedAt > REFRESH_MS) {
+  if (!infoRequest || Date.now() - loadedAt >= REFRESH_MS - 500) {
     loadedAt = Date.now()
     infoRequest = getPublicSite()
       .then((site) => ({ hours: site?.hours ?? null, weather: site?.weather ?? null }))
