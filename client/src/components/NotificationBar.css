@@ -1,7 +1,22 @@
-.notice-bar { display: grid; gap: 6px; margin: 0 0 14px; }
 .notice { margin: 0; padding: 9px 14px; border-radius: 6px; border: 1px solid #b9d8dc; border-left: 6px solid #1c9aa8; background: #eaf6f7; color: #12302f; }
 .notice-warning { border-color: #f0d27a; border-left-color: #ffc233; background: #fff7dc; }
 .notice-alert { border-color: #e7b3b0; border-left-color: #a4161a; background: #fdecea; }
+/* Ride notices (SQL/rules/30): a new or returning ride is good news, a retired ride is a heads-up. */
+.notice-kind-rideadded { border-color: #b7dfc3; border-left-color: #2e9d57; background: #eaf7ee; }
+.notice-kind-ridedeactivated { border-left-color: #6b7280; }
+
+/* Portal notices: one card, click through. It reuses the .notice-* colours above for severity and ride kind. */
+.notice-card { display: flex; align-items: center; gap: 16px; margin: 0 0 14px; padding: 12px 8px 12px 16px; border-radius: 8px; border: 1px solid #b9d8dc; border-left: 6px solid #1c9aa8; background: #eaf6f7; color: #12302f; box-shadow: 0 2px 8px rgba(0, 0, 0, .06); }
+.notice-card-body { flex: 1; min-width: 0; }
+.notice-card-body p { margin: 0; }
+.notice-card-message { margin-top: 2px; line-height: 1.4; }
+.notice-card-actions { flex: none; display: flex; align-items: center; gap: 8px; }
+.notice-card-count { font-size: .8rem; font-weight: 700; opacity: .7; white-space: nowrap; }
+.notice-card-next { min-height: 44px; padding: 0 18px; border-radius: 6px; border: 0; background: var(--navy); color: #fff; font-weight: 800; cursor: pointer; }
+.notice-card .notice-card-next:hover:not(:disabled), .notice-card .notice-card-next:focus-visible { background: #123a73; color: #fff; }
+.notice-card-close { width: 44px; height: 44px; display: grid; place-items: center; background: transparent; border: 0; color: inherit; font-size: 1.5rem; line-height: 1; cursor: pointer; border-radius: 6px; }
+.notice-card .notice-card-close:hover:not(:disabled), .notice-card .notice-card-close:focus-visible { background: rgba(0, 0, 0, .08); color: inherit; }
+@media (max-width: 560px) { .notice-card { flex-direction: column; align-items: stretch; } .notice-card-actions { justify-content: flex-end; } }
 
 /* Public site banner: one notice at a time. Navy always (red is kept for "Buy Tickets"). */
 .notice-strip { background: var(--navy); color: #fff; font-size: .86rem; }

@@ -32,6 +32,7 @@
 }
 .corner-toast-bad { border-color: #f0b4b0; background: var(--bad-bg); color: var(--bad); }
 .corner-toast-top { display: flex; align-items: center; gap: 8px; }
+.corner-toast-x { margin-left: auto; background: none; border: 0; color: inherit; font-size: 1.2rem; line-height: 1; cursor: pointer; padding: 0 2px; }
 .corner-toast p { margin: 6px 0 0; }
 .corner-badge { font-size: .75rem; font-weight: 700; background: var(--bad); color: white; border-radius: 99px; padding: 1px 8px; }
 
@@ -40,3 +41,15 @@
 }
 
 .rm-locked { margin: 8px 0; padding: 8px 12px; border-left: 4px solid var(--line); background: #f6f6f6; font-size: 0.9rem; }
+
+/* "Now" / "Pick a time" choice (type whenNow) */
+.rm-when { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rm-when button { font: inherit; padding: 7px 16px; border: 1.5px solid var(--line); border-radius: 4px; background: #fff; cursor: pointer; }
+.rm-when button.rm-when-on { background: #0c2340; border-color: #0c2340; color: #fff; }
+
+.rm-reactivate {
+  border-color: var(--green, #1a7f4b);
+  color: var(--green, #1a7f4b);
+}
+.rm-actions button:disabled[title] { cursor: not-allowed; }
+.rm-lockmsg { font-size: 0.75rem; opacity: 0.75; margin-left: 4px; }

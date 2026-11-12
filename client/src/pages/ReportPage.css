@@ -1,5 +1,46 @@
 /* Styles for the report page only. Every class starts with rp- so nothing else on the site is affected. */
 
+.rp-runbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 4px;
+}
+
+.rp-datepick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--muted, #4a6663);
+}
+
+.rp-search {
+  min-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule, #d5dde5);
+  border-radius: 6px;
+  background: var(--white, #fff);
+  color: var(--ink, #12302e);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.rp-run {
+  padding: 9px 18px;
+  border: 1px solid var(--ink, #12302e);
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rp-run:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .rp-filters {
   display: flex;
   flex-wrap: wrap;
@@ -91,6 +132,59 @@
   cursor: not-allowed;
 }
 
+.rd-panel {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line, #d5e1dd);
+  border-radius: 8px;
+  background: var(--panel, #fff);
+}
+
+.rd-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rd-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.rd-from {
+  margin: 6px 0;
+  color: var(--muted, #4a6663);
+  font-size: 0.85rem;
+}
+
+.rd-sources {
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rd-sources li {
+  display: flex;
+  gap: 10px;
+  margin: 4px 0;
+}
+
+.rd-sources strong {
+  min-width: 8.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+}
+
+.rd-label {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.rd-error {
+  color: #9b2c2c;
+}
+
 @media (max-width: 600px) {
   .rp-filters label,
   .rp-filters select,
@@ -127,6 +221,31 @@
   margin: 10px 0 0;
 }
 
+.rp-editlinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 10px 0 14px;
+}
+
+.rp-editlinks-label {
+  font-weight: 700;
+}
+
+.rp-editlinks-link {
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel, #fff);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.rp-editlinks-link:hover {
+  border-color: var(--ink);
+}
+
 .rp-notes {
   margin: 12px 0;
   padding: 10px 14px;
@@ -151,3 +270,44 @@
   margin: 14px 0 0;
   font-size: 1rem;
 }
+
+/* Run Queries page (QueryPage.jsx) reuses the report look for its click-first inputs */
+.qp-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted, #4a6663); }
+.qp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.qp-chips button { padding: 7px 12px; border: 1px solid var(--line, #d5e1dd); border-radius: 6px; background: var(--panel, #fff); font: inherit; cursor: pointer; }
+.qp-chips button[aria-pressed='true'] { background: var(--role, #5b3f9a); color: var(--on-role, #fff); border-color: var(--ink, #12302e); font-weight: 700; }
+
+/* "Report changed" card (record saved, added or deleted). Fixed, so it shows above the View all and edit pop-ups too. */
+.rp-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3000;
+  width: min(400px, calc(100vw - 36px));
+  box-sizing: border-box;
+  padding: 26px 44px 24px;
+  text-align: center;
+  font-size: 1.05rem;
+  border: 1px solid #b7dfc3;
+  border-top: 6px solid #2e9d57;
+  border-radius: 12px;
+  background: #eaf7ee;
+  color: #12302f;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+}
+.rp-toast p { margin: 10px 0 0; }
+.rp-toast-title { font-size: 1.3rem; }
+.rp-toast-extra { padding-top: 6px; border-top: 1px solid rgba(0, 0, 0, 0.12); }
+.rp-toast-foot { font-size: 0.85rem; opacity: 0.8; }
+.rp-toast-bad { border-color: #e7b3b0; border-top-color: #a4161a; background: #fdecea; }
+.rp-toast-x { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; color: inherit; font-size: 1.5rem; line-height: 1; cursor: pointer; }
+.rp-toast-x:hover, .rp-toast-x:focus-visible { background: rgba(0, 0, 0, 0.1); }
+
+/* "Add record" drop-down in the edit-links bar. */
+.rp-addmenu { position: relative; }
+.rp-addmenu summary { cursor: pointer; list-style: none; }
+.rp-addmenu summary::-webkit-details-marker { display: none; }
+.rp-addmenu ul { position: absolute; z-index: 50; left: 0; top: calc(100% + 4px); min-width: 190px; margin: 0; padding: 4px; list-style: none; border: 1px solid var(--line); border-radius: 8px; background: var(--panel, #fff); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+.rp-addmenu li a, .rp-addmenu li button { display: block; width: 100%; padding: 7px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.rp-addmenu li a:hover, .rp-addmenu li button:hover { background: rgba(128, 128, 128, 0.16); }

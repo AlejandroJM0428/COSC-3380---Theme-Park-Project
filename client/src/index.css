@@ -147,9 +147,6 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .tabs button[aria-pressed='true'] { background: var(--role); color: var(--on-role); }
 .toolbar { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin: 12px 0 8px; }
 .button-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.demo { margin: 12px 0; max-width: 760px; }
-.demo h2 { margin: 0 0 4px; font-size: 1.2rem; font-weight: 700; }
-.demo p { margin: 0 0 12px; }
 .sell-form { display: grid; gap: 14px; max-width: 360px; }
 .sell-form .check { flex-direction: row; align-items: center; gap: 10px; }
 

@@ -1,16 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { getReport } from '../api/index.js'
+import { getReportOptions, getReportParams, listQueries, reportDetail, runQuery, runReport } from '../api/index.js'
+import ReportDetail from '../components/ReportDetail.jsx'
+import DetailModal from '../components/DetailModal.jsx'
 import { useAuth } from '../auth/context.js'
 import DataTable from '../components/DataTable.jsx'
+import DateRangePicker from '../components/DateRangePicker.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
+import ReportParams, { emptySpec, isCustom, toRequest } from '../components/ReportParams.jsx'
+import RecordEditDialog from '../components/RecordEditDialog.jsx'
+import ReportEditLinks from '../components/ReportEditLinks.jsx'
+import { EDIT_ROLES } from '../config/reportEdits.js'
+import { editTargetFor } from '../config/reportRowEdits.js'
+import { canEditRow } from '../config/rowEditAccess.js'
+import { makeLabeler } from '../config/labels.js'
 import { REPORTS } from '../config/reports.js'
 import NotFound from './NotFound.jsx'
 import './ReportPage.css'
 
 // chart = { type, x, y, y2?, yLabel?, y2Label?, angle? } (see config/reports.js)
-function Chart({ chart, rows }) {
+function Chart({ chart, rows, label }) {
   if (!chart || rows.length === 0) return null
   const Plot = chart.type === 'line' ? LineChart : BarChart
   const angled = Boolean(chart.angle)
@@ -26,19 +36,28 @@ function Chart({ chart, rows }) {
           {chart.y2 && <Legend verticalAlign="top" />}
           {chart.type === 'line' ? (
             <>
-              <Line type="monotone" dataKey={chart.y} name={chart.yLabel ?? chart.y} stroke="#f26b4f" strokeWidth={3} dot={false} />
-              {chart.y2 && <Line type="monotone" dataKey={chart.y2} name={chart.y2Label ?? chart.y2} stroke="#1c9aa8" strokeWidth={2} dot={false} />}
+              <Line type="monotone" dataKey={chart.y} name={chart.yLabel ?? label(chart.y)} stroke="#f26b4f" strokeWidth={3} dot={false} />
+              {chart.y2 && <Line type="monotone" dataKey={chart.y2} name={chart.y2Label ?? label(chart.y2)} stroke="#1c9aa8" strokeWidth={2} dot={false} />}
             </>
           ) : (
             <>
-              <Bar dataKey={chart.y} name={chart.yLabel ?? chart.y} fill="#1c9aa8" radius={[3, 3, 0, 0]} />
-              {chart.y2 && <Bar dataKey={chart.y2} name={chart.y2Label ?? chart.y2} fill="#f2b14f" radius={[3, 3, 0, 0]} />}
+              <Bar dataKey={chart.y} name={chart.yLabel ?? label(chart.y)} fill="#1c9aa8" radius={[3, 3, 0, 0]} />
+              {chart.y2 && <Bar dataKey={chart.y2} name={chart.y2Label ?? label(chart.y2)} fill="#f2b14f" radius={[3, 3, 0, 0]} />}
             </>
           )}
         </Plot>
       </ResponsiveContainer>
     </div>
   )
+}
+
+// The clicked row is kept as JSON text (it is the Details key); turn it back into the row.
+function parseRow(key) {
+  try {
+    return JSON.parse(key) ?? {}
+  } catch {
+    return {}
+  }
 }
 
 // A report's own functions should never be able to blank the whole page.
@@ -59,8 +78,8 @@ function csvCell(v) {
 }
 
 // Download the rows as a .csv file (opens in Excel / LibreOffice Calc).
-function downloadCsv(name, columns, rows) {
-  const lines = [columns.map(csvCell).join(','), ...rows.map((r) => columns.map((c) => csvCell(r[c])).join(','))]
+function downloadCsv(name, columns, rows, label) {
+  const lines = [columns.map((c) => csvCell(label(c))).join(','), ...rows.map((r) => columns.map((c) => csvCell(r[c])).join(','))]
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -72,81 +91,467 @@ function downloadCsv(name, columns, rows) {
   URL.revokeObjectURL(url)
 }
 
+// The inputs for a query tab, drawn from the parameter list the server sends: the start and end dates become one
+// click-to-pick date range, a parameter with `choices` becomes a drop-down, a text parameter is a search box, and any other number is a number box.
+function QueryInputs({ params, values, onChange, onEnter }) {
+  const set = (name, value) => onChange((v) => ({ ...v, [name]: value }))
+  const hasDates = params.some((p) => p.name === 'start') && params.some((p) => p.name === 'end')
+  return (
+    <>
+      {params
+        .filter((p) => p.type !== 'date')
+        .map((p) => (
+          <label key={p.name} className="rp-datepick">
+            <span>{p.label}</span>
+            {p.type === 'text' ? (
+              <>
+                <input
+                  type="search"
+                  className="rp-search"
+                  maxLength={60}
+                  list={`rp-names-${p.name}`}
+                  placeholder={p.placeholder ?? 'Type part of a name, or pick one'}
+                  value={values[p.name] ?? ''}
+                  onChange={(e) => set(p.name, e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && onEnter?.()}
+                />
+                <datalist id={`rp-names-${p.name}`}>
+                  {(p.suggestions ?? []).map((n) => (
+                    <option key={n} value={n} />
+                  ))}
+                </datalist>
+              </>
+            ) : Array.isArray(p.choices) ? (
+              <select value={values[p.name] ?? p.default} onChange={(e) => set(p.name, Number(e.target.value))}>
+                {p.choices.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input type="number" min="0" value={values[p.name] ?? ''} onChange={(e) => set(p.name, e.target.value)} />
+            )}
+          </label>
+        ))}
+      {hasDates && (
+        <div className="rp-datepick">
+          <span>Dates</span>
+          <DateRangePicker
+            label="Dates"
+            from={values.start ?? ''}
+            to={values.end ?? ''}
+            onChange={({ from, to }) => onChange((v) => ({ ...v, start: from || params.find((p) => p.name === 'start').default, end: to || params.find((p) => p.name === 'end').default }))}
+          />
+        </div>
+      )}
+    </>
+  )
+}
+
 // The body of one report or one section: filters, headline numbers, notes, charts and table.
 // `report` is either a whole report or one entry of report.sections (both use the same settings, see config/reports.js).
-function ReportBody({ report, csvName }) {
+// Columns that start on the Search options panel as ready-to-use filters: the report's own choice (`featured`), otherwise the
+// first few columns it already offers as drop-downs. The date range and the name search box live next to Run report instead.
+function featuredColumns(report, meta) {
+  const wanted = report.featured ?? (report.filters ?? []).map((f) => f.key)
+  return wanted.filter((k) => k !== report.dateFilter?.key && k !== report.search?.key && meta.columns.some((c) => c.name === k)).slice(0, 3)
+}
+
+function ReportBody({ report, csvName, addRequest, onAddHandled }) {
   const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loaded, setLoaded] = useState(false) // nothing is fetched until the user presses Run report
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [selects, setSelects] = useState({}) // filter key -> chosen value ('' = all)
+  const [selects, setSelects] = useState({}) // filter key -> chosen value ('' = all); only for columns the database does not have (see localKeys)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-
+  const [meta, setMeta] = useState(null) // the columns a person can choose parameters on; null if it cannot be loaded
+  const [spec, setSpec] = useState(() => emptySpec(null)) // parameters chosen before running (sent to the server)
+  const [ranCustom, setRanCustom] = useState(false) // the last run was a summary or a column choice
+  const [ranRequest, setRanRequest] = useState('')
+  // A tab with `query: 'q1'` runs one of the SQL files in SQL/queries instead of a view. Its parameters come from the server.
+  const isQuery = Boolean(report.query)
+  const [queryDef, setQueryDef] = useState(null) // { id, title, params: [{ name, label, type, default, choices? }] }
+  const [qvals, setQvals] = useState({}) // parameter name -> chosen value
+  const [searchText, setSearchText] = useState('') // the name search when the report's column list could not be loaded; otherwise it lives in spec.filters
+  const label = useMemo(() => makeLabeler(report.labels), [report.labels])
+  const [names, setNames] = useState([]) // the names offered in the search box's drop-down
+  const [detail, setDetail] = useState(null) // { key, loading, error, data } for the open Details row
+  const [viewAll, setViewAll] = useState(null) // { title, loading, error, data } for the View all pop-up
+  const { user } = useAuth()
+  const [editing, setEditing] = useState(null) // { entity, id, row, mode } for the open Edit / Add pop-up (config/reportRowEdits.js says which record a row is)
+  // The "Add record" menu lives above the tabs, so it asks and this body opens the blank form (then tells the page it was taken).
   useEffect(() => {
-    let cancelled = false // ignore a slow response if the user already switched tabs (this component is remounted per report and tab, so state starts fresh)
-    getReport(report.endpoint)
+    if (!addRequest) return
+    setEditing({ entity: addRequest.entity, id: null, row: null, mode: 'add' })
+    onAddHandled()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addRequest])
+
+  // The list of columns is cheap (no report data is read), so it loads when the report opens.
+  // The report itself still loads only when Run report is pressed.
+  useEffect(() => {
+    let live = true
+    if (isQuery) {
+      listQueries()
+        .then((list) => {
+          const def = list.find((q) => q.id === report.query)
+          if (!live || !def) return
+          setQueryDef(def)
+          setQvals(Object.fromEntries(def.params.map((p) => [p.name, p.default])))
+        })
+        .catch((err) => {
+          if (live) setError(err.message)
+        })
+      return () => {
+        live = false
+      }
+    }
+    getReportParams(report.endpoint)
+      .then((m) => {
+        if (!live || !m) return
+        setMeta(m)
+        setSpec(emptySpec(m, featuredColumns(report, m)))
+      })
+      .catch(() => {}) // no parameter panel; the report still runs with the old behaviour
+    return () => {
+      live = false
+    }
+  }, [report, isQuery])
+
+  const columnNames = useMemo(() => new Set((meta?.columns ?? []).map((c) => c.name)), [meta])
+  const dateKey = report.dateFilter?.key
+  // The date picker next to Run report sends its range to the database when that column exists there.
+  const dateOnServer = Boolean(meta) && Boolean(dateKey) && meta.columns.some((c) => c.name === dateKey && c.kind === 'date')
+  // The name search box next to Run report. It is a "contains" filter on one text column, sent to the server like any other
+  // filter (a bound LIKE, never pasted into the SQL). If the column list could not be loaded, the loaded rows are searched instead.
+  const searchKey = report.search?.key
+  const searchOnServer = Boolean(meta) && Boolean(searchKey) && meta.columns.some((c) => c.name === searchKey && c.kind === 'text')
+  const searchValue = searchOnServer ? (spec.filters.find((f) => f.column === searchKey)?.contains ?? '') : searchText
+  useEffect(() => {
+    if (!searchOnServer) return undefined
+    let live = true
+    getReportOptions(report.endpoint, searchKey, true)
+      .then((r) => live && setNames(r.values ?? []))
+      .catch(() => {}) // no drop-down; typing still works
+    return () => {
+      live = false
+    }
+  }, [report.endpoint, searchKey, searchOnServer])
+  const nameList = useMemo(() => {
+    const local = searchKey && !searchOnServer ? [...new Set(rows.map((r) => r[searchKey]).filter(Boolean))].sort() : names
+    return local
+  }, [names, rows, searchKey, searchOnServer])
+  function typeSearch(text) {
+    if (!searchOnServer) {
+      setSearchText(text)
+      return
+    }
+    const others = spec.filters.filter((f) => f.column !== searchKey)
+    setSpec({ ...spec, filters: text ? [...others, { column: searchKey, kind: 'text', values: [], contains: text }] : others })
+  }
+  const serverDate = dateOnServer ? spec.filters.find((f) => f.column === dateKey) : null
+  const pickFrom = dateOnServer ? (serverDate?.from ?? '') : from
+  const pickTo = dateOnServer ? (serverDate?.to ?? '') : to
+  // Drop-downs on columns the view does not have (the page works them out, for example Month) still work on the loaded rows.
+  const localKeys = useMemo(() => (report.filters ?? []).filter((f) => !columnNames.has(f.key)), [report, columnNames])
+
+  function pickDates({ from: f, to: t }) {
+    if (!dateOnServer) {
+      setFrom(f)
+      setTo(t)
+      return
+    }
+    const others = spec.filters.filter((x) => x.column !== dateKey)
+    setSpec({ ...spec, filters: f || t ? [...others, { column: dateKey, kind: 'date', from: f, to: t }] : others })
+  }
+
+  // Only the Run report button fetches. A newer press makes an older, slower answer be ignored. The component is remounted
+  // per report and tab, so a report you switch away from starts empty again and loads nothing until you press the button.
+  const latest = useRef(0)
+  // The "report changed" card: { title, message, extra?, footnote?, bad? }, shown above any pop-up so a change is never silent.
+  const [notice, setNotice] = useState(null)
+  useEffect(() => {
+    if (!notice) return undefined
+    const t = setTimeout(() => setNotice(null), 9000)
+    return () => clearTimeout(t)
+  }, [notice])
+  const REFRESHED = 'The report below was refreshed with this change.'
+  const detailReq = useRef(0)
+  const allReq = useRef(0)
+  function detailTitle(row) {
+    const cols = (!ranCustom && report.columns) || Object.keys(row)
+    return cols
+      .filter((c) => c !== 'Note' && !String(c).startsWith('_') && row[c] !== null && row[c] !== undefined && row[c] !== '')
+      .slice(0, 4)
+      .map((c) => `${label(c)} ${row[c]}`)
+      .join(' · ')
+  }
+  function detailRange() {
+    let saved
+    try {
+      saved = JSON.parse(ranRequest)
+    } catch {
+      saved = null
+    }
+    if (isQuery) return { from: saved?.start || '', to: saved?.end || '' }
+    if (dateOnServer) {
+      const hit = (saved?.filters ?? []).find((f) => f.column === dateKey)
+      return { from: hit?.from || '', to: hit?.to || '' }
+    }
+    return { from, to }
+  }
+  // View all: load every matching row of the open Details line and show them in the searchable pop-up.
+  function openViewAll() {
+    if (!detail) return
+    const row = parseRow(detail.key)
+    const mine = ++allReq.current
+    const title = detail.title
+    setViewAll({ title, loading: true, error: '', data: null })
+    reportDetail(report.endpoint || report.query, row, detailRange(), 'all')
+      .then((data) => mine === allReq.current && setViewAll({ title, loading: false, error: '', data }))
+      .catch((err) => mine === allReq.current && setViewAll({ title, loading: false, error: err.message, data: null }))
+  }
+  function closeViewAll() {
+    allReq.current++ // an answer still on its way is ignored
+    setViewAll(null)
+  }
+  // The Edit button on a detail row. null = no button (not a manager role, or an aggregate row with no single record behind it).
+  // Greyed with the reason as its tooltip when this person may not edit that record. The server checks the role again on save.
+  function rowActionFor(row) {
+    if (!EDIT_ROLES.includes(user?.role)) return null
+    const target = editTargetFor(row)
+    if (!target) return null
+    const { allowed, reason } = canEditRow(target.entity, row, user)
+    return { label: 'Edit', disabled: !allowed, title: allowed ? `Edit ${target.entity.noun} #${target.id}` : reason, onClick: () => setEditing({ ...target, row }) }
+  }
+  function openDetail(row) {
+    const key = JSON.stringify(row)
+    closeViewAll()
+    if (detail?.key === key) {
+      setDetail(null)
+      return
+    }
+    const id = report.endpoint || report.query
+    const mine = ++detailReq.current
+    setDetail({ key, title: detailTitle(row), loading: true, error: '', data: null })
+    reportDetail(id, row, detailRange())
       .then((data) => {
-        if (!cancelled) setRows(report.prepare ? report.prepare(data) : data)
+        if (mine === detailReq.current) setDetail({ key, title: detailTitle(row), loading: false, error: '', data })
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message)
+        if (mine === detailReq.current) setDetail({ key, title: detailTitle(row), loading: false, error: err.message, data: null })
+      })
+  }
+  // Reload the open Details line after a record was saved, keeping the tab, date range and open row.
+  // Quiet on purpose: no loading flash, the old rows stay until the new ones arrive. It shares detailReq with openDetail, so
+  // a slower older answer never overwrites a newer one, and a panel the person closed meanwhile stays closed.
+  function refreshDetail() {
+    if (!detail) return
+    const { key, title } = detail
+    const mine = ++detailReq.current
+    reportDetail(report.endpoint || report.query, parseRow(key), detailRange())
+      .then((data) => {
+        if (mine !== detailReq.current) return
+        if (!(data.rows?.length > 0)) {
+          // Nothing is left on this line (the last record was removed or moved elsewhere): close the panel instead of showing an empty one.
+          closeViewAll()
+          setDetail(null)
+          setNotice({ title: 'Report updated', message: 'No records are left on that line.', footnote: REFRESHED })
+          return
+        }
+        setDetail((cur) => (cur && cur.key === key ? { key, title, loading: false, error: '', data } : cur))
+      })
+      .catch((err) => {
+        // Keep the rows that are already shown and say the refresh failed.
+        if (mine === detailReq.current) setDetail((cur) => (cur && cur.key === key ? { ...cur, error: `Saved, but the list could not be refreshed: ${err.message}` } : cur))
+      })
+  }
+  // Reload the report's own numbers (table, ticks and crosses, chart) after a record was saved. Uses the request of the last Run, not
+  // the filters on screen now, so half-edited filters are not applied. Quiet: no loading flash, no closing the open Details line.
+  // A newer Run press (latest) or a newer refresh wins over this answer; on failure the old numbers stay.
+  const refreshReq = useRef(0)
+  function refreshReport() {
+    if (!loaded) return
+    let saved
+    try {
+      saved = JSON.parse(ranRequest)
+    } catch {
+      return
+    }
+    const base = latest.current
+    const mine = ++refreshReq.current
+    ;(isQuery ? runQuery(report.query, saved ?? qvals) : runReport(report.endpoint, saved ?? undefined))
+      .then(({ rows: data }) => {
+        if (mine !== refreshReq.current || base !== latest.current) return
+        setRows(report.prepare && !ranCustom ? report.prepare(data) : data)
+      })
+      .catch(() => {})
+  }
+  // Reload the open View all pop-up after a save (same shape as openViewAll, but keeps the old rows until the new ones arrive).
+  function refreshViewAll() {
+    if (!viewAll || !detail) return
+    const { title } = viewAll
+    const mine = ++allReq.current
+    reportDetail(report.endpoint || report.query, parseRow(detail.key), detailRange(), 'all')
+      .then((data) => {
+        if (mine === allReq.current) setViewAll((cur) => (cur ? { title, loading: false, error: '', data } : cur))
+      })
+      .catch((err) => {
+        if (mine === allReq.current) setViewAll((cur) => (cur ? { ...cur, error: `Saved, but the list could not be refreshed: ${err.message}` } : cur))
+      })
+  }
+  function run(eventOrSpec) {
+    const useSpec = eventOrSpec && Array.isArray(eventOrSpec.filters) ? eventOrSpec : spec
+    const mine = ++latest.current
+    const request = isQuery ? qvals : meta ? toRequest(useSpec) : undefined
+    const custom = !isQuery && Boolean(meta) && isCustom(useSpec)
+    setLoading(true)
+    setError('')
+    setDetail(null)
+    ;(isQuery ? runQuery(report.query, qvals) : runReport(report.endpoint, request))
+      .then(({ rows: data }) => {
+        if (mine !== latest.current) return
+        setRows(report.prepare && !custom ? report.prepare(data) : data)
+        setRanCustom(custom)
+        setRanRequest(JSON.stringify(request ?? null))
+        setLoaded(true)
+      })
+      .catch((err) => {
+        if (mine === latest.current) setError(err.message)
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (mine === latest.current) setLoading(false)
       })
-    return () => {
-      cancelled = true
+  }
+
+  const stale = loaded && (isQuery ? JSON.stringify(qvals) !== ranRequest : Boolean(meta) && JSON.stringify(toRequest(spec)) !== ranRequest)
+
+  // A date the person picked that has no rows. Future days used to vanish with no explanation, so a ticket sold ahead looked like a broken report.
+  function showAllDates() {
+    if (dateOnServer) {
+      const next = { ...spec, filters: spec.filters.filter((f) => f.column !== dateKey) }
+      setSpec(next)
+      run(next)
+      return
     }
-  }, [report])
+    setFrom('')
+    setTo('')
+  }
+  const todayIso = (() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })()
+  const dateLabel = pickFrom && pickTo ? (pickFrom === pickTo ? pickFrom : `${pickFrom} to ${pickTo}`) : pickFrom ? `from ${pickFrom}` : pickTo ? `up to ${pickTo}` : ''
+  const rangeIsAhead = Boolean(pickFrom) && pickFrom > todayIso
 
   // Values for each drop-down, taken from the rows themselves.
   const options = useMemo(() => {
     const out = {}
-    for (const f of report.filters ?? []) {
+    for (const f of localKeys) {
       out[f.key] = [...new Set(rows.map((r) => r[f.key]).filter((v) => v !== null && v !== undefined))].map(String).sort()
     }
     return out
-  }, [rows, report])
+  }, [rows, localKeys])
 
+  const useLocal = !ranCustom // a summary has different columns, so the page-side filters do not apply to it
+  const localDate = useLocal && report.dateFilter && !dateOnServer
   const filtered = useMemo(
     () =>
-      rows.filter((r) => {
-        for (const f of report.filters ?? []) {
-          const chosen = selects[f.key]
-          if (chosen && String(r[f.key]) !== chosen) return false
-        }
-        if (report.dateFilter) {
-          const day = String(r[report.dateFilter.key]).slice(0, 10)
-          if (from && day < from) return false
-          if (to && day > to) return false
-        }
-        return true
-      }),
-    [rows, selects, from, to, report],
+      useLocal
+        ? rows.filter((r) => {
+            for (const f of localKeys) {
+              const chosen = selects[f.key]
+              if (chosen && String(r[f.key]) !== chosen) return false
+            }
+            if (localDate) {
+              const day = String(r[report.dateFilter.key]).slice(0, 10)
+              if (from && day < from) return false
+              if (to && day > to) return false
+            }
+            if (searchKey && !searchOnServer && searchText.trim()) {
+              if (!String(r[searchKey] ?? '').toLowerCase().includes(searchText.trim().toLowerCase())) return false
+            }
+            return true
+          })
+        : rows,
+    [rows, selects, from, to, report, localKeys, useLocal, localDate, searchKey, searchOnServer, searchText],
   )
 
-  const kpis = report.kpis ? safely(() => report.kpis(filtered), []) : []
-  const insights = report.insights ? safely(() => report.insights(filtered), []) : []
-  const notes = [...insights, ...(report.notes ?? [])]
-  const chartRows = report.chartRows ? safely(() => report.chartRows(filtered), []) : filtered
-  const extra = report.extraChart
-  const extraRows = extra ? safely(() => extra.rows(filtered), []) : []
+  // Days after today are Pre-ordered (tickets booked ahead). They stay out of every total, average and chart,
+  // and only a report with showPreOrdered lists them (at the top of the table, marked Pre-ordered).
+  const actual = useMemo(() => (ranCustom ? filtered : filtered.filter((r) => !Number(r.PreOrdered))), [filtered, ranCustom])
+  const preOrdered = useMemo(
+    () => (ranCustom ? [] : filtered.filter((r) => Number(r.PreOrdered)).map((r) => ({ ...r, Note: 'Pre-ordered', _mark: undefined }))),
+    [filtered, ranCustom],
+  )
+  const kpis = !ranCustom && report.kpis ? safely(() => report.kpis(actual), []) : []
+  const insights = !ranCustom && report.insights ? safely(() => report.insights(actual), []) : []
+  const notes = ranCustom ? [] : [...insights, ...(report.notes ?? [])]
+  const chartRows = ranCustom ? [] : report.chartRows ? safely(() => report.chartRows(actual), []) : actual
+  const extra = ranCustom ? null : report.extraChart
+  const extraRows = extra ? safely(() => extra.rows(actual), []) : []
   // tableRows lets a report show a summary (one row per month, venue, item...) instead of the raw rows.
-  const tableRows = report.tableRows ? safely(() => report.tableRows(filtered), []) : filtered
-  const hasFilters = (report.filters?.length ?? 0) > 0 || Boolean(report.dateFilter)
-  const filtersOn = Object.values(selects).some(Boolean) || from || to
+  const baseRows = !ranCustom && report.tableRows ? safely(() => report.tableRows(actual), []) : actual
+  const tableRows =
+    !ranCustom && report.showPreOrdered
+      ? [...[...preOrdered].sort((a, b) => String(b[report.dateFilter?.key] ?? b.VisitDate ?? '').localeCompare(String(a[report.dateFilter?.key] ?? a.VisitDate ?? ''))), ...baseRows]
+      : baseRows
+  const hasFilters = localKeys.length > 0
+  const filtersOn = localKeys.some((f) => selects[f.key]) || (localDate && (from || to)) || (!searchOnServer && searchKey && searchText.trim() !== '')
 
   return (
     <div>
       {report.sectionDescription && <p className="muted rp-section-desc">{report.sectionDescription}</p>}
       <ErrorBanner message={error} onClose={() => setError('')} />
-      {loading ? (
-        <p className="muted">Loading report…</p>
-      ) : (
+      <div className="rp-runbar">
+        {report.search && !isQuery && (
+          <label className="rp-datepick">
+            <span>{report.search.label}</span>
+            <input
+              type="search"
+              className="rp-search"
+              maxLength={60}
+              placeholder={report.search.placeholder ?? 'Type part of a name, or pick one'}
+              list={`rp-names-${csvName}`}
+              value={searchValue}
+              onChange={(e) => typeSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !loading && run()}
+            />
+            <datalist id={`rp-names-${csvName}`}>
+              {nameList.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
+          </label>
+        )}
+        {isQuery && queryDef && <QueryInputs params={queryDef.params} values={qvals} onChange={setQvals} onEnter={() => !loading && run()} />}
+        {report.dateFilter && (
+          <div className="rp-datepick">
+            <span>{report.dateFilter.label}</span>
+            <DateRangePicker label={report.dateFilter.label} from={pickFrom} to={pickTo} onChange={pickDates} />
+          </div>
+        )}
+        <button type="button" className="btn-primary rp-run" onClick={run} disabled={loading}>
+          {loading ? 'Loading…' : loaded ? (stale ? 'Update results' : 'Refresh') : 'Run report'}
+        </button>
+        {!loaded && !loading && !error && <span className="muted">Pick a date or any filters you want (or none), then press Run report.</span>}
+        {stale && !loading && <span className="muted">You changed the filters. Press Update results to apply them.</span>}
+      </div>
+      {!isQuery && <ReportParams
+          endpoint={report.endpoint}
+          meta={meta}
+          spec={spec}
+          onChange={setSpec}
+          label={label}
+          hideColumn={[dateOnServer ? dateKey : '', searchOnServer ? searchKey : '']}
+        />}
+      {loaded && (
         <>
-          {hasFilters && (
+          {(hasFilters || filtersOn) && (
             <div className="rp-filters">
-              {(report.filters ?? []).map((f) => (
+              {localKeys.map((f) => (
                 <label key={f.key}>
                   <span>{f.label}</span>
                   <select value={selects[f.key] ?? ''} onChange={(e) => setSelects((s) => ({ ...s, [f.key]: e.target.value }))}>
@@ -159,18 +564,6 @@ function ReportBody({ report, csvName }) {
                   </select>
                 </label>
               ))}
-              {report.dateFilter && (
-                <>
-                  <label>
-                    <span>{report.dateFilter.label} from</span>
-                    <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-                  </label>
-                  <label>
-                    <span>to</span>
-                    <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-                  </label>
-                </>
-              )}
               {filtersOn && (
                 <button
                   type="button"
@@ -179,12 +572,19 @@ function ReportBody({ report, csvName }) {
                     setSelects({})
                     setFrom('')
                     setTo('')
+                    setSearchText('')
                   }}
                 >
                   Clear filters
                 </button>
               )}
             </div>
+          )}
+
+          {ranCustom && <p className="muted">Custom result: a summary or a column choice, so the report&apos;s own charts and headline numbers are left out.</p>}
+
+          {loaded && preOrdered.length > 0 && actual.length === 0 && (
+            <p className="muted">These dates have not happened yet. The bookings are listed below and are not included in the totals until that day.</p>
           )}
 
           {kpis.length > 0 && (
@@ -210,12 +610,12 @@ function ReportBody({ report, csvName }) {
             </div>
           )}
 
-          {report.summary && <p className="summary">{safely(() => report.summary(filtered), '')}</p>}
-          <Chart chart={report.chart} rows={chartRows} />
+          {!ranCustom && report.summary && <p className="summary">{safely(() => report.summary(actual), '')}</p>}
+          {!ranCustom && <Chart chart={report.chart} rows={chartRows} label={label} />}
           {extra && extraRows.length > 0 && (
             <>
               <h3 className="rp-chart-title">{extra.title}</h3>
-              <Chart chart={extra.chart} rows={extraRows} />
+              <Chart chart={extra.chart} rows={extraRows} label={label} />
             </>
           )}
           <div className="rp-actions">
@@ -224,12 +624,65 @@ function ReportBody({ report, csvName }) {
               type="button"
               className="rp-export"
               disabled={tableRows.length === 0}
-              onClick={() => downloadCsv(csvName, report.columns ?? Object.keys(tableRows[0]), tableRows)}
+              onClick={() => downloadCsv(csvName, (!ranCustom && report.columns) || Object.keys(tableRows[0]), tableRows, label)}
             >
               Download CSV
             </button>
           </div>
-          <DataTable key={csvName} rows={tableRows} columns={report.columns} rowClass={report.rowClass} />
+          <DataTable
+            key={csvName}
+            rows={tableRows}
+            empty={
+              tableRows.length === 0 && dateLabel ? (
+                <p className="muted">
+                  No rows for {dateLabel}.
+                  {rangeIsAhead
+                    ? ' That day has not happened yet, and nothing is booked for it. Ticket sales for a later day show up when you pick that day, or when you show every date.'
+                    : ' Nothing was recorded in that range.'}{' '}
+                  <button type="button" className="rp-clear" onClick={showAllDates}>
+                    Show all dates
+                  </button>
+                </p>
+              ) : undefined
+            }
+            columns={ranCustom ? undefined : report.columns}
+            rowClass={ranCustom ? undefined : report.rowClass}
+            labelOf={label}
+            onDetail={report.endpoint || report.query ? openDetail : undefined}
+            detailKey={detail?.key ?? null}
+            detailSlot={detail ? <ReportDetail state={detail} onClose={() => setDetail(null)} onViewAll={openViewAll} rowAction={rowActionFor} /> : null}
+          />
+          {notice && (
+            <aside className={`rp-toast ${notice.bad ? 'rp-toast-bad' : ''}`} role="status" aria-live="polite">
+              <button type="button" className="rp-toast-x" onClick={() => setNotice(null)} aria-label="Dismiss">
+                ×
+              </button>
+              <strong className="rp-toast-title">{notice.title}</strong>
+              <p>{notice.message}</p>
+              {notice.extra && (
+                <p className="rp-toast-extra">
+                  <strong>{notice.extra.title}</strong> {notice.extra.message}
+                </p>
+              )}
+              {notice.footnote && <p className="rp-toast-foot">{notice.footnote}</p>}
+            </aside>
+          )}
+          {viewAll && <DetailModal state={viewAll} onClose={closeViewAll} rowAction={rowActionFor} />}
+          {editing && <RecordEditDialog entity={editing.entity} mode={editing.mode} id={editing.id} row={editing.row} onDeleted={(message) => {
+              setEditing(null)
+              if (message) setNotice({ title: 'Record deleted', message, footnote: REFRESHED })
+              refreshReport()
+              refreshDetail()
+              refreshViewAll()
+            }} onSaved={(saved, message) => {
+              const extra = editing.entity.savedToast?.(saved) // a database rule added something (for example a notice): say so too
+              const title = editing.mode === 'add' ? 'Record added' : 'Record updated'
+              setEditing(null)
+              if (message) setNotice({ title, message, extra, footnote: extra?.footnote ?? REFRESHED })
+              refreshReport()
+              refreshDetail()
+              refreshViewAll()
+            }} onClose={() => setEditing(null)} />}
         </>
       )}
     </div>
@@ -246,6 +699,7 @@ export default function ReportPage({ reportKey }) {
   const report = REPORTS.find((r) => r.key === key)
   const allowed = Boolean(report) && (!report.roles || report.roles.includes(user.role))
   const [tab, setTab] = useState('')
+  const [addRequest, setAddRequest] = useState(null) // { entity } from the Add record menu, passed down to the body
 
   if (!report) return <NotFound />
   if (!allowed) return <p className="page-note">Your role ({user.role}) cannot open this report.</p>
@@ -257,6 +711,7 @@ export default function ReportPage({ reportKey }) {
     <div>
       <h1>{report.title}</h1>
       <p className="muted">{report.description}</p>
+      <ReportEditLinks reportKey={report.key} onAdd={(entity) => setAddRequest({ entity })} />
       {sections && (
         <div className="rp-tabs" role="tablist">
           {sections.map((s) => (
@@ -273,7 +728,7 @@ export default function ReportPage({ reportKey }) {
           ))}
         </div>
       )}
-      <ReportBody key={`${report.key}/${active.key}`} report={active} csvName={sections ? `${report.key}-${active.key}` : report.key} />
+      <ReportBody key={`${report.key}/${active.key}`} report={active} csvName={sections ? `${report.key}-${active.key}` : report.key} addRequest={addRequest} onAddHandled={() => setAddRequest(null)} />
     </div>
   )
 }

@@ -24,9 +24,56 @@ const BLOCKED_COPY = {
     title: 'Those details could not be saved',
     help: 'A dependent must be under 18 and the birth date cannot be in the future. Check the date of birth.',
   },
+  trg_Ticket_BI_Window: {
+    title: 'That date is too far away',
+    help: 'Tickets go on sale 180 days before the visit. Pick an earlier date.',
+    action: { label: 'Pick another date', tab: 'tickets' },
+  },
+  trg_Ticket_BU_Window: {
+    title: 'That date is too far away',
+    help: 'Tickets go on sale 180 days before the visit. Pick an earlier date.',
+  },
+  trg_TicketRefund_BI: {
+    title: 'Too late for a refund',
+    help: 'Refunds need at least 2 days notice before the visit. Weather closures are refunded automatically.',
+    action: { label: 'View my tickets', tab: 'tickets' },
+  },
+  trg_Purchase_BI_Alcohol21: {
+    title: 'Alcohol needs a guest who is 21 or older',
+    help: 'Check the guest\'s date of birth. Pick a non-alcoholic item instead.',
+  },
+  trg_Purchase_BU_Alcohol21: {
+    title: 'Alcohol needs a guest who is 21 or older',
+    help: 'Check the guest\'s date of birth. Pick a non-alcoholic item instead.',
+  },
+  trg_Purchase_BI_DrinkLimit: {
+    title: 'Drink limit reached',
+    help: 'A ticket can have at most 8 alcoholic drinks per day.',
+  },
+  trg_Purchase_BU_DrinkLimit: {
+    title: 'Drink limit reached',
+    help: 'A ticket can have at most 8 alcoholic drinks per day.',
+  },
+  trg_Membership_BI_Adult: {
+    title: 'Memberships are for adults',
+    help: 'The membership holder must be 18 or older. Children are covered as dependents on a parent account.',
+  },
   trg_Ticket_BI: {
     title: 'That ticket could not be booked',
     help: 'Try another date, or check what your membership covers.',
+  },
+  trg_Ticket_BI_WeatherClosed: {
+    title: 'The park is closed for weather',
+    help: 'Tickets for today are paused. You can still book a ticket for another day.',
+    action: { label: 'Pick another date', tab: 'tickets' },
+  },
+  trg_Purchase_BI_WeatherClosed: {
+    title: 'The park is closed for weather',
+    help: 'Nothing was charged. Purchases resume when the park reopens.',
+  },
+  trg_GamePlay_BI_WeatherClosed: {
+    title: 'The park is closed for weather',
+    help: 'Nothing was charged. Games reopen when the park reopens.',
   },
 }
 const FALLBACK_COPY = { title: 'A park rule stopped that', help: 'Nothing was charged. Change the details and try again.' }

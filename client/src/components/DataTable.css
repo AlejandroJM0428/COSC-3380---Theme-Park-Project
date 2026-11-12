@@ -29,6 +29,18 @@ td.dt-num {
   margin: 8px 0 0;
 }
 
+th.dt-detail,
+td.dt-detail {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+tr.dt-detail-row > td {
+  background: var(--paper, #f6faf8);
+  padding: 8px 10px 12px;
+}
+
 .dt-toggle {
   margin-left: 10px;
   padding: 4px 10px;
@@ -39,6 +51,11 @@ td.dt-num {
   cursor: pointer;
 }
 
+.dt-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Rows a report flags as unusual (the Note column says why, so colour is never the only signal). */
 tr.dt-row-high td {
   background: #e3f4ea;
@@ -46,4 +63,18 @@ tr.dt-row-high td {
 
 tr.dt-row-low td {
   background: #fde8e4;
+}
+
+/* Long tables scroll inside their own box so the page stays usable; the header row stays in view. */
+.table-wrap.dt-scroll {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.table-wrap.dt-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--panel, #fff);
+  box-shadow: 0 1px 0 var(--line, #d5e1dd);
 }

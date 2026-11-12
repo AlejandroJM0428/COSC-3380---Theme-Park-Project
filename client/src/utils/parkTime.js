@@ -48,7 +48,7 @@ export function durationLabel(totalMinutes) {
   return m === 0 ? `${h} hr` : `${h} hr ${m} min`
 }
 
-// A forced mode for demos: ?preview=closed or ?preview=happyhour. It is remembered for the browser tab so it
+// A forced mode for previewing: ?preview=closed or ?preview=happyhour. It is remembered for the browser tab so it
 // survives clicking around the site. ?preview=off clears it.
 export function readPreview() {
   try {
@@ -64,17 +64,28 @@ export function readPreview() {
 
 // Works out what the park is doing right now.
 //   hours:   { open: 'HH:MM', close: 'HH:MM' } from the database (null until it loads)
+//   weather: the weather closure in effect now, from /api/public/site (null when there is none)
 //   now:     minutes after midnight, park time
 //   preview: '', 'closed' or 'happyhour'
 // mode is 'unknown' (hours not loaded yet), 'closed', 'happyhour' or 'open'.
-export function parkStatus({ hours, now, preview = '' }) {
+// reason is 'weather' when a Severe weather event has closed the park, including after opening hours.
+export function parkStatus({ hours, weather = null, now, preview = '' }) {
+  const status = clockStatus({ hours, now, preview })
+  if (weather?.closesPark) {
+    return { ...status, mode: 'closed', reason: 'weather', opensTomorrow: false, minutesToOpen: null, minutesLeft: null }
+  }
+  return { ...status, reason: null }
+}
+
+// The park's state from its hours alone (and the preview override), ignoring weather.
+function clockStatus({ hours, now, preview }) {
   const openAt = toMinutes(hours?.open)
   const closeAt = toMinutes(hours?.close)
   const hhStart = toMinutes(BRAND.happyHour.start)
   const hhEnd = toMinutes(BRAND.happyHour.end)
 
   if (openAt == null || closeAt == null) {
-    // Without hours we can still show a demo; otherwise stay quiet rather than guess.
+    // Without hours we can still show a preview; otherwise stay quiet rather than guess.
     if (preview === 'closed') return { mode: 'closed', openAt: null, closeAt: null, opensTomorrow: false, minutesToOpen: null, minutesLeft: null }
     if (preview === 'happyhour') return { mode: 'happyhour', openAt: null, closeAt: null, opensTomorrow: false, minutesToOpen: null, minutesLeft: hhEnd - hhStart }
     return { mode: 'unknown', openAt, closeAt, opensTomorrow: false, minutesToOpen: null, minutesLeft: null }
@@ -82,7 +93,7 @@ export function parkStatus({ hours, now, preview = '' }) {
 
   const isOpen = now >= openAt && now < closeAt
   const isHappy = isOpen && now >= hhStart && now < hhEnd
-  // A forced "closed" demo during open hours reads as if the park had already closed for the day.
+  // A forced "closed" preview during open hours reads as if the park had already closed for the day.
   const forcedClosed = preview === 'closed' && isOpen
   const opensTomorrow = now >= closeAt || forcedClosed
   const minutesToOpen = isOpen && !forcedClosed ? 0 : opensTomorrow ? 24 * 60 - now + openAt : openAt - now

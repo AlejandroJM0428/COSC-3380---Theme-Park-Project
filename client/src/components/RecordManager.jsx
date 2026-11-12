@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
-import { createRecord, deleteRecord, getLookups, getRecord, listRecords, updateRecord } from '../api'
+import { getLookups, listRecords } from '../api'
 import { useAuth } from '../auth/context.js'
+import usePersistedState from '../hooks/usePersistedState.js'
+import useRecordDelete from '../hooks/useRecordDelete.jsx'
 import ErrorBanner from './ErrorBanner.jsx'
-import LookupField from './LookupField.jsx'
+import RecordEditor from './RecordEditor.jsx'
 import './RecordManager.css'
 
 // A table of records plus an add / edit / delete form, all driven by one config object
 // (see config/entities.js). Database trigger messages show in the red banner.
-export default function RecordManager({ entity }) {
+// Optional props for a page that shows something else about the same records (the weather page's park status banner):
+//   refreshKey  change it and the list reloads (no remount, so an open form is kept)
+//   onChanged   called after a save or delete went through
+export default function RecordManager({ entity, refreshKey = 0, onChanged }) {
   const { user } = useAuth()
   const canDelete = entity.deleteRoles.includes(user?.role)
   const canWrite = !entity.writeRoles || entity.writeRoles.includes(user?.role) // false = view only
@@ -17,12 +22,13 @@ export default function RecordManager({ entity }) {
   const [rows, setRows] = useState(null)
   const [lookups, setLookups] = useState(null)
   const [reload, setReload] = useState(0)
-  const [form, setForm] = useState(null) // null = form closed
-  const [editingId, setEditingId] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
+  const [editor, setEditor] = useState(null) // null = form closed, or { mode: 'add' | 'edit', id, initial }
+  const [error, setError] = useState('') // load failures
   const [notice, setNotice] = useState('')
-  const [toast, setToast] = useState(null)
+  // What a database rule said about a save, delete or reactivate. Both stay through a refresh until closed.
+  const [actionError, setActionError] = usePersistedState(`records.${entity.resource}.error`, '')
+  const [toast, setToast] = usePersistedState(`records.${entity.resource}.toast`, null)
+  const clearErrors = () => { setError(''); setActionError('') }
   const [grouped, setGrouped] = useState(Boolean(entity.groupBy?.defaultOn)) // entity.groupBy: show the rows under a heading per group (groupBy.defaultOn starts it on)
 
   useEffect(() => {
@@ -35,12 +41,6 @@ export default function RecordManager({ entity }) {
     }
   }, [entity.resource])
 
-  useEffect(() => {
-    if (!toast) return undefined
-    const timer = setTimeout(() => setToast(null), 5000)
-    return () => clearTimeout(timer)
-  }, [toast])
-
   const filterKey = JSON.stringify(filters)
   useEffect(() => {
     let alive = true
@@ -50,170 +50,45 @@ export default function RecordManager({ entity }) {
     return () => {
       alive = false
     }
-  }, [entity.resource, filterKey, reload])
+  }, [entity.resource, filterKey, reload, refreshKey])
 
   function openAdd() {
-    setError('')
+    clearErrors()
     setNotice('')
-    setEditingId(null)
-    setForm(entity.blank())
+    setEditor({ mode: 'add', initial: entity.blank() })
   }
 
-  async function openEdit(row) {
-    setError('')
+  function openAddLogin(row) {
+    clearErrors()
     setNotice('')
-    try {
-      const full = await getRecord(entity.resource, row[entity.idKey]) // the list has no crew, the single record does
-      setEditingId(row[entity.idKey])
-      setForm(entity.fromRecord(full))
-    } catch (err) {
-      setError(err.message)
-    }
+    setEditor({ mode: 'add', initial: entity.addLoginForm(row, lookups) })
+  }
+
+  function openEdit(row) {
+    clearErrors()
+    setNotice('')
+    setEditor({ mode: 'edit', id: row[entity.idKey] }) // RecordEditor loads the full record (the list has no crew, the single record does)
   }
 
   function closeForm() {
-    setForm(null)
-    setEditingId(null)
+    setEditor(null)
   }
 
-  async function submit(e) {
-    e.preventDefault()
-    setError('')
-    setNotice('')
-    const missing = entity.fields.find((f) => f.type === 'lookup' && f.required && !form[f.key] && (!f.show || f.show(form)))
-    if (missing) {
-      setError(`Choose the ${missing.pickLabel ?? missing.label.toLowerCase()} first.`)
-      return
-    }
-    setSaving(true)
-    try {
-      const body = entity.toPayload(form)
-      const saved = editingId == null ? await createRecord(entity.resource, body) : await updateRecord(entity.resource, editingId, body)
-      const label = `${entity.noun[0].toUpperCase()}${entity.noun.slice(1)}`
-      setNotice(entity.hideIds ? `${label} saved.` : `${label} #${saved[entity.idKey]} saved.`)
-      const nextToast = entity.savedToast?.(saved)
-      if (nextToast) setToast(nextToast)
-      closeForm()
-      setReload((n) => n + 1)
-    } catch (err) {
-      const nextToast = entity.rejectToast?.(err.message)
-      if (nextToast) setToast(nextToast)
-      else setError(err.message) // the trigger's own text, for example "Park is at capacity for that date"
-    } finally {
-      setSaving(false)
-    }
+  function handleSaved(saved, savedNotice) {
+    setNotice(savedNotice)
+    closeForm()
+    setReload((n) => n + 1)
+    onChanged?.()
   }
 
-  // Optional entity settings: lockedNote (why Edit is turned off, shown under the intro), hideIds (never show record numbers), deleteLabel ('Void'), deletePast ('Voided'), askReason (prompt sent as ?reason=),
-  // canEditRow(row) and canDeleteRow(row) to hide the buttons on rows that are already finished.
-  const deleteLabel = entity.deleteLabel ?? 'Delete'
-  const deletePast = entity.deletePast ?? 'Deleted'
-
-  async function remove(row) {
-    let query = {}
-    if (entity.askReason) {
-      const reason = window.prompt(`${deleteLabel} ${entity.describe(row)}? Enter a reason (optional):`)
-      if (reason === null) return // pressed Cancel
-      query = { reason: reason.trim() }
-    } else if (!window.confirm(`${deleteLabel} ${entity.describe(row)}? ${entity.deleteNote ?? 'This cannot be undone.'}`)) {
-      return
-    }
-    setError('')
-    setNotice('')
-    try {
-      await deleteRecord(entity.resource, row[entity.idKey], query)
-      setNotice(`${deletePast} ${entity.describe(row)}.`)
-      setReload((n) => n + 1)
-    } catch (err) {
-      setError(err.message)
-    }
-  }
-
-  // An entity may add `onFieldChange(key, value, form, lookups)` to fill other fields when one changes (it returns the extra values, or null).
-  const set = (key, value) => setForm((f) => ({ ...f, [key]: value, ...(entity.onFieldChange?.(key, value, f, lookups) ?? {}) }))
-
-  function renderField(field) {
-    if (field.show && !field.show(form)) return null
-    const value = form[field.key]
-    const options = field.optionsFrom ? field.optionsFrom(form, lookups) : (field.options ?? [])
-    const id = `f-${field.key}`
-
-    if (field.type === 'multicheck') {
-      return (
-        <fieldset key={field.key} className={`rm-field rm-check-group ${field.wide ? 'rm-wide' : ''}`}>
-          <legend>{field.label}</legend>
-          {options.length === 0 && <span className="muted">None available.</span>}
-          {options.map(([v, label]) => (
-            <label key={v} className="rm-check">
-              <input
-                type="checkbox"
-                checked={value.includes(v)}
-                onChange={(e) => set(field.key, e.target.checked ? [...value, v] : value.filter((x) => x !== v))}
-              />
-              {label}
-            </label>
-          ))}
-        </fieldset>
-      )
-    }
-
-    let input
-    if (field.type === 'lookup') {
-      // Pick a guest, ticket or membership by what a person knows. The form keeps the ID, nobody sees or types it.
-      return (
-        <div key={field.key} className={`rm-field ${field.wide ?? true ? 'rm-wide' : ''}`}>
-          <span id={`${id}-label`}>{field.label}</span>
-          <LookupField
-            id={id}
-            kind={field.kind}
-            value={value}
-            required={field.required}
-            forCustomer={field.forCustomerKey ? form[field.forCustomerKey] : undefined}
-            needsLogin={field.needsLogin}
-            onChange={(v) => set(field.key, v)}
-          />
-        </div>
-      )
-    }
-    if (field.type === 'select') {
-      input = (
-        <select id={id} value={value} required={field.required} onChange={(e) => set(field.key, e.target.value)}>
-          {field.required && value === '' && <option value="">— choose —</option>}
-          {options.map(([v, label]) => (
-            <option key={v} value={v}>
-              {label}
-            </option>
-          ))}
-        </select>
-      )
-    } else {
-      const type = field.type === 'datetime' ? 'datetime-local' : field.type
-      input = (
-        <input
-          id={id}
-          type={type}
-          value={value}
-          required={field.required}
-          maxLength={field.maxLength}
-          min={field.min}
-          step={field.step}
-          onChange={(e) => set(field.key, e.target.value)}
-        />
-      )
-    }
-    return (
-      <label key={field.key} htmlFor={id} className={`rm-field ${field.wide ? 'rm-wide' : ''}`}>
-        {field.label}
-        {input}
-      </label>
-    )
-  }
-
-  // Picking another kind (ride/game/venue) clears the chosen item, because the lists differ.
-  const kindFieldKey = 'facilityKind'
-  function onFormChange(e) {
-    if (e.target.id === `f-${kindFieldKey}`) setForm((f) => ({ ...f, facilityId: '' }))
-  }
+  // Delete, void and reactivate (with their reason prompts) live in hooks/useRecordDelete.jsx.
+  const { remove, reactivate, deleteLabel, reasonDialog } = useRecordDelete(entity, {
+    clearErrors,
+    setNotice,
+    setActionError,
+    onReload: () => setReload((n) => n + 1),
+    onDeleted: onChanged,
+  })
 
   // Grouped view: one heading row per group (for example per role), in the order the entity lists, with the group size.
   function buildGroups(list) {
@@ -231,22 +106,34 @@ export default function RecordManager({ entity }) {
   const groupName = (key) => entity.groupBy.labels?.[key] ?? String(key || 'Other').replace(/([a-z])([A-Z])/g, '$1 $2')
 
   function renderRow(row) {
+    const lock = entity.rowLock?.(row, user) // a reason string: the row's Edit / Delete show greyed out with it
     return (
       <tr key={row[entity.rowKey ?? entity.idKey]}>
         {entity.columns.map((c) => (
           <td key={c.key}>{c.format ? c.format(row[c.key], row) : (row[c.key] ?? '—')}</td>
         ))}
         <td className="rm-actions">
+          {canWrite && entity.canAddLoginRow?.(row) && (
+            <button type="button" onClick={() => openAddLogin(row)} disabled={editor !== null}>
+              Add login
+            </button>
+          )}
           {canEdit && (entity.canEditRow?.(row) ?? true) && (
-            <button type="button" onClick={() => openEdit(row)} disabled={form !== null}>
+            <button type="button" onClick={() => openEdit(row)} disabled={editor !== null || Boolean(lock)} title={lock || undefined}>
               Edit
             </button>
           )}
+          {canEdit && entity.canReactivateRow?.(row) && (
+            <button type="button" className="rm-reactivate" onClick={() => reactivate(row)} disabled={editor !== null}>
+              {entity.reactivateLabel ?? 'Reactivate'}
+            </button>
+          )}
           {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
-            <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={form !== null}>
+            <button type="button" className="rm-danger" onClick={() => remove(row)} disabled={editor !== null || Boolean(lock)} title={lock || undefined}>
               {deleteLabel}
             </button>
           )}
+          {lock && <span className="rm-lockmsg">Insufficient privileges</span>}
         </td>
       </tr>
     )
@@ -264,11 +151,12 @@ export default function RecordManager({ entity }) {
       )}
 
       <ErrorBanner message={error} onClose={() => setError('')} />
+      <ErrorBanner message={actionError} onClose={() => setActionError('')} />
       {notice && <p className="result allowed">{notice}</p>}
 
       <div className="rm-toolbar">
         {canWrite && (
-          <button type="button" className="btn-primary" onClick={openAdd} disabled={form !== null}>
+          <button type="button" className="btn-primary" onClick={openAdd} disabled={editor !== null}>
             + Add {entity.noun}
           </button>
         )}
@@ -305,19 +193,19 @@ export default function RecordManager({ entity }) {
         )}
       </div>
 
-      {form && (
-        <form className="panel rm-form" onSubmit={submit} onChange={onFormChange}>
-          <h2>{editingId == null ? `Add ${entity.noun}` : entity.hideIds ? `Edit ${entity.noun}` : `Edit ${entity.noun} #${editingId}`}</h2>
-          <div className="rm-grid">{entity.fields.map(renderField)}</div>
-          <div className="button-row">
-            <button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-            <button type="button" onClick={closeForm} disabled={saving}>
-              Cancel
-            </button>
-          </div>
-        </form>
+      {editor && (
+        <RecordEditor
+          key={`${editor.mode}-${editor.id ?? 'new'}`}
+          entity={entity}
+          mode={editor.mode}
+          id={editor.id}
+          initial={editor.initial}
+          lookups={lookups}
+          onSaved={handleSaved}
+          onCancel={closeForm}
+          onError={(m) => (m ? setActionError(m) : clearErrors())}
+          onToast={setToast}
+        />
       )}
 
       {toast && (
@@ -325,11 +213,14 @@ export default function RecordManager({ entity }) {
           <div className="corner-toast-top">
             <strong>{toast.title}</strong>
             {toast.badge && <span className="corner-badge">{toast.badge}</span>}
+            <button type="button" className="corner-toast-x" aria-label="Dismiss" onClick={() => setToast(null)}>×</button>
           </div>
           <p>{toast.message}</p>
           {toast.footnote && <p className="muted">{toast.footnote}</p>}
         </div>
       )}
+
+      {reasonDialog}
 
       {rows === null ? (
         <p className="muted">Loading…</p>

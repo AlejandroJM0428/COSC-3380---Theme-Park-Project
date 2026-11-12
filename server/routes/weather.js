@@ -2,20 +2,32 @@ import { route } from '../router.js';
 import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
-import { friendlyDbError, needDecimal, needInt, needDateTime, oneOf, optDateTime, recordId } from '../validate.js';
+import { friendlyDbError, needDateTime, oneOf, optDateTime, recordId } from '../validate.js';
+import { clearPublicSiteCache } from './publicSite.js';
 
 // Weather log (data entry, not a report): list, get, add, edit, delete.
-// The browser never sends ClosesOutdoorRides. trg_WeatherLog_BI sets it on insert.
-// An edit sets it with fn_WeatherCloses, the same function the insert trigger uses.
+// The form sends the weather type, a severity and the times. The database decides what closes
+// (SQL/migrations/27) and, since SQL/migrations/31, ClosesOutdoorRides and ClosesPark are ordinary columns the form
+// sets directly (Severity is only a label). Old readings (temperature, wind, lightning) are kept but not edited here.
 // Delete is a real delete (WeatherLog has no IsActive). The database refuses it when a refund uses the event.
 
-const CAN_READ = ['Admin', 'Manager'];
-const CAN_WRITE = ['Admin', 'Manager'];
-const CAN_DELETE = ['Admin', 'Manager'];
+const CAN_READ = ['Admin', 'Manager', 'RetailManager'];
+const CAN_WRITE = ['Admin', 'Manager', 'RetailManager'];
+const CAN_DELETE = ['Admin', 'Manager', 'RetailManager'];
 const TYPES = ['Clear', 'Cloudy', 'Rain', 'Storm', 'Heat', 'Cold'];
+const SEVERITIES = ['Low', 'Medium', 'High', 'Severe'];
+
+// Closing the whole park is Admin-only: only an Admin may add, edit or delete an entry that closes the park, or turn one into it.
+// Everyone else who can open the Weather Log sees those controls greyed out. Checked here, not just in the page.
+const PARK_CLOSER = 'Admin';
+const NOT_ALLOWED = 'Insufficient privileges: only an Admin can close or reopen the park';
+function needAdminForParkClosure(ctx, ...closesPark) {
+  if (ctx.session?.role !== PARK_CLOSER && closesPark.some(Boolean)) throw new HttpError(403, NOT_ALLOWED);
+}
 
 const SELECT_WEATHER = `
-  SELECT WeatherID, WeatherType, StartedAt, EndedAt, TemperatureF, WindMph, LightningMiles, ClosesOutdoorRides
+  SELECT WeatherID, WeatherType, Severity, StartedAt, EndedAt, TemperatureF, WindMph, LightningMiles,
+         ClosesOutdoorRides, ClosesPark
     FROM WeatherLog`;
 
 async function loadWeather(id) {
@@ -31,18 +43,36 @@ export function parseWeather(body) {
   if (endedAt && endedAt < startedAt) throw new HttpError(400, 'The end time cannot be before the start time');
   return {
     weatherType: oneOf(b.weatherType, 'Weather type', TYPES),
+    severity: oneOf(b.severity, 'Severity', SEVERITIES),
     startedAt,
     endedAt,
-    temperatureF: needInt(b.temperatureF, 'Temperature (F)', -60, 150),
-    windMph: needInt(b.windMph, 'Wind (mph)', 0, 300),
-    lightningMiles: needDecimal(b.lightningMiles, 'Lightning distance (miles)', 0, 99.9), // 99.9 = none detected
+    closesOutdoorRides: flag(b.closesOutdoorRides, 'Outdoor rides'),
+    closesPark: flag(b.closesPark, 'Park'),
   };
+}
+
+// Open / Closed as sent by the form: true, false, 1, 0, '1' or '0'.
+function flag(v, label) {
+  if (v === true || v === 1 || v === '1') return 1;
+  if (v === false || v === 0 || v === '0') return 0;
+  throw new HttpError(400, `${label} must be Open or Closed`);
+}
+
+// The one INSERT for a weather event, used by the weather form and by the one-click "close park" button.
+// startedAt null means "now". Pass `db` (a connection inside a transaction) to commit or roll back with other writes.
+export async function insertWeather(w, db = pool) {
+  const [result] = await db.query(
+    `INSERT INTO WeatherLog (ParkID, WeatherType, Severity, StartedAt, EndedAt, ClosesOutdoorRides, ClosesPark)
+     VALUES ((SELECT ParkID FROM Park ORDER BY ParkID LIMIT 1), ?, ?, COALESCE(?, NOW()), ?, ?, ?)`,
+    [w.weatherType, w.severity, w.startedAt ?? null, w.endedAt ?? null, w.closesOutdoorRides ?? 0, w.closesPark ?? 0],
+  );
+  return result.insertId;
 }
 
 const FRIENDLY = {
   1062: 'There is already a weather entry that starts at that time',
   1451: 'A refund uses this weather event, so it cannot be deleted',
-  3819: 'The end time cannot be before the start time, and lightning distance cannot be negative',
+  3819: 'The end time cannot be before the start time',
 };
 
 // GET /api/weather?status=ongoing|closing (optional). Newest first, first 200.
@@ -74,14 +104,12 @@ route(
   '/api/weather',
   requireRole(...CAN_WRITE)(async (ctx) => {
     const w = parseWeather(ctx.body);
+    needAdminForParkClosure(ctx, w.closesPark);
     try {
-      const [result] = await pool.query(
-        `INSERT INTO WeatherLog (ParkID, WeatherType, StartedAt, EndedAt, TemperatureF, WindMph, LightningMiles, ClosesOutdoorRides)
-         VALUES ((SELECT ParkID FROM Park ORDER BY ParkID LIMIT 1), ?, ?, ?, ?, ?, ?, 0)`,
-        [w.weatherType, w.startedAt, w.endedAt, w.temperatureF, w.windMph, w.lightningMiles],
-      );
+      const insertId = await insertWeather(w);
+      clearPublicSiteCache(); // the homepage ticker follows the log
       ctx.status = 201;
-      return await loadWeather(result.insertId);
+      return await loadWeather(insertId);
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);
     }
@@ -94,18 +122,19 @@ route(
   requireRole(...CAN_WRITE)(async (ctx) => {
     const id = recordId(ctx, 'Weather');
     const w = parseWeather(ctx.body);
-    await loadWeather(id); // 404 if missing
+    const before = await loadWeather(id); // 404 if missing
+    needAdminForParkClosure(ctx, before.ClosesPark, w.closesPark); // changing a Severe entry (ending it too) or making one
     try {
       await pool.query(
         `UPDATE WeatherLog
-            SET WeatherType = ?, StartedAt = ?, EndedAt = ?, TemperatureF = ?, WindMph = ?, LightningMiles = ?,
-                ClosesOutdoorRides = fn_WeatherCloses(ParkID, ?, ?, ?)
+            SET WeatherType = ?, Severity = ?, StartedAt = ?, EndedAt = ?, ClosesOutdoorRides = ?, ClosesPark = ?
           WHERE WeatherID = ?`,
-        [w.weatherType, w.startedAt, w.endedAt, w.temperatureF, w.windMph, w.lightningMiles, w.temperatureF, w.windMph, w.lightningMiles, id],
+        [w.weatherType, w.severity, w.startedAt, w.endedAt, w.closesOutdoorRides, w.closesPark, id],
       );
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);
     }
+    clearPublicSiteCache();
     return loadWeather(id);
   }),
 );
@@ -116,11 +145,13 @@ route(
   requireRole(...CAN_DELETE)(async (ctx) => {
     const id = recordId(ctx, 'Weather');
     const gone = await loadWeather(id); // 404 if missing
+    needAdminForParkClosure(ctx, gone.ClosesPark);
     try {
       await pool.query('DELETE FROM WeatherLog WHERE WeatherID = ?', [id]);
     } catch (err) {
       throw friendlyDbError(err, FRIENDLY);
     }
+    clearPublicSiteCache();
     return gone;
   }),
 );

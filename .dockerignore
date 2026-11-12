@@ -6,6 +6,9 @@
 *.log
 cookies.txt
 *.zip
-# the big test-data file is loaded by MySQL from the host, not needed in the app image
-SQL/02_test_data.sql
+# generated seed data is loaded by MySQL from the host, not needed in the app image
+SQL/seed
 SQL/tools
+
+# cleanup archive
+archive

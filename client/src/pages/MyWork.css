@@ -1,0 +1,7 @@
+.mw-jobs { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 12px; max-width: 720px; }
+.mw-job { display: grid; gap: 10px; }
+.mw-reason { display: block; font-size: 0.9em; }
+.mw-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.mw-form label { display: grid; gap: 4px; }
+.mw-note { flex: 1 1 220px; }
+.mw-reported { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; color: var(--ok); }

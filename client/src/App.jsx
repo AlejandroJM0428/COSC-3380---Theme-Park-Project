@@ -2,14 +2,11 @@ import './App.css'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import RequireAuth from './auth/RequireAuth.jsx'
 import Layout from './components/Layout.jsx'
-import MemberLogin from './pages/MemberLogin.jsx'
-import StaffLogin from './pages/StaffLogin.jsx'
+import SignIn from './pages/SignIn.jsx'
 import Register from './pages/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import AdminOnePage from './pages/AdminOnePage.jsx'
 import ReportPage from './pages/ReportPage.jsx'
-import QueryPage from './pages/QueryPage.jsx'
-import TriggerList from './pages/TriggerList.jsx'
 import SellTicket from './pages/SellTicket.jsx'
 import MaintenancePage from './pages/MaintenancePage.jsx'
 import TicketSalesPage from './pages/TicketSalesPage.jsx'
@@ -61,16 +58,17 @@ export default function App() {
         <Route path="/plan" element={<Plan />} />
       </Route>
 
-      {/* 2. Member (customer) login + account */}
-      <Route path="/member/login" element={<MemberLogin />} />
+      {/* 2. The one sign-in page: members, staff and admins all sign in here and are sent to their own portal */}
+      <Route path="/login" element={<SignIn />} />
+      <Route path="/member/login" element={<Navigate to="/login" replace />} />
+      <Route path="/staff/login" element={<Navigate to="/login" replace />} />
+
+      {/* 3. Member sign up + account */}
       <Route path="/member/register" element={<Register />} />
-      <Route element={<RequireAuth roles={['Customer']} loginPath="/member/login" />}>
+      <Route element={<RequireAuth roles={['Customer']} />}>
         <Route path="/member" element={<MemberPortal />} />
       </Route>
 
-      {/* 3. Staff sign in (admins sign in here too and are sent to /admin) */}
-      <Route path="/staff/login" element={<StaffLogin />} />
-      <Route path="/login" element={<Navigate to="/staff/login" replace />} />
       <Route path="/visitor" element={<Navigate to="/" replace />} />
 
       <Route path="*" element={<NotFound />} />
@@ -82,10 +80,6 @@ export default function App() {
         {/* The older admin pages keep working at their own addresses (with the sidebar). */}
         <Route element={<Layout base="/admin" sections={ADMIN_NAV_SECTIONS} brandSub="Admin portal" />}>
           <Route path="reports/:key" element={<ReportPage />} />
-          {/* Not in any menu. Kept for the presentation: type the address to open them. */}
-          <Route path="queries" element={<QueryPage />} />
-          <Route path="triggers" element={<TriggerList />} />
-
           {FORM_PAGES.map((p) => {
             const Page = PAGE_COMPONENTS[p.path]
             return <Route key={p.path} path={p.path} element={Page ? <Page /> : <Placeholder title={p.label} />} />

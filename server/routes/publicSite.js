@@ -4,13 +4,19 @@ import { pool } from '../db.js';
 // Public site data for the homepage and the public pages. No login needed, so it only ever
 // contains things any visitor may see: prices, hours, membership tiers for sale, rides (name,
 // zone, type, height rule, Open/Closed), venues and games (name, zone, price per play), and the
-// upcoming dates that are sold out (dates only, no counts).
+// upcoming dates that are sold out (dates only, no counts), and the weather closure going on right now (if any).
 //
 // It NEVER contains wait times: no RideLog query, no wait columns. Wait times are members only
 // and live in /api/visitor/dashboard. Notices come from the existing public /api/notifications.
 
 const CACHE_MS = 15 * 1000; // anonymous and read-only, so a short cache protects the database
 let cache = { at: 0, data: null };
+
+// Forget the cached answer. Called when something changes what the homepage shows (closing or reopening the park for
+// weather, and later rides being added or retired), so the change shows on the next request, not after the 15 s wait.
+export function clearPublicSiteCache() {
+  cache = { at: 0, data: null };
+}
 
 const hhmm = (t) => String(t ?? '').slice(0, 5);
 
@@ -31,7 +37,7 @@ function tierJson(r) {
 }
 
 async function loadSite() {
-  const [[parkRows], [tierRows], [rideRows], [venueRows], [gameRows], [soldOutRows]] = await Promise.all([
+  const [[parkRows], [tierRows], [rideRows], [venueRows], [gameRows], [soldOutRows], [weatherRows]] = await Promise.all([
     pool.query('SELECT DayPassPrice, ExpressAddOnPrice, OpeningTime, ClosingTime FROM Park WHERE ParkID = 1'),
     pool.query('SELECT Tier, AnnualPrice FROM MembershipTier WHERE IsForSale = 1 ORDER BY AnnualPrice'),
     pool.query(
@@ -66,14 +72,35 @@ async function loadSite() {
        HAVING COUNT(*) >= (SELECT MaxOccupancy FROM Park WHERE ParkID = 1)
         ORDER BY t.VisitDate`,
     ),
+    // The weather closure in effect now (SQL/migrations/27_weather_severity.sql). A park closure wins over an
+    // outdoor-only one. Same "in effect" test as v_RideAvailability.
+    pool.query(
+      `SELECT WeatherType, Severity, ClosesOutdoorRides, ClosesPark, EndedAt
+         FROM WeatherLog
+        WHERE (ClosesOutdoorRides = 1 OR ClosesPark = 1)
+          AND NOW() >= StartedAt
+          AND (EndedAt IS NULL OR NOW() < EndedAt)
+        ORDER BY ClosesPark DESC, StartedAt DESC
+        LIMIT 1`,
+    ),
   ]);
 
   const park = parkRows[0];
+  const weather = weatherRows[0];
   return {
     prices: park ? { dayPass: Number(park.DayPassPrice), expressAddOn: Number(park.ExpressAddOnPrice) } : null,
     hours: park ? { open: hhmm(park.OpeningTime), close: hhmm(park.ClosingTime) } : null,
     tiers: tierRows.map(tierJson),
     soldOutDates: soldOutRows.map((r) => r.VisitDay),
+    weather: weather
+      ? {
+          type: weather.WeatherType,
+          severity: weather.Severity,
+          closesPark: Boolean(weather.ClosesPark),
+          closesOutdoorRides: Boolean(weather.ClosesOutdoorRides),
+          endsAt: weather.EndedAt ?? null,
+        }
+      : null,
     rides: rideRows.map((r) => ({
       rideId: r.RideID,
       rideName: r.RideName,
@@ -82,8 +109,9 @@ async function loadSite() {
       minHeightCm: r.MinHeightCm > 0 ? r.MinHeightCm : null,
       // Express-eligible rides are the park's headline rides (the "Premier rides" on /rides).
       expressEligible: Boolean(r.IsExpressEligible),
-      // Any "Closed - ..." reason (maintenance, weather) is shown as plain Closed.
+      // Any "Closed - ..." state is Closed. closedReason says why, so the page can show "Closed: maintenance".
       state: r.CurrentState === 'Open' ? 'Open' : 'Closed',
+      closedReason: r.CurrentState === 'Closed - Maintenance' ? 'maintenance' : r.CurrentState === 'Closed - Weather' ? 'weather' : null,
     })),
     venues: venueRows.map((v) => ({
       venueId: v.VenueID,

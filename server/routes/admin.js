@@ -21,7 +21,7 @@ export async function audit(ctx, action, { table = null, rowKey = null, detail =
   );
 }
 
-// Who am I, and is the audit table in place? auditReady is false until SQL/10_admin_audit.sql is applied.
+// Who am I, and is the audit table in place? auditReady is false until SQL/schema/10_admin_audit.sql is applied.
 route(
   'GET',
   '/api/admin/ping',

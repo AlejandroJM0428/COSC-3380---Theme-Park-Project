@@ -1,0 +1,19 @@
+/* Reason dialog (components/ReasonDialog.jsx). Sits above the page, same layer as the notice pop-up. */
+.reason-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(8, 20, 40, .55); }
+.reason-dialog { width: min(460px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 22px 22px 18px; background: #fff; color: #12302f; border-radius: 10px; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); display: grid; gap: 12px; }
+.reason-dialog h2 { margin: 0; font-size: 1.25rem; line-height: 1.25; }
+.reason-message { margin: 0; color: #4a6663; font-size: .95rem; }
+.reason-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.reason-chip { font: inherit; font-size: .88rem; padding: 6px 12px; border: 1.5px solid var(--line, #d5e1dd); border-radius: 999px; background: #f6faf8; color: inherit; cursor: pointer; }
+.reason-chip:hover:not(:disabled) { border-color: #1c9aa8; }
+.reason-chip-on { background: #0c2340; border-color: #0c2340; color: #fff; }
+.reason-field { display: grid; gap: 4px; font-size: .9rem; }
+.reason-field textarea { font: inherit; padding: 8px; border: 1.5px solid var(--line, #d5e1dd); border-radius: 4px; resize: vertical; min-width: 0; }
+.reason-count { margin: -8px 0 0; text-align: right; font-size: .75rem; color: #5b6b6a; }
+.reason-error { margin: 0; padding: 8px 10px; border-radius: 6px; background: var(--bad-bg, #fde8e4); color: var(--bad, #a4161a); font-size: .9rem; }
+.reason-actions { display: flex; gap: 8px; }
+.reason-actions button { font: inherit; padding: 8px 16px; border: 1.5px solid var(--line, #d5e1dd); border-radius: 6px; background: #fff; cursor: pointer; }
+.reason-actions .reason-go { background: #0c2340; border-color: #0c2340; color: #fff; font-weight: 700; }
+.reason-actions .reason-go-danger { background: var(--bad, #a4161a); border-color: var(--bad, #a4161a); }
+.reason-actions button:disabled { opacity: .55; cursor: not-allowed; }
+.reason-dialog :focus-visible { outline: 3px solid #4b92db; outline-offset: 2px; }

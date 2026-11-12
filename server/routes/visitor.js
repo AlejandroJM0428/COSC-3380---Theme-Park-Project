@@ -3,7 +3,7 @@ import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { getSession } from '../session.js';
 import { requireRole } from '../middleware/requireRole.js';
-import { describeTrigger } from '../demos/triggerCatalog.js';
+import { describeTrigger } from '../catalog/triggerCatalog.js';
 
 // Visitor portal. Everything about a member is looked up with the CustomerID stored in the
 // logged-in session, never with an id from the request, so one member can never see or

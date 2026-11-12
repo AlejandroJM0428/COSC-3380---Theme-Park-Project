@@ -1,118 +1,60 @@
-# Theme Park <img src="docs/beltway-helmet.svg" alt="Beltway Park astronaut helmet" height="40" align="center">
+# Beltway Park <img src="docs/beltway-helmet.svg" alt="Beltway Park astronaut helmet" height="40" align="center">
 
-**Beltway Park** is a theme park management web app, loosely inspired by Astroworld. Visitors buy tickets and memberships and use a member portal. Staff run rides, maintenance, shifts, purchases, and reports. Admins manage logins and edit records.
+A theme park management web app. Guests buy tickets and memberships and use a member portal. Staff run rides, maintenance, shifts, sales and reports. Admins manage logins and records.
 
-Tech stack
-----------
-- Frontend: React 19, Vite, React Router, Recharts
-- Backend: Node.js (no Express)
-- Database: MySQL 8.4, run in Docker
+**Stack:** React 19, Vite, React Router, Recharts · Node.js (no Express) · MySQL 8.4 in Docker
 
-Requirements
-------------
-Node 20.12 or newer, npm, and Docker with Compose.
+**Requirements:** Node 20.12+, npm, Docker with Compose
 
-Setup
------
-Create three `.env` files before running anything.
+## Quick start
 
-Root `.env` (used by Docker for MySQL):
-```bash
-cp .env.example .env
-```
-```env
-DB_PASSWORD=dev-root-password
-SESSION_SECRET=change_me_to_a_long_random_string
-NODE_ENV=development
-APP_PORT=3100
-```
+1. Create the environment files and set the same `DB_PASSWORD` in the root and `server` ones:
+   ```bash
+   cp .env.example .env
+   cp server/.env.example server/.env
+   ```
+   In `client/.env`, set `VITE_USE_MOCK=false` so the app uses the database.
+2. Install dependencies:
+   ```bash
+   (cd server && npm install) && (cd client && npm install)
+   ```
+3. Start the database (the first run loads the schema):
+   ```bash
+   docker compose up -d --wait mysql
+   ```
+4. Load the demo data and create staff logins. Passwords print once, so save them:
+   ```bash
+   cd server && npm run seed
+   ```
+5. Run the backend and the frontend in two terminals:
+   ```bash
+   cd server && node --watch index.js
+   cd client && npm run dev
+   ```
+6. Open the URL Vite prints (usually http://localhost:5173). Staff sign in at `/staff/login`.
 
-`server/.env` (`DB_PASSWORD` must match the root `.env`):
-```bash
-cp server/.env.example server/.env
-```
-```env
-PORT=3100
-NODE_ENV=development
-DB_HOST=127.0.0.1
-DB_PORT=3307
-DB_USER=root
-DB_PASSWORD=dev-root-password
-DB_NAME=theme_park
-SESSION_SECRET=change_me_to_a_long_random_string
-SEED_STAFF_PASSWORD=YourStaffPassword
-```
+## Project layout
 
-`client/.env`:
-```env
-VITE_USE_MOCK=false
-```
-Without this the frontend runs on mock data and never touches the database.
+- `client/` React app
+- `server/` Node API
+- `SQL/` database schema, rules and data
+- `docs/` images
 
-Install dependencies:
-```bash
-cd server && npm install && cd ..
-cd client && npm install && cd ..
-```
+## Features
 
-Run the database
-----------------
-```bash
-docker compose up -d --wait mysql
-```
-The first start loads the schema, views, and triggers. MySQL is exposed on `127.0.0.1:3307`.
+- **Weather closure:** an Admin can close and reopen the park in one click. While closed, the database blocks ride boardings and sales.
+- **Ride notices:** adding or deactivating a ride posts a notice on the homepage for 7 days.
+- **Editing from reports:** Admins and managers can edit, delete or add records directly from a report's detail rows. The report updates right away.
 
-Then load the demo data and create the staff logins (once):
-```bash
-SQL/tools/load_history.sh --no-generate
-cd server && npm run seed
-```
-Logins are named after an employee: first name plus the last four digits of their ID (for example `mason0028`). Passwords print once, so save them.
+Existing databases need the matching SQL rule applied for the first two features. See `SQL/`.
 
-`docker-compose.yml` mounts `SQL/02_test_data.sql`, which is not in the repo. Docker still starts; ignore it.
-
-Run the backend
----------------
-```bash
-cd server
-node --watch index.js
-```
-Runs on http://localhost:3100. Health check: http://localhost:3100/api/health
-
-Run the frontend
-----------------
-```bash
-cd client
-npm run dev
-```
-Open the URL Vite prints (usually http://localhost:5173). It proxies `/api` to port 3100. Staff log in at `/staff/login`.
-
-Backend
--------
-The backend is plain Node.js. It uses the built-in `node:http` module instead of Express, and the pieces Express would normally provide are written by us.
-
-Built on top of Node:
-- `router.js`: route matching with path params, JSON body parsing, and a 100 KB body limit
-- `session.js`: cookie sessions signed with HMAC-SHA256, stored in memory (a restart logs everyone out)
-- `loginLimiter.js`: sign-in throttling by user, IP, and user plus IP
-- `middleware/requireRole.js`: role-based access (401 if not logged in, 403 if the role is not allowed)
-- `validate.js`: input checks shared by the data-entry routes
-- `errors.js`: JSON responses and error handling
-- `config.js`: loads `server/.env` with Node's built-in `process.loadEnvFile`
-- `routes/`: one file per feature (auth, tickets, memberships, maintenance, shifts, reports, admin tools, and more)
-
-Only two npm packages:
-- `mysql2`: MySQL connection pool
-- `bcrypt`: password hashing
-
-Demo
-----
+## Screenshots
 
 ### Homepage
-<!-- INSERT: Homepage -->
+![Beltway Park homepage with the header and notification bar](docs/screenshots/homepage.png)
 
 ### Admin portal
-<!-- INSERT: Admin portal -->
+![Admin portal home with data tables and reports](docs/screenshots/admin-portal.png)
 
 ### Member portal
-<!-- INSERT: Member portal -->
+![Member portal showing membership and ticket details](docs/screenshots/member-portal.png)

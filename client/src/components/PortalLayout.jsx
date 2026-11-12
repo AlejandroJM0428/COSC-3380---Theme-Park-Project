@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
 import NotificationBar from './NotificationBar.jsx'
+import NoticePopup from './NoticePopup.jsx'
 import Wordmark from './Wordmark.jsx'
 import { BRAND } from '../config/brand.js'
 import '../portal.css'
@@ -41,6 +42,7 @@ export default function PortalLayout({ title, tabs = [], active, onSelect, child
       </header>
 
       <NotificationBar />
+      <NoticePopup />
 
       <main className="pt-main">{children}</main>
     </div>

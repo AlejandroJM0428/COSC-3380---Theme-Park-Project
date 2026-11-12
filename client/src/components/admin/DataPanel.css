@@ -1,7 +1,0 @@
-/* Data importance panel. Every class starts with dp- so nothing else is affected. */
-
-.dp h2 { margin: 0 0 4px; font-size: 1.2rem; }
-.dp-group { margin-top: 22px; }
-.dp-group h3 { margin: 0; font-size: 1.05rem; }
-.dp-why { margin: 4px 0 8px; max-width: 75ch; color: var(--muted, #4a6663); }
-.dp-num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }

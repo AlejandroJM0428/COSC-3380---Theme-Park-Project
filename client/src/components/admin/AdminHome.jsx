@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { getReport, listRecords } from '../../api'
+import ParkClosurePanel from '../ParkClosurePanel.jsx'
 import './AdminHome.css'
 
 // The admin Home screen. Layout: four number cards, a wide chart with a side panel, then a row of three cards.
-// It only uses data the admin already has: staff accounts, rides, games and venues, and the Customers per Month report.
+// It only uses data the admin already has: staff accounts, rides, games and venues. The Customers per Month chart is a report,
+// so it loads only when the admin presses Load chart.
 // goTo(groupId, itemKey) opens an area of the workspace.
 
 const pad = (n) => String(n).padStart(2, '0')
+const STAFF_ROLES = ['Admin', 'Manager', 'Cashier', 'RetailManager', 'HRManager', 'MaintenanceManager', 'MaintenanceWorker', 'RestaurantWorker']
 
 function countBy(rows, key) {
   const counts = new Map()
@@ -40,22 +43,23 @@ export default function AdminHome({ goTo }) {
   const [users, setUsers] = useState(null)
   const [places, setPlaces] = useState(null)
   const [months, setMonths] = useState(null)
+  const [monthsBusy, setMonthsBusy] = useState(false)
   const [error, setError] = useState('')
+
+  // Closing or reopening the park changes ride availability, so refresh the facility numbers.
+  function reloadPlaces() {
+    listRecords('facilities').then(setPlaces).catch(() => {})
+  }
 
   useEffect(() => {
     let alive = true
-    // Starting inside .then() turns an immediate throw (mock mode) into a rejection the .catch below shows as a note.
+    // Starting inside .then() turns an immediate throw into a rejection the .catch below shows as a note.
     Promise.resolve()
-      .then(() => Promise.all([listRecords('users'), listRecords('facilities'), getReport('customers-per-month')]))
-      .then(([u, f, m]) => {
+      .then(() => Promise.all([listRecords('users'), listRecords('facilities')]))
+      .then(([u, f]) => {
         if (!alive) return
         setUsers(u)
         setPlaces(f)
-        setMonths(
-          m
-            .map((r) => ({ Month: `${r.VisitYear}-${pad(r.VisitMonth)}`, Customers: Number(r.Customers) }))
-            .sort((a, b) => a.Month.localeCompare(b.Month)),
-        )
       })
       .catch((err) => alive && setError(err.message))
     return () => {
@@ -63,7 +67,27 @@ export default function AdminHome({ goTo }) {
     }
   }, [])
 
-  const activeUsers = users?.filter((u) => Number(u.IsActive) === 1)
+  // A report: fetched only when the button is pressed.
+  function loadMonths() {
+    setMonthsBusy(true)
+    setError('')
+    Promise.resolve()
+      .then(() => getReport('customers-per-month'))
+      .then((m) =>
+        setMonths(
+          m
+            .map((r) => ({ Month: `${r.VisitYear}-${pad(r.VisitMonth)}`, Customers: Number(r.Customers) }))
+            .sort((a, b) => a.Month.localeCompare(b.Month)),
+        ),
+      )
+      .catch((err) => setError(err.message))
+      .finally(() => setMonthsBusy(false))
+  }
+
+  // The users list also holds member accounts and guests. Only real staff logins count as staff accounts.
+  const staffUsers = users?.filter((u) => STAFF_ROLES.includes(u.Role))
+  const activeUsers = staffUsers?.filter((u) => Number(u.IsActive) === 1)
+  const noLogin = users?.filter((u) => u.Role === 'NoLogin' && Number(u.IsActive) === 1)
   const activePlaces = places?.filter((p) => Number(p.IsActive) === 1)
   const rides = activePlaces?.filter((p) => p.Kind === 'Ride')
   const inMaintenance = rides?.filter((r) => r.RideStatus === 'Maintenance')
@@ -72,8 +96,10 @@ export default function AdminHome({ goTo }) {
     <div className="ah">
       {error && <p className="muted">Some numbers are unavailable: {error}</p>}
 
+      <ParkClosurePanel onChanged={reloadPlaces} />
+
       <div className="ah-kpis">
-        <Kpi tone="a" value={activeUsers?.length} label="Active staff accounts" note={users ? `${users.length - activeUsers.length} deactivated` : ''} />
+        <Kpi tone="a" value={activeUsers?.length} label="Active staff accounts" note={staffUsers ? `${staffUsers.length - activeUsers.length} deactivated · ${noLogin.length} active staff with no login` : ''} />
         <Kpi tone="b" value={rides?.length} label="Active rides" note={inMaintenance ? `${inMaintenance.length} in maintenance` : ''} />
         <Kpi tone="c" value={activePlaces?.filter((p) => p.Kind === 'Game').length} label="Games" note="active" />
         <Kpi tone="d" value={activePlaces?.filter((p) => p.Kind === 'Venue').length} label="Venues" note="active" />
@@ -92,7 +118,10 @@ export default function AdminHome({ goTo }) {
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <p className="muted">{months ? 'No visits recorded yet.' : 'Loading…'}</p>
+            <>
+              <p className="muted">{months ? 'No visits recorded yet.' : 'This chart is a report: it loads when you ask for it.'}</p>
+              <button type="button" onClick={loadMonths} disabled={monthsBusy}>{monthsBusy ? 'Loading…' : months ? 'Load again' : 'Load chart'}</button>
+            </>
           )}
         </Card>
 
@@ -148,11 +177,17 @@ export default function AdminHome({ goTo }) {
           </button>
         </Card>
 
-        <Card title="Jump to">
+        <Card title="Quick access">
+          <strong className="ah-sub">Park setup</strong>
+          <ul className="ah-list">
+            <li><button type="button" onClick={() => goTo('park', 'facilities')}>Rides, games &amp; venues</button></li>
+            <li><button type="button" onClick={() => goTo('park', 'notifications')}>Promos &amp; notices</button></li>
+            <li><button type="button" onClick={() => goTo('daily', 'weather')}>Weather log</button></li>
+          </ul>
+          <strong className="ah-sub">Everything else</strong>
           <ul className="ah-list">
             <li><button type="button" onClick={() => goTo('reports')}>Reports</button></li>
             <li><button type="button" onClick={() => goTo('daily')}>Daily records</button></li>
-            <li><button type="button" onClick={() => goTo('tools', 'triggers')}>Triggers</button></li>
           </ul>
         </Card>
       </div>

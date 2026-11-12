@@ -23,7 +23,7 @@ const LOOKUP_FOR_KIND = { Ride: 'rides', Game: 'games', Venue: 'venues' }
 export const MAINTENANCE = {
   title: 'Maintenance',
   intro:
-    'Log repair and inspection jobs. To close a job, fill in the end time, the outcome and the repair cost together. The database refuses to close a job without a cost.',
+    'Log repair and inspection jobs. To close a job, fill in the end time, the outcome and the repair cost together. The database refuses to close a job without a cost. When a crew member reports the work finished, it shows in the Crew report column and under Ready to close.',
   resource: 'maintenance',
   idKey: 'MaintenanceID',
   noun: 'job',
@@ -36,6 +36,7 @@ export const MAINTENANCE = {
       options: [
         ['', 'All jobs'],
         ['open', 'Open jobs'],
+        ['ready', 'Ready to close (crew reported finished)'],
         ['closed', 'Closed jobs'],
       ],
     },
@@ -47,6 +48,11 @@ export const MAINTENANCE = {
     { key: 'StartDate', label: 'Started', format: shortDate },
     { key: 'EndDate', label: 'Closed', format: (v) => (v ? shortDate(v) : 'Open') },
     { key: 'Outcome', label: 'Outcome', format: (v) => v ?? '—' },
+    {
+      key: 'ReportOutcome',
+      label: 'Crew report',
+      format: (v, row) => (v ? `${row.ReportedBy}: work finished, ${v.toLowerCase()}${row.ReportNote ? ` · ${row.ReportNote}` : ''}` : '—'),
+    },
     { key: 'RepairCost', label: 'Repair cost', format: money },
     { key: 'HoursWorked', label: 'Hours', format: (v) => v ?? '—' },
     { key: 'Reason', label: 'Reason' },
@@ -191,6 +197,7 @@ export const SHIFTS = {
   resource: 'shifts',
   idKey: 'ShiftID',
   noun: 'shift',
+  writeRoles: ['Admin', 'HRManager'], // same as CAN_WRITE in server/routes/shifts.js
   deleteRoles: ['Admin', 'HRManager'],
   filters: [
     {

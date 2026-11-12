@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     mem_limit: 512m
     environment:
+      TZ: America/Chicago # Chicago time: CURDATE() and NOW() must agree with the browser
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
     command:
       - --character-set-server=utf8mb4
@@ -15,30 +16,34 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       # Init scripts run once, on an empty data volume, in file-name order.
-      # They are renamed here because "theme-park-schema.sql" would sort after "01_" and "02_".
-      - ./SQL/theme-park-schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
-      - ./SQL/01_park_and_reference.sql:/docker-entrypoint-initdb.d/01_park_and_reference.sql:ro
-      - ./SQL/02_test_data.sql:/docker-entrypoint-initdb.d/02_test_data.sql:ro
-      - ./SQL/views_extra.sql:/docker-entrypoint-initdb.d/03_views_extra.sql:ro
-      # 03 to 12 were added after the first deploy. Files load in name order, after the seed data.
-      # On an existing database they do NOT run again: apply them by hand once (see docs/DEV_SETUP.md).
-      - ./SQL/03_Customer_view.sql:/docker-entrypoint-initdb.d/04_customer_view.sql:ro
-      - ./SQL/04_staff_roles_and_costs.sql:/docker-entrypoint-initdb.d/05_staff_roles_and_costs.sql:ro
-      - ./SQL/05_notifications.sql:/docker-entrypoint-initdb.d/06_notifications.sql:ro
-      - ./SQL/06_report_and_portal_views.sql:/docker-entrypoint-initdb.d/07_report_and_portal_views.sql:ro
-      - ./SQL/07_extra_maintenance_data.sql:/docker-entrypoint-initdb.d/08_extra_maintenance_data.sql:ro
-      - ./SQL/08_simplify_triggers.sql:/docker-entrypoint-initdb.d/09_simplify_triggers.sql:ro
-      - ./SQL/09_ride_maintenance_notice.sql:/docker-entrypoint-initdb.d/10_ride_maintenance_notice.sql:ro
-      - ./SQL/10_admin_audit.sql:/docker-entrypoint-initdb.d/11_admin_audit.sql:ro
-      - ./SQL/11_restore_triggers.sql:/docker-entrypoint-initdb.d/12_restore_triggers.sql:ro
-      - ./SQL/12_report_views.sql:/docker-entrypoint-initdb.d/13_report_views.sql:ro
-      - ./SQL/13_notification_triggers.sql:/docker-entrypoint-initdb.d/14_notification_triggers.sql:ro
-      - ./SQL/14_purchase_guards.sql:/docker-entrypoint-initdb.d/15_purchase_guards.sql:ro
-      - ./SQL/15_price_update.sql:/docker-entrypoint-initdb.d/16_price_update.sql:ro
-      - ./SQL/16_dependents_cancellation.sql:/docker-entrypoint-initdb.d/17_dependents_cancellation.sql:ro
-      - ./SQL/17_shift_hours_cap.sql:/docker-entrypoint-initdb.d/18_shift_hours_cap.sql:ro
-      - ./SQL/19_editable_records.sql:/docker-entrypoint-initdb.d/19_editable_records.sql:ro
-      - ./SQL/20_employee_termination.sql:/docker-entrypoint-initdb.d/20_employee_termination.sql:ro
+      # Each file is mounted under its own name, so the number in the name is the load order (see SQL/README.md).
+      # Data is not loaded here. After the first start, restore theme_park_2026-11-11_1340.sql (see README). Files 21 to 26 are not mounted; the dump has them.
+      # 15 to 20 were added after the first deploy: on an existing database they do NOT run again, apply them by hand once.
+      - ./SQL/schema/00_schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
+      - ./SQL/seed/01_park_and_reference.sql:/docker-entrypoint-initdb.d/01_park_and_reference.sql:ro
+      - ./SQL/schema/03_customer_accounts.sql:/docker-entrypoint-initdb.d/03_customer_accounts.sql:ro
+      - ./SQL/schema/04_staff_roles_and_costs.sql:/docker-entrypoint-initdb.d/04_staff_roles_and_costs.sql:ro
+      - ./SQL/schema/05_notifications.sql:/docker-entrypoint-initdb.d/05_notifications.sql:ro
+      - ./SQL/views/06_report_and_portal_views.sql:/docker-entrypoint-initdb.d/06_report_and_portal_views.sql:ro
+      - ./SQL/seed/07_extra_maintenance_data.sql:/docker-entrypoint-initdb.d/07_extra_maintenance_data.sql:ro
+      - ./SQL/rules/08_simplify_triggers.sql:/docker-entrypoint-initdb.d/08_simplify_triggers.sql:ro
+      - ./SQL/rules/09_ride_maintenance_notice.sql:/docker-entrypoint-initdb.d/09_ride_maintenance_notice.sql:ro
+      - ./SQL/schema/10_admin_audit.sql:/docker-entrypoint-initdb.d/10_admin_audit.sql:ro
+      - ./SQL/rules/11_restore_triggers.sql:/docker-entrypoint-initdb.d/11_restore_triggers.sql:ro
+      - ./SQL/views/12_report_views.sql:/docker-entrypoint-initdb.d/12_report_views.sql:ro
+      - ./SQL/rules/13_notification_triggers.sql:/docker-entrypoint-initdb.d/13_notification_triggers.sql:ro
+      - ./SQL/rules/14_purchase_guards.sql:/docker-entrypoint-initdb.d/14_purchase_guards.sql:ro
+      - ./SQL/migrations/15_price_update.sql:/docker-entrypoint-initdb.d/15_price_update.sql:ro
+      - ./SQL/rules/16_dependents_cancellation.sql:/docker-entrypoint-initdb.d/16_dependents_cancellation.sql:ro
+      - ./SQL/rules/17_shift_hours_cap.sql:/docker-entrypoint-initdb.d/17_shift_hours_cap.sql:ro
+      - ./SQL/views/18_ride_traffic_by_month.sql:/docker-entrypoint-initdb.d/18_ride_traffic_by_month.sql:ro
+      - ./SQL/rules/19_editable_records.sql:/docker-entrypoint-initdb.d/19_editable_records.sql:ro
+      - ./SQL/schema/20_employee_termination.sql:/docker-entrypoint-initdb.d/20_employee_termination.sql:ro
+      # 27: weather severity (Medium+ closes outdoor rides, Severe closes the park). Runs after the seed data.
+      - ./SQL/migrations/27_weather_severity.sql:/docker-entrypoint-initdb.d/27_weather_severity.sql:ro
+      - ./SQL/rules/28_ride_notice_dedupe.sql:/docker-entrypoint-initdb.d/28_ride_notice_dedupe.sql:ro
+      - ./SQL/rules/29_sales_blocked_when_park_closed.sql:/docker-entrypoint-initdb.d/29_sales_blocked_when_park_closed.sql:ro
+      - ./SQL/rules/30_ride_added_deactivated.sql:/docker-entrypoint-initdb.d/30_ride_added_deactivated.sql:ro
     # No "ports:" on purpose: MySQL is reachable only from the app container.
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
@@ -57,6 +62,7 @@ services:
     ports:
       - "${APP_PORT:-3100}:3100"
     environment:
+      TZ: America/Chicago
       PORT: "3100"
       NODE_ENV: ${NODE_ENV:-development}
       DB_HOST: mysql

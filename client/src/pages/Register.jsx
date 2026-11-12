@@ -88,7 +88,7 @@ export default function Register() {
         <button type="submit" className="auth-submit" disabled={busy}>
           {busy ? 'Creating account…' : 'Create account'}
         </button>
-        <p className="auth-links"><Link to="/member/login">Already a member? Sign in</Link></p>
+        <p className="auth-links"><Link to="/login">Already a member? Sign in</Link></p>
       </form>
     </AuthShell>
   )

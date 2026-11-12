@@ -57,7 +57,8 @@ route(
   '/api/purchases/lookups',
   requireRole(...CAN_READ)(async () => {
     const [items] = await pool.query(
-      `SELECT i.ItemID AS id, CONCAT(v.VenueName, ' - ', i.ItemName, ' ($', FORMAT(i.Price, 2), ')') AS name
+      `SELECT i.ItemID AS id, i.IsAlcoholic AS alcoholic,
+              CONCAT(v.VenueName, ' - ', i.ItemName, ' ($', FORMAT(i.Price, 2), ')', IF(i.IsAlcoholic = 1, ' [alcohol, 21+]', '')) AS name
          FROM Item i
          JOIN Venue v ON v.VenueID = i.VenueID
         WHERE i.IsActive = 1 AND v.IsActive = 1

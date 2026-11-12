@@ -5,7 +5,10 @@ import { BRAND } from '../config/brand.js'
 import { clockLabel, durationLabel } from '../utils/parkTime.js'
 import './NotificationBar.css'
 
-const DISMISS_KEY = 'park.notices.dismissed'
+// What was closed since the page loaded. It is kept in memory only, so a refresh brings every notice back for as
+// long as it is active on the server. Moving between pages does not bring them back.
+let seenThisLoad = []
+let dismissedThisLoad = ''
 
 // Park notices (sold out, weather, maintenance closed, promos). Made by database triggers, except promos
 // which staff type in. Shows nothing if there are none or the server is unreachable.
@@ -18,16 +21,46 @@ export default function NotificationBar({ variant = 'default' }) {
   return variant === 'strip' ? <TopBanner /> : <NoticeList />
 }
 
+// Portal notices: ONE card at a time instead of a stack of boxes. "Next" steps through them and the last one
+// says "Got it". After the last one the card is gone until the next refresh. A new or reworded notice shows up again.
+const seenKeyOf = (n) => `${n.NotificationID}|${n.CreatedAt}|${n.Message}`
+
 function NoticeList() {
   const items = useNotices()
-  if (items.length === 0) return null
+  const [seen, setSeen] = useState(seenThisLoad)
+  const markSeen = (keys) => {
+    setSeen((list) => {
+      seenThisLoad = [...new Set([...list, ...keys])].slice(-100)
+      return seenThisLoad
+    })
+  }
+
+  const unread = items.filter((n) => !seen.includes(seenKeyOf(n)))
+  if (unread.length === 0) return null
+
+  const current = unread[0]
+  const position = items.length - unread.length + 1
+  const isLast = unread.length === 1
+  const severity = String(current.Severity).toLowerCase()
+
   return (
-    <section className="notice-bar" aria-label="Park notices">
-      {items.slice(0, 5).map((n) => (
-        <p key={n.NotificationID} className={`notice notice-${String(n.Severity).toLowerCase()}`}>
-          <strong>{n.Title}:</strong> {n.Message}
-        </p>
-      ))}
+    <section
+      className={`notice-card notice-${severity} notice-kind-${String(current.Kind).toLowerCase()}`}
+      aria-label="Park notices"
+    >
+      <div className="notice-card-body" aria-live="polite">
+        <p className="notice-card-title"><strong>{current.Title}</strong></p>
+        <p className="notice-card-message">{current.Message}</p>
+      </div>
+      <div className="notice-card-actions">
+        {items.length > 1 && <span className="notice-card-count">{position} of {items.length}</span>}
+        <button type="button" className="notice-card-next" onClick={() => markSeen([seenKeyOf(current)])}>
+          {isLast ? 'Got it' : 'Next'}
+        </button>
+        {!isLast && (
+          <button type="button" className="notice-card-close" aria-label="Dismiss all park notices" onClick={() => markSeen(unread.map(seenKeyOf))}>×</button>
+        )}
+      </div>
     </section>
   )
 }
@@ -35,21 +68,26 @@ function NoticeList() {
 function TopBanner() {
   const notices = useNotices()
   const park = useParkClock()
-  const [dismissed, setDismissed] = useState(() => {
-    try { return sessionStorage.getItem(DISMISS_KEY) || '' } catch { return '' }
-  })
+  const [dismissed, setDismissed] = useState(dismissedThisLoad)
 
   const showTicker = park.mode === 'closed' || park.mode === 'happyhour'
-  // Closing the banner is remembered for this browser tab, for this mode and this exact set of notices.
-  // When the park goes from closed to open, or Happy Hour starts, the new mode shows again.
-  const signature = `${showTicker ? park.mode : 'notices'}:${notices.slice(0, 3).map((n) => n.NotificationID).join(',')}`
+  // Closing the banner lasts until the page is refreshed, for this mode and this exact set of notices.
+  // When the park goes from closed to open, Happy Hour starts, or weather closes the park, the new mode shows again.
+  const mode = park.reason === 'weather' ? 'closed-weather' : park.mode
+  const signature = `${showTicker ? mode : 'notices'}:${notices.slice(0, 3).map((n) => n.NotificationID).join(',')}`
   const dismiss = () => {
+    dismissedThisLoad = signature
     setDismissed(signature)
-    try { sessionStorage.setItem(DISMISS_KEY, signature) } catch { /* private mode: fine */ }
   }
   if (dismissed === signature) return null
 
   const noticeLines = notices.slice(0, 3).map((n) => `${n.Title}: ${n.Message}`)
+
+  // Severe weather (SQL/migrations/27_weather_severity.sql). The weather notice itself is already in noticeLines.
+  if (park.reason === 'weather') {
+    const lines = [`${BRAND.name} is closed right now due to severe weather`, 'Every ride is closed until the weather clears']
+    return <Ticker mode="closed" tag="Weather" lines={[...lines, ...noticeLines, BRAND.tagline]} onDismiss={dismiss} />
+  }
 
   if (park.mode === 'closed') {
     const lines = [`${BRAND.name} is closed right now`]

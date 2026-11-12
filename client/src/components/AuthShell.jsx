@@ -2,10 +2,9 @@ import { Link } from 'react-router-dom'
 import Wordmark from './Wordmark.jsx'
 import '../login.css'
 
-// The one card for member sign in, member sign up and staff sign in (look and rules are in login.css).
-// variant="member" is the white card under the blue awning; variant="staff" adds a navy header.
-// `role` tints the staff page (awning and button) once a portal is chosen.
-// `title` names the page and picks the link under the card. `heading` is the big line in the card (defaults to the
+// The one card for sign in and member sign up (look and rules are in login.css).
+// variant="member" is the white card under the blue awning (the "staff" variant with the navy header is no longer used).
+// `title` names the page. `heading` is the big line in the card (defaults to the
 // title) and `subtitle` is an optional line under it.
 export default function AuthShell({ variant = 'member', role, title, heading, subtitle, children }) {
   return (
@@ -22,8 +21,6 @@ export default function AuthShell({ variant = 'member', role, title, heading, su
           </header>
           <div className="auth-body">{children}</div>
         </section>
-        {title === 'Member sign in' && <p className="auth-back">Park employee? <Link to="/staff/login">Staff sign in</Link></p>}
-        {title === 'Staff sign in' && <p className="auth-back">Park guest? <Link to="/member/login">Member sign in</Link></p>}
         <p className="auth-back"><Link to="/">← Back to the park home</Link></p>
       </main>
     </div>

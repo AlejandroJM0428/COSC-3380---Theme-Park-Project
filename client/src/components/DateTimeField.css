@@ -1,0 +1,8 @@
+/* DateTimeField: date, time list, Now, Clear on one row. */
+.dtf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dtf input[type="date"], .dtf select { font: inherit; padding: 7px 8px; border: 1.5px solid var(--line, #d5e1dd); border-radius: 4px; background: #fff; min-width: 0; }
+.dtf select { min-width: 110px; }
+.dtf-btn { font: inherit; font-size: .88rem; padding: 7px 12px; border: 1.5px solid var(--line, #d5e1dd); border-radius: 4px; background: #f6faf8; cursor: pointer; }
+.dtf-btn:hover:not(:disabled) { border-color: #1c9aa8; }
+.dtf-clear { color: var(--bad, #a4161a); }
+.dtf-btn:disabled { opacity: .55; cursor: not-allowed; }

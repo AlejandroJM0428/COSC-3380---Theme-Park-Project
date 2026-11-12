@@ -9,10 +9,7 @@ import { lockedForSeconds, recordFailure, recordSuccess } from '../loginLimiter.
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
 const BAD_LOGIN = 'Invalid username or password';
 
-// The staff and member sign-in pages are separate. Each says which one it is ('staff' or 'member'), and the
-// server refuses an account of the other kind with the same message as a wrong password, so neither page
-// reveals what the other one is for. No audience (older callers, check.sh) keeps the old behaviour.
-const AUDIENCES = ['staff', 'member'];
+// One sign-in for everyone (members, staff and admins). The answer carries the role, and the client sends the person to the matching portal.
 
 // The name shown in the top bar of every portal: the employee's name for staff, the member's own name for customers.
 // Never the username. Null only if the account has no employee or customer row (the pages then show a plain label).
@@ -29,11 +26,10 @@ async function nameFor(employeeId, customerId) {
 }
 
 route('POST', '/api/auth/login', async (ctx) => {
-  const { username, password, audience } = ctx.body;
+  const { username, password } = ctx.body;
   if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
     throw new HttpError(400, 'Username and password are required');
   }
-  if (audience !== undefined && !AUDIENCES.includes(audience)) throw new HttpError(400, 'Unknown sign in page');
 
   // Too many recent failures for this username / address: refuse before touching the database or bcrypt.
   const ip = ctx.req.socket?.remoteAddress ?? 'unknown';
@@ -49,9 +45,7 @@ route('POST', '/api/auth/login', async (ctx) => {
   );
   const user = rows[0];
   const ok = await bcrypt.compare(password, user ? user.PasswordHash : DUMMY_HASH);
-  const isCustomer = user?.Role === 'Customer';
-  const wrongPage = (audience === 'staff' && isCustomer) || (audience === 'member' && user && !isCustomer);
-  if (!user || !ok || wrongPage) {
+  if (!user || !ok) {
     recordFailure(username, ip);
     throw new HttpError(401, BAD_LOGIN);
   }

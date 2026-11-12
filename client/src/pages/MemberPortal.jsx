@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/context.js'
+import usePersistedState from '../hooks/usePersistedState.js'
 import { buyVisitorMembership, buyVisitorTicket, getVisitorDashboard, refundVisitorTicket } from '../api/index.js'
 import PortalLayout from '../components/PortalLayout.jsx'
 import TriggerNotice from '../components/TriggerNotice.jsx'
@@ -38,7 +39,10 @@ export default function MemberPortal() {
   const [buyingMembership, setBuyingMembership] = useState(false)
   const [refundBusy, setRefundBusy] = useState(null)
   // A database trigger stopped something ("blocked") or ran for it ("fired"). See components/TriggerNotice.jsx.
-  const [notice, setNotice] = useState(null)
+  // Kept through a refresh until the guest closes it (see hooks/usePersistedState.js).
+  const [notice, setNotice] = usePersistedState('member.notice', null)
+  // The text of an action a database rule refused. Kept through a refresh too. Load failures stay in `error`.
+  const [actionError, setActionError] = usePersistedState('member.actionError', '')
   // State updates are not instant, so a fast double click can start two purchases. These flags change at once.
   const ticketLock = useRef(false)
   const membershipLock = useRef(false)
@@ -49,7 +53,7 @@ export default function MemberPortal() {
 
   // logout/navigate change identity every render; keep them in a ref so the loaders stay stable.
   const exitRef = useRef(null)
-  useEffect(() => { exitRef.current = () => { logout(); navigate('/member/login', { replace: true }) } })
+  useEffect(() => { exitRef.current = () => { logout(); navigate('/login', { replace: true }) } })
 
   // The browser remembers who signed in, but the server forgets sessions when it restarts.
   // No customer back means the server does not see us as signed in, so ask for a fresh sign-in.
@@ -98,11 +102,12 @@ export default function MemberPortal() {
   // A failure from a known trigger becomes a "trigger fired" card; anything else stays a plain error.
   function showFailure(err, fallback) {
     if (err.trigger) setNotice({ variant: 'blocked', message: err.message, trigger: err.trigger })
-    else setError(err.message || fallback)
+    else setActionError(err.message || fallback)
   }
 
   function clearMessages() {
     setError('')
+    setActionError('')
     setSuccess('')
     setNotice(null)
   }
@@ -181,6 +186,7 @@ export default function MemberPortal() {
       </div>
 
       {error && <div className="pt-alert pt-alert-error" role="alert"><strong>Something needs attention</strong><span>{error}</span></div>}
+      {actionError && <div className="pt-alert pt-alert-error" role="alert"><strong>Something needs attention</strong><span>{actionError}</span><button type="button" aria-label="Dismiss message" onClick={() => setActionError('')}>×</button></div>}
       {success && <div className="pt-alert pt-alert-ok" role="status"><strong>All set</strong><span>{success}</span><button type="button" aria-label="Dismiss message" onClick={() => setSuccess('')}>×</button></div>}
 
       <TriggerNotice notice={notice} onDismiss={() => setNotice(null)} onGo={go} />

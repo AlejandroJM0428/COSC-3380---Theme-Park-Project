@@ -9,6 +9,7 @@ export const MembershipsPage = () => <RecordManager entity={MEMBERSHIPS} />
 export const PurchasesPage = () => <RecordManager entity={PURCHASES} />
 export const GamePlaysPage = () => <RecordManager entity={GAME_PLAYS} />
 export const RideLogPage = () => <RecordManager entity={RIDE_LOG} />
+// The park closure banner lives on the admin Overview only. This page is just the log.
 export const WeatherPage = () => <RecordManager entity={WEATHER} />
 export const FacilitiesPage = () => <RecordManager entity={FACILITIES} />
 export const UsersPage = () => <RecordManager entity={USERS} />

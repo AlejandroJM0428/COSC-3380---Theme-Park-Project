@@ -1,0 +1,20 @@
+/* "View all" pop-up for report details (components/DetailModal.jsx). */
+.dm-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(8, 20, 40, .55); }
+.dm { width: min(960px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 16px; background: var(--panel, #fff); color: inherit; border-radius: 10px; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); }
+.dm-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.dm-head h2 { margin: 0; font-size: 1.15rem; line-height: 1.3; }
+.dm-sub { margin: 2px 0 0; }
+.dm-x { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: inherit; font-size: 1.7rem; line-height: 1; cursor: pointer; }
+.dm-x:hover, .dm-x:focus-visible { background: rgba(128, 128, 128, .18); }
+.dm-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.dm-bar input[type="search"] { flex: 1 1 260px; font: inherit; padding: 8px 10px; border: 1.5px solid var(--line, #d5e1dd); border-radius: 6px; min-width: 0; }
+.dm-count { font-size: .85rem; color: #5b6b6a; white-space: nowrap; }
+.dm-warn { margin: 0; padding: 8px 10px; border-left: 4px solid #f0d27a; background: #fff8e6; font-size: .9rem; }
+.dm-none { margin: 12px 0; }
+.dm-body { min-height: 0; overflow: auto; }
+.dm-body .table-wrap.dt-scroll { max-height: none; overflow: visible; } /* the pop-up body scrolls, not the table box */
+.dm :focus-visible { outline: 3px solid #4b92db; outline-offset: 2px; }
+
+/* Column names stay in view while the rows scroll. Without an explicit colour the global `th` rule makes the text white,
+   and the sticky header's background is white, so the names looked blank. */
+.dm-body .table-wrap.dt-scroll thead th { color: var(--ink, #1b2a41); background: var(--panel, #fff); z-index: 2; }

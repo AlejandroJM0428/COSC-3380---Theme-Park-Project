@@ -4,6 +4,8 @@
 // Pages for guest activity (purchases, game plays, ride log) have no Edit button on purpose: the database
 // refuses edits to them with a trigger. Managers can Delete an entry, then add it again to correct a mistake.
 
+import { localDate } from '../utils/portalFormat.js'
+
 const toInput = (s) => (s ? s.replace(' ', 'T').slice(0, 16) : '')
 const shortDate = (s) => (s ? s.slice(0, 16) : '—')
 const money = (v) => (v === null || v === undefined ? '—' : `$${Number(v).toFixed(2)}`)
@@ -74,6 +76,7 @@ export const MEMBERSHIPS = {
   resource: 'memberships',
   idKey: 'MembershipID',
   noun: 'membership',
+  writeRoles: ['Admin', 'RetailManager', 'Cashier'], // same as CAN_WRITE in server/routes/memberships.js
   deleteRoles: ['Admin', 'RetailManager'],
   deleteNote: 'Memberships that already have tickets cannot be deleted.',
   filters: [
@@ -109,7 +112,7 @@ export const MEMBERSHIPS = {
     { key: 'startDate', label: 'Start date', type: 'date', required: true },
     { key: 'autoRenew', label: 'Auto-renew', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
   ],
-  blank: () => ({ customerId: '', tier: '', startDate: '', autoRenew: 'no' }),
+  blank: () => ({ customerId: '', tier: '', startDate: localDate(), autoRenew: 'no' }),
   fromRecord: (rec) => ({
     customerId: String(rec.CustomerID),
     tier: rec.Tier,
@@ -159,19 +162,28 @@ export const PURCHASES = {
   fields: [
     { key: 'ticketId', label: 'Ticket', type: 'lookup', kind: 'ticket', required: true },
     {
+      key: 'itemFilter',
+      label: 'Show',
+      type: 'select',
+      wide: true,
+      optionsFrom: () => [['all', 'All items'], ['alcohol', 'Alcoholic drinks only']],
+    },
+    {
       key: 'itemId',
       label: 'Item',
       type: 'select',
       required: true,
       wide: true,
-      optionsFrom: (form, lookups) => (lookups?.items ?? []).map((x) => [String(x.id), x.name]),
+      optionsFrom: (form, lookups) =>
+        (lookups?.items ?? []).filter((x) => form.itemFilter !== 'alcohol' || Number(x.alcoholic) === 1).map((x) => [String(x.id), x.name]),
     },
     { key: 'quantity', label: 'Quantity', type: 'number', required: true, min: 1, step: '1' },
-    { key: 'purchasedAt', label: 'Time (leave empty for now)', type: 'datetime' },
+    { key: 'purchasedAt', label: 'When', type: 'whenNow' },
   ],
-  blank: () => ({ ticketId: '', itemId: '', quantity: '1', purchasedAt: '' }),
+  blank: () => ({ ticketId: '', itemFilter: 'all', itemId: '', quantity: '1', purchasedAt: '' }),
   fromRecord: (rec) => ({
     ticketId: String(rec.TicketID),
+    itemFilter: 'all',
     itemId: String(rec.ItemID),
     quantity: String(rec.Quantity),
     purchasedAt: toInput(rec.PurchasedAt),
@@ -213,7 +225,7 @@ export const GAME_PLAYS = {
       required: true,
       optionsFrom: (form, lookups) => (lookups?.games ?? []).map((x) => [String(x.id), x.name]),
     },
-    { key: 'playedAt', label: 'Time (leave empty for now)', type: 'datetime' },
+    { key: 'playedAt', label: 'When', type: 'whenNow' },
   ],
   blank: () => ({ ticketId: '', gameId: '', playedAt: '' }),
   fromRecord: (rec) => ({ ticketId: String(rec.TicketID), gameId: String(rec.GameID), playedAt: toInput(rec.PlayedAt) }),
@@ -273,7 +285,7 @@ export const RIDE_LOG = {
     { key: 'ticketId', label: 'Ticket (for a boarding)', type: 'lookup', kind: 'ticket', show: (form) => form.eventType === 'Boarding' },
     { key: 'waitMinutes', label: 'Wait minutes (for a wait reading)', type: 'number', min: 0, step: '1' },
     { key: 'usedExpress', label: 'Used the Express line (boardings)', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
-    { key: 'loggedAt', label: 'Time (leave empty for now)', type: 'datetime' },
+    { key: 'loggedAt', label: 'When', type: 'whenNow' },
   ],
   blank: () => ({ eventType: 'Boarding', rideId: '', ticketId: '', waitMinutes: '', usedExpress: 'no', loggedAt: '' }),
   fromRecord: (rec) => ({
@@ -299,12 +311,14 @@ export const RIDE_LOG = {
 export const WEATHER = {
   title: 'Weather Log',
   intro:
-    'Weather readings. On insert, the database decides whether a reading closes outdoor rides. An edit uses the same rule.',
+    'Weather events. Set every value of an entry directly: the weather, its severity (a label), the start and end times, and whether the outdoor rides and the whole park are Open or Closed while it lasts. Leave the end time empty while the weather is still going on.',
   resource: 'weather',
   idKey: 'WeatherID',
   noun: 'weather entry',
-  deleteRoles: ['Admin', 'Manager'],
+  deleteRoles: ['Admin', 'Manager', 'RetailManager'],
   deleteNote: 'Entries that a refund uses cannot be deleted.',
+  // An entry that closes the park: only an Admin can change, end or delete it.
+  rowLock: (row, user) => (Number(row.ClosesPark) === 1 && user?.role !== 'Admin' ? 'Insufficient privileges: only an Admin can change an entry that closes the park' : ''),
   filters: [
     {
       key: 'status',
@@ -319,12 +333,11 @@ export const WEATHER = {
   columns: [
     { key: 'WeatherID', label: 'Entry #' },
     { key: 'WeatherType', label: 'Weather' },
+    { key: 'Severity', label: 'Severity' },
     { key: 'StartedAt', label: 'Started', format: shortDate },
     { key: 'EndedAt', label: 'Ended', format: (v) => (v ? shortDate(v) : 'Ongoing') },
-    { key: 'TemperatureF', label: 'Temp (F)' },
-    { key: 'WindMph', label: 'Wind (mph)' },
-    { key: 'LightningMiles', label: 'Lightning', format: (v) => (Number(v) >= 99.9 ? 'None detected' : `${v} mi`) },
     { key: 'ClosesOutdoorRides', label: 'Outdoor rides', format: (v) => (Number(v) ? 'Closed' : 'Open') },
+    { key: 'ClosesPark', label: 'Park', format: (v) => (Number(v) ? 'Closed' : 'Open') },
   ],
   fields: [
     {
@@ -334,30 +347,56 @@ export const WEATHER = {
       required: true,
       options: ['Clear', 'Cloudy', 'Rain', 'Storm', 'Heat', 'Cold'].map((t) => [t, t]),
     },
+    {
+      key: 'severity',
+      label: 'Severity',
+      type: 'select',
+      required: true,
+      // Only a label now. What closes is set by the two fields below (SQL/migrations/31_weather_flags_editable.sql).
+      options: [
+        ['Low', 'Low'],
+        ['Medium', 'Medium'],
+        ['High', 'High'],
+        ['Severe', 'Severe'],
+      ],
+    },
     { key: 'startedAt', label: 'Started', type: 'datetime', required: true },
     { key: 'endedAt', label: 'Ended (leave empty while it is ongoing)', type: 'datetime' },
-    { key: 'temperatureF', label: 'Temperature (F)', type: 'number', required: true, step: '1' },
-    { key: 'windMph', label: 'Wind (mph)', type: 'number', required: true, min: 0, step: '1' },
-    { key: 'lightningMiles', label: 'Lightning distance (miles, 99.9 = none detected)', type: 'number', required: true, min: 0, step: '0.1' },
+    {
+      key: 'closesOutdoorRides',
+      label: 'Outdoor rides',
+      type: 'select',
+      required: true,
+      options: [['0', 'Open'], ['1', 'Closed']],
+    },
+    {
+      key: 'closesPark',
+      label: 'Park',
+      type: 'select',
+      required: true,
+      options: [['0', 'Open'], ['1', 'Closed (the whole park)']],
+      // Closing the park is Admin-only (the server checks too: server/routes/weather.js).
+      optionLock: (v, user) => v === '1' && user?.role !== 'Admin',
+    },
   ],
-  blank: () => ({ weatherType: 'Clear', startedAt: '', endedAt: '', temperatureF: '', windMph: '', lightningMiles: '99.9' }),
+  blank: () => ({ weatherType: 'Clear', severity: 'Low', startedAt: '', endedAt: '', closesOutdoorRides: '0', closesPark: '0' }),
   fromRecord: (rec) => ({
     weatherType: rec.WeatherType,
+    severity: rec.Severity,
     startedAt: toInput(rec.StartedAt),
     endedAt: toInput(rec.EndedAt),
-    temperatureF: String(rec.TemperatureF),
-    windMph: String(rec.WindMph),
-    lightningMiles: String(rec.LightningMiles),
+    closesOutdoorRides: String(Number(rec.ClosesOutdoorRides)),
+    closesPark: String(Number(rec.ClosesPark)),
   }),
   toPayload: (form) => ({
     weatherType: form.weatherType,
+    severity: form.severity,
     startedAt: form.startedAt,
     endedAt: form.endedAt || null,
-    temperatureF: num(form.temperatureF),
-    windMph: num(form.windMph),
-    lightningMiles: num(form.lightningMiles),
+    closesOutdoorRides: form.closesOutdoorRides === '1',
+    closesPark: form.closesPark === '1',
   }),
-  describe: (row) => `weather entry #${row.WeatherID} (${row.WeatherType}, ${row.StartedAt?.slice(0, 16)})`,
+  describe: (row) => `weather entry #${row.WeatherID} (${row.WeatherType}, ${row.Severity}, ${row.StartedAt?.slice(0, 16)})`,
 }
 
 // ---- Rides, Games & Venues (Admin): add / edit / deactivate -----------------------------------------------
@@ -366,7 +405,7 @@ export const WEATHER = {
 export const FACILITIES = {
   title: 'Rides, Games & Venues',
   intro:
-    'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Edit one to turn it back on. Set a ride to Maintenance and save: MySQL adds a notice, a toast appears in the corner, and the notice stays on Promos & Notices.',
+    'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Press Reactivate on a deactivated one to turn it back on. Set a ride to Maintenance and save: MySQL adds a notice, a toast appears in the corner, and the notice stays on Promos & Notices.',
   resource: 'facilities',
   idKey: 'FacilityKey',
   hideIds: true, // the page never shows internal keys
@@ -374,8 +413,16 @@ export const FACILITIES = {
   deleteRoles: ['Admin'],
   deleteLabel: 'Deactivate',
   deletePast: 'Deactivated',
-  deleteNote: 'The record is kept and can be turned back on by editing it.',
+  deleteNote: 'The record is kept and can be turned back on with the Reactivate button.',
+  // Turning an attraction off or on asks for a reason first (a dialog with ready-made choices). It is saved in the audit log.
+  requireReason: true,
+  reasonChoices: {
+    deactivate: ['Permanently retired', 'Closed for the season', 'Safety concern', 'Being replaced', 'Added by mistake'],
+    reactivate: ['Repairs finished', 'Back in season', 'Safety check passed', 'Deactivated by mistake'],
+  },
   canDeleteRow: (row) => Number(row.IsActive) === 1,
+  reactivateLabel: 'Reactivate',
+  canReactivateRow: (row) => Number(row.IsActive) !== 1,
   filters: [
     {
       key: 'kind',
@@ -514,7 +561,7 @@ const isStaffRow = (row) => row.UserID != null && row.Role !== 'Customer'
 export const USERS = {
   title: 'App Users',
   intro:
-    'Everyone in one place, grouped by role: staff logins, member accounts and guests (customer records with no login). Filter by role or search by name or username. Staff logins belong to an employee and are named after them (first name plus the last four digits of their ID); you can add one, change its role, set a new password, or deactivate it. Members and guests are view only here (members and guests show the newest 300; search to find others). You cannot deactivate yourself or change your own role.',
+    'Everyone in one place, grouped by role: staff logins, employees who do not have a login yet, member accounts and guests (customer records with no login). Filter by role or search by name or username. Staff logins belong to an employee and are named after them (first name plus the last four digits of their ID); you can add one, change its role, set a new password, or deactivate it. Members and guests are view only here (members and guests show the newest 300; search to find others). You cannot deactivate yourself or change your own role.',
   resource: 'users',
   idKey: 'UserID',
   rowKey: 'RowKey', // guests have no UserID, so rows are keyed by RowKey
@@ -524,8 +571,8 @@ export const USERS = {
     label: 'Group by',
     optionLabel: 'Role',
     defaultOn: true,
-    order: ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker', 'Customer', 'Guest'],
-    labels: { Customer: 'Member accounts', Guest: 'Guests (no login)' },
+    order: ['Admin', 'Manager', 'RetailManager', 'HRManager', 'MaintenanceManager', 'Cashier', 'MaintenanceWorker', 'RestaurantWorker', 'NoLogin', 'Customer', 'Guest'],
+    labels: { Customer: 'Member accounts', Guest: 'Guests (no login)', NoLogin: 'Staff without a login' },
   },
   hideIds: true, // the page never shows user numbers
   noun: 'user',
@@ -534,6 +581,12 @@ export const USERS = {
   deletePast: 'Deactivated',
   deleteNote: 'The account is kept and can be turned back on by editing it.',
   canEditRow: isStaffRow,
+  // Employees with no login get an "Add login" button that opens the form with that employee already chosen.
+  canAddLoginRow: (row) => row.Role === 'NoLogin',
+  addLoginForm: (row, lookups) => {
+    const emp = (lookups?.employees ?? []).find((e) => String(e.id) === String(row.EmployeeID))
+    return { username: emp?.username ?? '', suggested: emp?.username ?? '', role: '', password: '', employeeId: String(row.EmployeeID), isActive: 'yes' }
+  },
   canDeleteRow: (row) => isStaffRow(row) && Number(row.IsActive) === 1,
   filters: [
     {
@@ -542,6 +595,7 @@ export const USERS = {
       options: [
         ['', 'All roles'],
         ...STAFF_ROLE_LIST.map((r) => [r, r.replace(/([a-z])([A-Z])/g, '$1 $2')]),
+        ['NoLogin', 'Staff without a login'],
         ['Customer', 'Member accounts'],
         ['Guest', 'Guests (no login)'],
       ],
@@ -560,7 +614,7 @@ export const USERS = {
   columns: [
     { key: 'PersonName', label: 'Name', format: (v) => v || '—' },
     { key: 'Username', label: 'Username', format: (v) => v || '—' },
-    { key: 'Role', label: 'Role', format: (v) => (v === 'Customer' ? 'Member' : v === 'Guest' ? 'Guest' : v) },
+    { key: 'Role', label: 'Role', format: (v, row) => (v === 'Customer' ? 'Member' : v === 'Guest' ? 'Guest' : v === 'NoLogin' ? `${row?.JobTitle ?? 'Staff'} (no login)` : v) },
     { key: 'EmployeeID', label: 'Employee ID', format: (v) => v || '—' },
     { key: 'CustomerID', label: 'Customer #', format: (v) => v || '—' },
     { key: 'IsActive', label: 'Status', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
