@@ -129,7 +129,11 @@ export function fixedRules(report) {
   if (report.dropFuture) rules.push(`Days after today are left out (${report.dropFuture} <= CURDATE()). Tickets booked ahead are pre-orders, not revenue.`);
   if (report.preorder) {
     const blank = (report.blank ?? []).join(' and ');
-    rules.push(`Days after today are kept as pre-orders (PreOrdered = 1)${blank ? ` and ${blank} is left blank for them` : ''}. Only the booking count is real.`);
+    rules.push(
+      blank
+        ? `Days after today are kept as pre-orders (PreOrdered = 1) and ${blank} is left blank for them. Only the booking count is real.`
+        : 'Days after today are kept as pre-orders (PreOrdered = 1). They are listed, but left out of the headline totals until that day.',
+    );
   }
   return rules;
 }

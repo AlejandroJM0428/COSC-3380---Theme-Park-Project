@@ -68,10 +68,10 @@ export function readPreview() {
 //   now:     minutes after midnight, park time
 //   preview: '', 'closed' or 'happyhour'
 // mode is 'unknown' (hours not loaded yet), 'closed', 'happyhour' or 'open'.
-// reason is 'weather' when severe weather has closed a park that would otherwise be open, else null.
+// reason is 'weather' when a Severe weather event has closed the park, including after opening hours.
 export function parkStatus({ hours, weather = null, now, preview = '' }) {
   const status = clockStatus({ hours, now, preview })
-  if (weather?.closesPark && status.mode !== 'closed') {
+  if (weather?.closesPark) {
     return { ...status, mode: 'closed', reason: 'weather', opensTomorrow: false, minutesToOpen: null, minutesLeft: null }
   }
   return { ...status, reason: null }
