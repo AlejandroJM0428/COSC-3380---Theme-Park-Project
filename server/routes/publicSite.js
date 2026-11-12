@@ -77,7 +77,7 @@ async function loadSite() {
     pool.query(
       `SELECT WeatherType, Severity, ClosesOutdoorRides, ClosesPark, EndedAt
          FROM WeatherLog
-        WHERE ClosesOutdoorRides = 1
+        WHERE (ClosesOutdoorRides = 1 OR ClosesPark = 1)
           AND NOW() >= StartedAt
           AND (EndedAt IS NULL OR NOW() < EndedAt)
         ORDER BY ClosesPark DESC, StartedAt DESC

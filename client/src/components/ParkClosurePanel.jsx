@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../auth/context.js'
-import { closePark, getParkClosure, reopenPark } from '../api/index.js'
+import { getParkClosure, reopenPark } from '../api/index.js'
+import RecordEditor from './RecordEditor.jsx'
+import { WEATHER } from '../config/entitiesMore.js'
 import useParkClock from '../hooks/useParkClock.js'
 import usePersistedState from '../hooks/usePersistedState.js'
 import { clockLabel } from '../utils/parkTime.js'
 import './ParkClosurePanel.css'
 
-// Park status banner with one-click "Close park for weather" / "Reopen park". Admin only: everyone else who can see the
-// Weather Log sees the same banner with the button greyed out ("Insufficient privileges").
+// Park status banner on the admin Overview (it is not shown anywhere else). "Close park for weather" opens the SAME form as
+// the Weather Log (weather, severity, started, ended: the WEATHER entity), so a closure is saved exactly like a log entry.
+// While the park is closed for weather, "Edit weather event" reopens that entry in the same form and "Reopen park" ends it.
+// Admin only: other roles see the banner with the buttons greyed out ("Insufficient privileges").
 // Green "Park is in operation" while the park is open; red "Park is closed" when it is closed (outside opening hours, or closed for weather).
-// It is a shortcut over the weather form below it: closing logs a Severe weather event, reopening ends it.
 // The server checks the role again, so hiding this panel is only for tidiness.
-const TYPES = ['Storm', 'Rain', 'Heat', 'Cold']
-
 const VIEW_ROLES = ['Admin', 'Manager', 'RetailManager'] // same as CAN_SEE in server/routes/parkClosure.js
 const NO_RIGHTS = 'Insufficient privileges: only an Admin can close or reopen the park.'
 
@@ -27,7 +28,7 @@ export default function ParkClosurePanel({ onChanged, refreshKey = 0 }) {
   const [message, setMessage] = useState('')
   const [actionError, setActionError] = usePersistedState('closure.actionError', '') // a refused close or reopen stays through a refresh
   const [confirming, setConfirming] = useState(false)
-  const [weatherType, setWeatherType] = useState('Storm')
+  const [editor, setEditor] = useState(null) // { mode: 'add' | 'edit', id? }: the weather form
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const clock = useParkClock() // opening hours + weather, refreshed every 10 seconds
@@ -80,13 +81,8 @@ export default function ParkClosurePanel({ onChanged, refreshKey = 0 }) {
     setError('')
     setActionError('')
     try {
-      if (closed) {
-        await reopenPark({ note })
-        setMessage('The park is open again. Sales and rides resume.')
-      } else {
-        await closePark({ weatherType, note })
-        setMessage('The park is closed for weather. Sales and boardings are blocked until you reopen it.')
-      }
+      await reopenPark({ note })
+      setMessage('The park is open again. Sales and rides resume.')
       setConfirming(false)
       setNote('')
       await load()
@@ -96,6 +92,13 @@ export default function ParkClosurePanel({ onChanged, refreshKey = 0 }) {
     } finally {
       setBusy(false)
     }
+  }
+
+  function handleSaved(saved, notice) {
+    setEditor(null)
+    setMessage(notice)
+    load()
+    onChanged?.()
   }
 
   return (
@@ -108,46 +111,65 @@ export default function ParkClosurePanel({ onChanged, refreshKey = 0 }) {
             {detail && <div className="pcp-detail">{detail}</div>}
           </div>
         </div>
-        {status != null && !confirming && (
+        {status != null && !confirming && !editor && (
           <div className="pcp-btnwrap">
-            <button
-              type="button"
-              className={`pt-btn pt-btn-sm ${canClose ? '' : 'pcp-locked'}`}
-              disabled={!canClose}
-              title={canClose ? undefined : NO_RIGHTS}
-              onClick={() => { setMessage(''); setConfirming(true) }}
-            >
-              {closed ? 'Reopen park' : 'Close park for weather'}
-            </button>
+            <div className="pcp-actions">
+              {closed && (
+                <button
+                  type="button"
+                  className={`pt-btn pt-btn-sm ${canClose ? '' : 'pcp-locked'}`}
+                  disabled={!canClose}
+                  title={canClose ? undefined : NO_RIGHTS}
+                  onClick={() => { setMessage(''); setActionError(''); setEditor({ mode: 'edit', id: status.weatherId }) }}
+                >
+                  Edit weather event
+                </button>
+              )}
+              <button
+                type="button"
+                className={`pt-btn pt-btn-sm ${canClose ? '' : 'pcp-locked'}`}
+                disabled={!canClose}
+                title={canClose ? undefined : NO_RIGHTS}
+                onClick={() => {
+                  setMessage('')
+                  setActionError('')
+                  if (closed) setConfirming(true)
+                  else setEditor({ mode: 'add', initial: { weatherType: 'Storm', severity: 'Severe', startedAt: '', endedAt: '', closesOutdoorRides: '1', closesPark: '1' } })
+                }}
+              >
+                {closed ? 'Reopen park' : 'Close park for weather'}
+              </button>
+            </div>
             {!canClose && <span className="pcp-lockmsg">Insufficient privileges (Admin only)</span>}
           </div>
         )}
       </div>
 
-      {confirming && canClose && (
+      {editor && canClose && (
+        <RecordEditor
+          key={`${editor.mode}-${editor.id ?? 'new'}`}
+          entity={WEATHER}
+          mode={editor.mode}
+          id={editor.id}
+          initial={editor.initial}
+          lookups={null}
+          onSaved={handleSaved}
+          onCancel={() => setEditor(null)}
+          onError={(m) => setActionError(m)}
+          onToast={() => {}}
+        />
+      )}
+
+      {confirming && canClose && closed && (
         <div className="pcp-confirm">
-          <p>
-            {closed
-              ? 'Reopen the park? Ticket sales for today, purchases, game plays and ride boardings resume.'
-              : 'Close the whole park? Ticket sales for today, purchases, game plays and ride boardings stop until you reopen it.'}
-          </p>
-          {!closed && (
-            <label>
-              Weather
-              <select value={weatherType} onChange={(e) => setWeatherType(e.target.value)} disabled={busy}>
-                {TYPES.map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
-            </label>
-          )}
+          <p>Reopen the park? Ticket sales for today, purchases, game plays and ride boardings resume.</p>
           <label>
             Note (saved in the audit log)
             <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} rows={2} disabled={busy} />
           </label>
           <div className="pcp-actions">
             <button type="button" className="pt-btn pt-btn-sm" onClick={confirm} disabled={busy}>
-              {busy ? 'Working...' : closed ? 'Confirm reopen' : 'Confirm close'}
+              {busy ? 'Working...' : 'Confirm reopen'}
             </button>
             <button type="button" onClick={() => setConfirming(false)} disabled={busy}>Cancel</button>
           </div>

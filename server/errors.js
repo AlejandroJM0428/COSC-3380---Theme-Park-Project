@@ -1,4 +1,4 @@
-import { triggerForMessage } from './demos/triggerCatalog.js';
+import { triggerForMessage } from './catalog/triggerCatalog.js';
 
 export class HttpError extends Error {
   constructor(status, message) {

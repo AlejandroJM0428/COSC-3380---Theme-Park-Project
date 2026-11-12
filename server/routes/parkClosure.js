@@ -65,7 +65,7 @@ route(
       id = await inTransaction(async (conn) => {
         const [open] = await conn.query(`SELECT WeatherID FROM WeatherLog WHERE ${IN_EFFECT} LIMIT 1 FOR UPDATE`);
         if (open.length > 0) throw new HttpError(409, 'The park is already closed for weather');
-        const newId = await insertWeather({ weatherType, severity: 'Severe', startedAt: null, endedAt: null }, conn);
+        const newId = await insertWeather({ weatherType, severity: 'Severe', startedAt: null, endedAt: null, closesOutdoorRides: 1, closesPark: 1 }, conn);
         await audit(ctx, 'PARK_CLOSE', { table: 'WeatherLog', rowKey: String(newId), detail: { weatherType, note } }, conn);
         return newId;
       });

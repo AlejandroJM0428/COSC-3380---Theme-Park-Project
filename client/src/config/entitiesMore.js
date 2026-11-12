@@ -311,14 +311,14 @@ export const RIDE_LOG = {
 export const WEATHER = {
   title: 'Weather Log',
   intro:
-    'Weather events. The severity decides what closes while the event is going on: Low closes nothing, Medium or High closes the outdoor rides, and Severe closes the whole park. Leave the end time empty while the weather is still going on.',
+    'Weather events. Set every value of an entry directly: the weather, its severity (a label), the start and end times, and whether the outdoor rides and the whole park are Open or Closed while it lasts. Leave the end time empty while the weather is still going on.',
   resource: 'weather',
   idKey: 'WeatherID',
   noun: 'weather entry',
   deleteRoles: ['Admin', 'Manager', 'RetailManager'],
   deleteNote: 'Entries that a refund uses cannot be deleted.',
-  // A Severe entry is the park being closed: only an Admin can change, end or delete it.
-  rowLock: (row, user) => (row.Severity === 'Severe' && user?.role !== 'Admin' ? 'Insufficient privileges: only an Admin can change a Severe entry (it closes the park)' : ''),
+  // An entry that closes the park: only an Admin can change, end or delete it.
+  rowLock: (row, user) => (Number(row.ClosesPark) === 1 && user?.role !== 'Admin' ? 'Insufficient privileges: only an Admin can change an entry that closes the park' : ''),
   filters: [
     {
       key: 'status',
@@ -352,31 +352,49 @@ export const WEATHER = {
       label: 'Severity',
       type: 'select',
       required: true,
-      // What each level closes is decided by the database (SQL/migrations/27_weather_severity.sql).
+      // Only a label now. What closes is set by the two fields below (SQL/migrations/31_weather_flags_editable.sql).
       options: [
-        ['Low', 'Low (nothing closes)'],
-        ['Medium', 'Medium (outdoor rides close)'],
-        ['High', 'High (outdoor rides close)'],
-        ['Severe', 'Severe (the whole park closes)'],
+        ['Low', 'Low'],
+        ['Medium', 'Medium'],
+        ['High', 'High'],
+        ['Severe', 'Severe'],
       ],
-      // Severe closes the park, so only an Admin can pick it (the server checks too: server/routes/weather.js).
-      optionLock: (v, user) => v === 'Severe' && user?.role !== 'Admin',
     },
     { key: 'startedAt', label: 'Started', type: 'datetime', required: true },
     { key: 'endedAt', label: 'Ended (leave empty while it is ongoing)', type: 'datetime' },
+    {
+      key: 'closesOutdoorRides',
+      label: 'Outdoor rides',
+      type: 'select',
+      required: true,
+      options: [['0', 'Open'], ['1', 'Closed']],
+    },
+    {
+      key: 'closesPark',
+      label: 'Park',
+      type: 'select',
+      required: true,
+      options: [['0', 'Open'], ['1', 'Closed (the whole park)']],
+      // Closing the park is Admin-only (the server checks too: server/routes/weather.js).
+      optionLock: (v, user) => v === '1' && user?.role !== 'Admin',
+    },
   ],
-  blank: () => ({ weatherType: 'Clear', severity: 'Low', startedAt: '', endedAt: '' }),
+  blank: () => ({ weatherType: 'Clear', severity: 'Low', startedAt: '', endedAt: '', closesOutdoorRides: '0', closesPark: '0' }),
   fromRecord: (rec) => ({
     weatherType: rec.WeatherType,
     severity: rec.Severity,
     startedAt: toInput(rec.StartedAt),
     endedAt: toInput(rec.EndedAt),
+    closesOutdoorRides: String(Number(rec.ClosesOutdoorRides)),
+    closesPark: String(Number(rec.ClosesPark)),
   }),
   toPayload: (form) => ({
     weatherType: form.weatherType,
     severity: form.severity,
     startedAt: form.startedAt,
     endedAt: form.endedAt || null,
+    closesOutdoorRides: form.closesOutdoorRides === '1',
+    closesPark: form.closesPark === '1',
   }),
   describe: (row) => `weather entry #${row.WeatherID} (${row.WeatherType}, ${row.Severity}, ${row.StartedAt?.slice(0, 16)})`,
 }

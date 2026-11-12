@@ -30,7 +30,7 @@ ALTER TABLE Maintenance
     ADD COLUMN RepairCost DECIMAL(10,2) NULL AFTER Reason,
     ADD CONSTRAINT CHK_Maint_Cost CHECK (RepairCost IS NULL OR RepairCost >= 0);
 
--- DEMO DATA: give every closed seed job a plausible cost so the cost reports are not empty.
+-- SEED DATA: give every closed seed job a plausible cost so the cost reports are not empty.
 -- These numbers are generated, not real. Say so in the presentation.
 UPDATE Maintenance
    SET RepairCost = (CASE MaintType

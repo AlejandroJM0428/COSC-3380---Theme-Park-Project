@@ -1,7 +1,7 @@
 import { route } from '../router.js';
 import { pool } from '../db.js';
 import { requireRole } from '../middleware/requireRole.js';
-import { TRIGGER_CATALOG } from '../demos/triggerCatalog.js';
+import { TRIGGER_CATALOG } from '../catalog/triggerCatalog.js';
 
 // GET /api/triggers  (Admin only)
 // Read-only. Compares the project triggers with the live database.

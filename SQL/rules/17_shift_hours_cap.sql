@@ -10,7 +10,7 @@
 --   - An open shift (no ClockOut) counts up to now. A shift that starts in the future counts as 0 until it has started.
 --   - When a shift is edited, its old row is left out of the sum (p_self), so shortening a shift or changing only its end is fine.
 --   - There is no overtime pay and no labour cost anywhere: this rule only refuses.
---   - Two people saving at the same moment can both pass the check (no lock is taken). Fine for a demo.
+--   - Two people saving at the same moment can both pass the check (no lock is taken). Acceptable at this project's scale.
 -- The overlap and hire-date checks are unchanged. Safe to run twice. Run it AGAIN after anyone re-runs the schema file: that puts
 -- the old sp_AssertShift back and the 40-hour rule disappears.
 USE theme_park;

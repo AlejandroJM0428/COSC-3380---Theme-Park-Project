@@ -1,8 +1,8 @@
--- 24_demo_work_finished.sql: shows both new rules fire, then rolls back. Run with --force so both demos print their error:
---   docker compose exec -T mysql sh -c 'mysql --force -uroot -p"$MYSQL_ROOT_PASSWORD" theme_park' < SQL/migrations/24_demo_work_finished.sql
+-- 24_test_work_finished.sql: checks both new rules reject bad rows, then rolls back. Run with --force so both tests print their error:
+--   docker compose exec -T mysql sh -c 'mysql --force -uroot -p"$MYSQL_ROOT_PASSWORD" theme_park' < SQL/tests/24_test_work_finished.sql
 -- Expect TWO errors, each ERROR 1644 (45000).
 
--- Demo 1: expect "Only a crew member of this job can report it finished."
+-- Test 1: expect "Only a crew member of this job can report it finished."
 START TRANSACTION;
 SELECT m.MaintenanceID, e.EmployeeID INTO @job, @outsider
   FROM Maintenance m JOIN Employee e ON e.JobTitle = 'Technician' AND e.IsActive = 1
@@ -13,7 +13,7 @@ SELECT @job AS open_job, @outsider AS technician_not_on_crew;
 INSERT INTO MaintenanceWorkReport (MaintenanceID, EmployeeID, ProposedOutcome) VALUES (@job, @outsider, 'Fixed');
 ROLLBACK;
 
--- Demo 2: expect "This job is already closed."
+-- Test 2: expect "This job is already closed."
 START TRANSACTION;
 SELECT m.MaintenanceID, c.EmployeeID INTO @closed, @crew
   FROM Maintenance m JOIN MaintenanceCrew c ON c.MaintenanceID = m.MaintenanceID

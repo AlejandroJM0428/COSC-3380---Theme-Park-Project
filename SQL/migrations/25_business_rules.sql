@@ -32,7 +32,7 @@ END$$
 
 -- [RULE 2] Refund notice: a ticket refund needs at least 2 days' notice before the visit.
 -- A weather refund (WeatherID set) is excepted. Why not a CHECK: it compares today with the visit date in Ticket.
--- Only refunds stamped within the last 5 minutes are checked (same pattern as trg_Ticket_BI_Guard), so the demo
+-- Only refunds stamped within the last 5 minutes are checked (same pattern as trg_Ticket_BI_Guard), so the seed
 -- history, which holds refunds made a day before the visit, still loads.
 -- This is trg_TicketRefund_BI from 11_restore_triggers.sql with the notice check added; the two old checks are unchanged.
 CREATE TRIGGER trg_TicketRefund_BI BEFORE INSERT ON TicketRefund

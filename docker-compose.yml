@@ -17,7 +17,7 @@ services:
       - mysql_data:/var/lib/mysql
       # Init scripts run once, on an empty data volume, in file-name order.
       # Each file is mounted under its own name, so the number in the name is the load order (see SQL/README.md).
-      # Demo data is not loaded here (the generated 02_test_data.sql is not in the repo). After the first start run: SQL/tools/load_history.sh --no-generate
+      # Data is not loaded here. After the first start, restore theme_park_2026-11-11_1340.sql (see README). Files 21 to 26 are not mounted; the dump has them.
       # 15 to 20 were added after the first deploy: on an existing database they do NOT run again, apply them by hand once.
       - ./SQL/schema/00_schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
       - ./SQL/seed/01_park_and_reference.sql:/docker-entrypoint-initdb.d/01_park_and_reference.sql:ro
