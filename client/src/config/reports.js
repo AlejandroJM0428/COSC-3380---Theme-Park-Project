@@ -423,7 +423,9 @@ const ALL_REPORTS = [
         notes: [
           'Memberships are counted in full on the day they start, so they make single days or months look high.',
           'The newest month may be unfinished, so it can look low. Shaded table rows are far from that source\'s usual month: green is high, red is low.',
+          'A ticket or membership for a day that has not happened yet is listed as Pre-ordered. It is not included in Total revenue until that day.',
         ],
+        showPreOrdered: true,
         chartRows: (rows) => sumBy(rows, 'Source', 'Revenue'),
         chart: { type: 'bar', x: 'Source', y: 'Revenue', yLabel: 'Revenue ($)' },
         extraChart: { title: 'Revenue per month (all sources)', rows: (rows) => trendByMonth(rows, 'Revenue'), chart: { type: 'line', x: 'Month', y: 'Revenue', yLabel: 'Revenue ($)' } },

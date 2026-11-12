@@ -402,10 +402,11 @@ function ReportBody({ report, csvName, addRequest, onAddHandled }) {
         if (mine === allReq.current) setViewAll((cur) => (cur ? { ...cur, error: `Saved, but the list could not be refreshed: ${err.message}` } : cur))
       })
   }
-  function run() {
+  function run(eventOrSpec) {
+    const useSpec = eventOrSpec && Array.isArray(eventOrSpec.filters) ? eventOrSpec : spec
     const mine = ++latest.current
-    const request = isQuery ? qvals : meta ? toRequest(spec) : undefined
-    const custom = !isQuery && Boolean(meta) && isCustom(spec)
+    const request = isQuery ? qvals : meta ? toRequest(useSpec) : undefined
+    const custom = !isQuery && Boolean(meta) && isCustom(useSpec)
     setLoading(true)
     setError('')
     setDetail(null)
@@ -426,6 +427,24 @@ function ReportBody({ report, csvName, addRequest, onAddHandled }) {
   }
 
   const stale = loaded && (isQuery ? JSON.stringify(qvals) !== ranRequest : Boolean(meta) && JSON.stringify(toRequest(spec)) !== ranRequest)
+
+  // A date the person picked that has no rows. Future days used to vanish with no explanation, so a ticket sold ahead looked like a broken report.
+  function showAllDates() {
+    if (dateOnServer) {
+      const next = { ...spec, filters: spec.filters.filter((f) => f.column !== dateKey) }
+      setSpec(next)
+      run(next)
+      return
+    }
+    setFrom('')
+    setTo('')
+  }
+  const todayIso = (() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })()
+  const dateLabel = pickFrom && pickTo ? (pickFrom === pickTo ? pickFrom : `${pickFrom} to ${pickTo}`) : pickFrom ? `from ${pickFrom}` : pickTo ? `up to ${pickTo}` : ''
+  const rangeIsAhead = Boolean(pickFrom) && pickFrom > todayIso
 
   // Values for each drop-down, taken from the rows themselves.
   const options = useMemo(() => {
@@ -477,7 +496,7 @@ function ReportBody({ report, csvName, addRequest, onAddHandled }) {
   const baseRows = !ranCustom && report.tableRows ? safely(() => report.tableRows(actual), []) : actual
   const tableRows =
     !ranCustom && report.showPreOrdered
-      ? [...[...preOrdered].sort((a, b) => String(b.VisitDate).localeCompare(String(a.VisitDate))), ...baseRows]
+      ? [...[...preOrdered].sort((a, b) => String(b[report.dateFilter?.key] ?? b.VisitDate ?? '').localeCompare(String(a[report.dateFilter?.key] ?? a.VisitDate ?? ''))), ...baseRows]
       : baseRows
   const hasFilters = localKeys.length > 0
   const filtersOn = localKeys.some((f) => selects[f.key]) || (localDate && (from || to)) || (!searchOnServer && searchKey && searchText.trim() !== '')
@@ -564,6 +583,10 @@ function ReportBody({ report, csvName, addRequest, onAddHandled }) {
 
           {ranCustom && <p className="muted">Custom result: a summary or a column choice, so the report&apos;s own charts and headline numbers are left out.</p>}
 
+          {loaded && preOrdered.length > 0 && actual.length === 0 && (
+            <p className="muted">These dates have not happened yet. The bookings are listed below and are not included in the totals until that day.</p>
+          )}
+
           {kpis.length > 0 && (
             <div className="rp-kpis">
               {kpis.map((k) => (
@@ -609,6 +632,19 @@ function ReportBody({ report, csvName, addRequest, onAddHandled }) {
           <DataTable
             key={csvName}
             rows={tableRows}
+            empty={
+              tableRows.length === 0 && dateLabel ? (
+                <p className="muted">
+                  No rows for {dateLabel}.
+                  {rangeIsAhead
+                    ? ' That day has not happened yet, and nothing is booked for it. Ticket sales for a later day show up when you pick that day, or when you show every date.'
+                    : ' Nothing was recorded in that range.'}{' '}
+                  <button type="button" className="rp-clear" onClick={showAllDates}>
+                    Show all dates
+                  </button>
+                </p>
+              ) : undefined
+            }
             columns={ranCustom ? undefined : report.columns}
             rowClass={ranCustom ? undefined : report.rowClass}
             labelOf={label}

@@ -75,7 +75,7 @@ const markClass = (m) => (m === 'high' ? 'dt-row-high' : m === 'low' ? 'dt-row-l
 // rowAction(row), when passed, adds a last, non-sortable Actions column. It returns null (no button on that row) or
 // { label, onClick, disabled, title }; a disabled button is greyed and shows title as its tooltip (for example "Insufficient privileges").
 // The column is left out altogether when no row returns an action. The cell is not part of the row data, so search boxes never see it.
-export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, detailKey, detailSlot, pageSize, rowAction }) {
+export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, detailKey, detailSlot, pageSize, rowAction, empty }) {
   const [sort, setSort] = useState(null) // null, or { key, dir: 'asc' | 'desc' }
   const [visible, setVisible] = useState(pageSize ?? Infinity)
 
@@ -88,7 +88,7 @@ export default function DataTable({ rows, columns, rowClass, labelOf, onDetail, 
     return [...filled, ...blank] // empty cells always go last
   }, [rows, sort])
 
-  if (!rows || rows.length === 0) return <p className="muted">No data to show.</p>
+  if (!rows || rows.length === 0) return empty ?? <p className="muted">No data to show.</p>
   const cols = columns ?? Object.keys(rows[0])
   const hasAction = Boolean(rowAction) && rows.some((r) => rowAction(r))
 
