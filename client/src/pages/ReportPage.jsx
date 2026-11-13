@@ -482,10 +482,13 @@ function ReportBody({ report, csvName, addRequest, onAddHandled }) {
   // Days after today are Pre-ordered (tickets booked ahead). They stay out of every total, average and chart,
   // and only a report with showPreOrdered lists them (at the top of the table, marked Pre-ordered).
   const actual = useMemo(() => (ranCustom ? filtered : filtered.filter((r) => !Number(r.PreOrdered))), [filtered, ranCustom])
-  const preOrdered = useMemo(
-    () => (ranCustom ? [] : filtered.filter((r) => Number(r.PreOrdered)).map((r) => ({ ...r, Note: 'Pre-ordered', _mark: undefined }))),
-    [filtered, ranCustom],
-  )
+  const preOrdered = useMemo(() => {
+    if (ranCustom) return []
+    const ahead = filtered.filter((r) => Number(r.PreOrdered))
+    // A report can sum its pre-ordered days (preOrderedRows) so they match how its other rows are grouped.
+    const shaped = report.preOrderedRows ? safely(() => report.preOrderedRows(ahead), ahead) : ahead
+    return shaped.map((r) => ({ ...r, Note: 'Pre-ordered', _mark: undefined }))
+  }, [filtered, ranCustom, report])
   const kpis = !ranCustom && report.kpis ? safely(() => report.kpis(actual), []) : []
   const insights = !ranCustom && report.insights ? safely(() => report.insights(actual), []) : []
   const notes = ranCustom ? [] : [...insights, ...(report.notes ?? [])]

@@ -426,6 +426,12 @@ const ALL_REPORTS = [
           'A ticket or membership for a day that has not happened yet is listed as Pre-ordered. It is not included in Total revenue until that day.',
         ],
         showPreOrdered: true,
+        // Pre-ordered days are summed per month and source, the same as the rows below them, so a month shows once
+        // and its Details button opens exactly the tickets that the row adds up.
+        preOrderedRows: (rows) =>
+          groupSum(rows, ['Month', 'Source'], ['Revenue']).sort(
+            (a, b) => b.Month.localeCompare(a.Month) || a.Source.localeCompare(b.Source),
+          ),
         chartRows: (rows) => sumBy(rows, 'Source', 'Revenue'),
         chart: { type: 'bar', x: 'Source', y: 'Revenue', yLabel: 'Revenue ($)' },
         extraChart: { title: 'Revenue per month (all sources)', rows: (rows) => trendByMonth(rows, 'Revenue'), chart: { type: 'line', x: 'Month', y: 'Revenue', yLabel: 'Revenue ($)' } },
