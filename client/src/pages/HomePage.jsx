@@ -14,7 +14,7 @@ export default function HomePage() {
   const { site, error, retry } = usePublicSite()
   const park = useParkClock()
 
-  // Today's facts under the headline. Hours come from the Park row; ride counts from the public ride list.
+  // Today's facts under the headline. Hours come from the Park row.
   const facts = []
   if (park.reason === 'weather') {
     facts.push({ key: 'hours', off: true, text: 'Closed now · Severe weather' })
@@ -23,14 +23,7 @@ export default function HomePage() {
       ? { key: 'hours', off: true, text: `Closed now · Opens ${park.opensTomorrow ? 'tomorrow' : 'today'} at ${clockLabel(park.openAt)}` }
       : { key: 'hours', text: `Open today ${clockLabel(park.openAt)} – ${clockLabel(park.closeAt)}` })
   }
-  if (park.mode !== 'closed' && park.weather?.closesOutdoorRides) {
-    facts.push({ key: 'weather', off: true, text: 'Outdoor rides closed due to weather' })
-  }
   if (park.mode === 'happyhour') facts.push({ key: 'happy', text: `Happy Hour until ${clockLabel(BRAND.happyHour.end)}` })
-  const rides = site?.rides ?? []
-  if (park.mode !== 'closed' && rides.length > 0) {
-    facts.push({ key: 'rides', text: `${rides.filter((r) => r.state === 'Open').length} of ${rides.length} rides open` })
-  }
 
   return (
     <main>
