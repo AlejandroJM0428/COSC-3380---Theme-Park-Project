@@ -174,12 +174,20 @@ route(
     const values = cleanValues(ctx.body.values, info, 'Values', { forWrite: true });
     if (values.length === 0) throw new HttpError(400, 'Give at least one column value');
 
+    // The Row Editor is Admin only, so a refund typed here may skip the 2-day notice rule (trg_TicketRefund_BI).
+    const waiveNotice = info.table.toLowerCase() === 'ticketrefund';
     return inTransaction(async (conn) => {
-      const [result] = await conn.query(`INSERT INTO ?? (??) VALUES (${values.map(() => '?').join(', ')})`, [
-        info.table,
-        values.map(([n]) => n),
-        ...values.map(([, v]) => v),
-      ]);
+      let result;
+      if (waiveNotice) await conn.query('SET @admin_refund_override = 1');
+      try {
+        [result] = await conn.query(`INSERT INTO ?? (??) VALUES (${values.map(() => '?').join(', ')})`, [
+          info.table,
+          values.map(([n]) => n),
+          ...values.map(([, v]) => v),
+        ]);
+      } finally {
+        if (waiveNotice) await conn.query('SET @admin_refund_override = NULL');
+      }
 
       // Work out the new row's key: the values given, plus the new auto id if the table made one.
       const given = new Map(values);

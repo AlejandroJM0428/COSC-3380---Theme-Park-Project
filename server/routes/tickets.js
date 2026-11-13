@@ -2,6 +2,7 @@ import { route } from '../router.js';
 import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { audit } from './admin.js';
 
 // Ticket sales (Revenue data entry): list, get, add, edit, void.
 // "Void" adds a TicketRefund row. There is no edit route for a refund.
@@ -157,6 +158,9 @@ route(
 );
 
 // DELETE voids the ticket: it adds a refund row (query ?reason=...). Nothing is removed from Ticket.
+// The 2-day notice rule (trg_TicketRefund_BI) applies to the retail manager. An Admin may void inside the notice
+// window: the server sets @admin_refund_override for this one insert, clears it again, and writes an AdminAudit row
+// in the same transaction.
 route(
   'DELETE',
   '/api/tickets/:id',
@@ -165,11 +169,43 @@ route(
     const reason = typeof ctx.query.reason === 'string' && ctx.query.reason.trim() ? ctx.query.reason.trim() : 'Voided by staff';
     if (reason.length > 200) throw new HttpError(400, 'Reason must be 200 characters or fewer');
     await loadTicket(id); // 404 if missing
+    const refundSql = 'INSERT INTO TicketRefund (TicketID, WeatherID, RefundedAt, RefundReason) VALUES (?, NULL, NOW(), ?)';
+    if (ctx.session.role !== 'Admin') {
+      try {
+        await pool.query(refundSql, [id, reason]);
+      } catch (err) {
+        if (err.errno === 1062) throw new HttpError(409, 'This ticket is already voided');
+        throw err;
+      }
+      return loadTicket(id);
+    }
+
+    const conn = await pool.getConnection();
+    let broken = false;
     try {
-      await pool.query('INSERT INTO TicketRefund (TicketID, WeatherID, RefundedAt, RefundReason) VALUES (?, NULL, NOW(), ?)', [id, reason]);
+      await conn.beginTransaction();
+      await conn.query('SET @admin_refund_override = 1');
+      try {
+        const [[chk]] = await conn.query('SELECT VisitDate, (VisitDate < CURDATE() + INTERVAL 2 DAY) AS inNotice FROM Ticket WHERE TicketID = ?', [id]);
+        await conn.query(refundSql, [id, reason]);
+        await audit(ctx, 'TICKET_REFUND', { table: 'TicketRefund', rowKey: `TicketID=${id}`, detail: { reason, noticeWaived: Boolean(Number(chk?.inNotice)) } }, conn);
+        await conn.commit();
+      } catch (err) {
+        await conn.rollback().catch(() => {
+          broken = true;
+        });
+        throw err;
+      }
     } catch (err) {
       if (err.errno === 1062) throw new HttpError(409, 'This ticket is already voided');
       throw err;
+    } finally {
+      // Never leave the override on a pooled connection: if it cannot be cleared, drop the connection.
+      await conn.query('SET @admin_refund_override = NULL').catch(() => {
+        broken = true;
+      });
+      if (broken) conn.destroy();
+      else conn.release();
     }
     return loadTicket(id);
   }),
