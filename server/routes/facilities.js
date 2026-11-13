@@ -64,7 +64,7 @@ function shape(kind, r) {
       IsExpressEligible: r.IsExpressEligible,
       RideStatus: r.Status,
       LiveState: r.LiveState ?? null, // what guests see right now: Open, Closed - Maintenance, Closed - Weather, Closed - Retired
-      Details: `${r.RideType}, ${r.SeatCapacity} seats, ${r.Status}, ${r.MinHeightCm ? `min ${r.MinHeightCm} cm` : 'no height limit'}`,
+      Details: `${r.RideType}, ${r.SeatCapacity} seats, ${r.MinHeightCm ? `min ${r.MinHeightCm} cm` : 'no height limit'}`,
     };
   }
   if (kind === 'Game') {
@@ -146,13 +146,21 @@ async function writeRide(f, existingId) {
       id = result.insertId;
     }
     if (id != null && (existingId != null || f.rideStatus === 'Maintenance')) {
+      // Saving the status as Open while the ride is closed by maintenance (the label, or a job) is a reopen: stamp
+      // ReopenedAt so older jobs stop closing it (SQL/migrations/34). Weather closures are not affected.
+      let reopen = 0;
+      if (existingId != null && f.rideStatus === 'Open') {
+        const [cur] = await conn.query(
+          `SELECT r.Status, a.CurrentState FROM Ride r JOIN v_RideAvailability a ON a.RideID = r.RideID WHERE r.RideID = ?`,
+          [id],
+        );
+        if (cur[0] && (cur[0].Status === 'Maintenance' || cur[0].CurrentState === 'Closed - Maintenance')) reopen = 1;
+      }
       await conn.query(
-        // ReopenedAt is assigned before Status, so it sees the old Status: Maintenance -> Open counts as a reopen.
         `UPDATE Ride SET ZoneID = ?, RideName = ?, RideType = ?, SeatCapacity = ?, MinHeightCm = ?,
-                         IsIndoor = ?, IsExpressEligible = ?,
-                         ReopenedAt = IF(Status = 'Maintenance' AND ? = 'Open', NOW(), ReopenedAt),
-                         Status = ?, IsActive = ? WHERE RideID = ?`,
-        [f.zoneId, f.name, f.rideType, f.seatCapacity, f.minHeightCm, f.isIndoor, f.isExpressEligible, f.rideStatus, f.rideStatus, f.isActive, id],
+                         IsIndoor = ?, IsExpressEligible = ?, Status = ?, IsActive = ?,
+                         ReopenedAt = IF(?, NOW(), ReopenedAt) WHERE RideID = ?`,
+        [f.zoneId, f.name, f.rideType, f.seatCapacity, f.minHeightCm, f.isIndoor, f.isExpressEligible, f.rideStatus, f.isActive, reopen, id],
       );
     }
     // A repeat (the ride was already down once) updates the old notice in place, so its id does not grow.

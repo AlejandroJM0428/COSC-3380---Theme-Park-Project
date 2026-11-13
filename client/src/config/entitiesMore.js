@@ -405,7 +405,7 @@ export const WEATHER = {
 export const FACILITIES = {
   title: 'Rides, Games & Venues',
   intro:
-    'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Press Reactivate on a deactivated one to turn it back on. Use Close ride to shut a ride now and Reopen ride to open it again (a reason is saved in the audit log); MySQL adds the notice. "Right now" is what guests see, so it also shows closures caused by weather or a maintenance job, which are changed on the Weather and Maintenance pages.',
+    'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Press Reactivate on a deactivated one to turn it back on. Use Close ride to shut a ride now and Reopen ride to open it again (a reason is saved in the audit log); MySQL adds the notice. "Status (guests see)" is the live state, so it also shows closures caused by weather or a maintenance job. You can also set the Operating status in Edit: choosing Open there overrides a maintenance closure. Weather closures are ended on the Weather page.',
   resource: 'facilities',
   idKey: 'FacilityKey',
   hideIds: true, // the page never shows internal keys
@@ -455,7 +455,7 @@ export const FACILITIES = {
     { key: 'Name', label: 'Name' },
     { key: 'ZoneName', label: 'Zone' },
     { key: 'Details', label: 'Details' },
-    { key: 'LiveState', label: 'Right now', format: (v) => (v ? v.replace('Closed - ', 'Closed: ') : '—') },
+    { key: 'LiveState', label: 'Status (guests see)', format: (v) => (v ? v.replace('Closed - ', 'Closed: ') : '—') },
     { key: 'IsActive', label: 'Active', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
   ],
   fields: [
@@ -485,7 +485,7 @@ export const FACILITIES = {
     { key: 'isExpressEligible', label: 'Express line (rides)', type: 'select', options: [['no', 'No'], ['yes', 'Yes']] },
     {
       key: 'rideStatus',
-      label: 'Operating status (rides)',
+      label: 'Operating status (rides): Open overrides a maintenance closure',
       type: 'select',
       show: (form) => form.kind === 'Ride',
       options: [['Open', 'Open'], ['Maintenance', 'Maintenance']],
