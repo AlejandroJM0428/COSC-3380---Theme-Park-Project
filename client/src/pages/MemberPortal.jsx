@@ -72,6 +72,20 @@ export default function MemberPortal() {
     return () => { alive = false }
   }, [fetchDashboard])
 
+  // Ride Open/Closed changes while the page is open (weather, maintenance, an Admin closing a ride), so the ride list is
+  // quietly fetched again every 10 seconds. Only the rides are replaced, so a form being filled in is left alone.
+  // A failed or paused (hidden tab) check keeps what is on screen.
+  useEffect(() => {
+    let alive = true
+    const timer = setInterval(() => {
+      if (document.hidden) return
+      fetchDashboard()
+        .then((data) => { if (alive && data) setDashboard((prev) => (prev ? { ...prev, rides: data.rides } : data)) })
+        .catch(() => {})
+    }, 10000)
+    return () => { alive = false; clearInterval(timer) }
+  }, [fetchDashboard])
+
   const refresh = useCallback(async () => {
     setLoading(true)
     setError('')
