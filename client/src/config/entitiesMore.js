@@ -423,8 +423,9 @@ export const FACILITIES = {
     open: ['Repairs finished', 'Safety check passed', 'Staffed again', 'Closed by mistake'],
   },
   // Rides only: Close ride / Reopen ride flips Ride.Status (Maintenance / Open), which is what guests see.
-  canCloseRow: (row) => row.Kind === 'Ride' && Number(row.IsActive) === 1 && row.RideStatus !== 'Maintenance',
-  canOpenRow: (row) => row.Kind === 'Ride' && Number(row.IsActive) === 1 && row.RideStatus === 'Maintenance',
+  canCloseRow: (row) => row.Kind === 'Ride' && Number(row.IsActive) === 1 && row.RideStatus !== 'Maintenance' && row.LiveState !== 'Closed - Maintenance',
+  // Reopen also shows when only a maintenance job (not the label) keeps the ride closed: an Admin can override it.
+  canOpenRow: (row) => row.Kind === 'Ride' && Number(row.IsActive) === 1 && (row.RideStatus === 'Maintenance' || row.LiveState === 'Closed - Maintenance'),
   canDeleteRow: (row) => Number(row.IsActive) === 1,
   reactivateLabel: 'Reactivate',
   canReactivateRow: (row) => Number(row.IsActive) !== 1,

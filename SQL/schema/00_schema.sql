@@ -83,6 +83,7 @@ CREATE TABLE Ride (
     IsExpressEligible BOOL NOT NULL,
     Status            ENUM('Open','Maintenance') NOT NULL,
     IsActive          BOOL NOT NULL,
+    ReopenedAt        DATETIME NULL, -- set by an Admin's Reopen ride: older maintenance jobs no longer close the ride
     -- [CONSTRAINT] Ride names unique per zone; seats positive.
     CONSTRAINT PK_Ride PRIMARY KEY (RideID),
     CONSTRAINT UQ_Ride_Name UNIQUE (ZoneID, RideName),
@@ -402,16 +403,22 @@ CREATE TABLE AppUser (
 DELIMITER $$
 
 -- [RULE] fn_UnderMaintenance: true if a job is running at p_at, or the latest finished job's outcome is not 'Fixed'.
--- p_kind: 'Ride' | 'Game' | 'Venue'
+-- For a ride, jobs from before an Admin's Reopen ride (Ride.ReopenedAt) are ignored.
 CREATE FUNCTION fn_UnderMaintenance(p_kind VARCHAR(10), p_id INT UNSIGNED, p_at DATETIME)
 RETURNS BOOL
 READS SQL DATA
 BEGIN
-    DECLARE v_out VARCHAR(20);
+    DECLARE v_out    VARCHAR(20);
+    DECLARE v_reopen DATETIME DEFAULT NULL;
+
+    IF p_kind = 'Ride' THEN
+        SELECT ReopenedAt INTO v_reopen FROM Ride WHERE RideID = p_id;
+    END IF;
 
     IF EXISTS (SELECT 1 FROM Maintenance m
                 WHERE m.StartDate <= p_at
                   AND (m.EndDate IS NULL OR p_at < m.EndDate)
+                  AND (v_reopen IS NULL OR m.StartDate > v_reopen)
                   AND ((p_kind = 'Ride'  AND m.RideID  = p_id)
                     OR (p_kind = 'Game'  AND m.GameID  = p_id)
                     OR (p_kind = 'Venue' AND m.VenueID = p_id))) THEN
@@ -422,6 +429,7 @@ BEGIN
       FROM Maintenance m
      WHERE m.EndDate IS NOT NULL
        AND m.EndDate <= p_at
+       AND (v_reopen IS NULL OR m.EndDate > v_reopen)
        AND ((p_kind = 'Ride'  AND m.RideID  = p_id)
          OR (p_kind = 'Game'  AND m.GameID  = p_id)
          OR (p_kind = 'Venue' AND m.VenueID = p_id))

@@ -106,7 +106,7 @@ export default function useRecordDelete(entity, { clearErrors, setNotice, setAct
           : asking.action === 'close'
             ? 'Guests will see the ride as Closed until it is reopened.'
             : asking.action === 'open'
-              ? 'Guests will see the ride as Open again, unless weather or an open maintenance job also closes it.'
+              ? 'Guests will see the ride as Open again. This overrides a maintenance closure; weather closures are still ended on the Weather page.'
               : 'It will show as active again and guests can use it.'
       }
       choices={entity.reasonChoices?.[asking.action] ?? []}

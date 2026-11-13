@@ -147,9 +147,12 @@ async function writeRide(f, existingId) {
     }
     if (id != null && (existingId != null || f.rideStatus === 'Maintenance')) {
       await conn.query(
+        // ReopenedAt is assigned before Status, so it sees the old Status: Maintenance -> Open counts as a reopen.
         `UPDATE Ride SET ZoneID = ?, RideName = ?, RideType = ?, SeatCapacity = ?, MinHeightCm = ?,
-                         IsIndoor = ?, IsExpressEligible = ?, Status = ?, IsActive = ? WHERE RideID = ?`,
-        [f.zoneId, f.name, f.rideType, f.seatCapacity, f.minHeightCm, f.isIndoor, f.isExpressEligible, f.rideStatus, f.isActive, id],
+                         IsIndoor = ?, IsExpressEligible = ?,
+                         ReopenedAt = IF(Status = 'Maintenance' AND ? = 'Open', NOW(), ReopenedAt),
+                         Status = ?, IsActive = ? WHERE RideID = ?`,
+        [f.zoneId, f.name, f.rideType, f.seatCapacity, f.minHeightCm, f.isIndoor, f.isExpressEligible, f.rideStatus, f.rideStatus, f.isActive, id],
       );
     }
     // A repeat (the ride was already down once) updates the old notice in place, so its id does not grow.
@@ -206,7 +209,12 @@ async function setRideOpen({ ctx, id, open, reason, row }) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    await conn.query('UPDATE Ride SET Status = ? WHERE RideID = ?', [open ? 'Open' : 'Maintenance', id]);
+    // Reopen also stamps ReopenedAt, so a maintenance job from before this moment no longer keeps the ride closed
+    // (SQL/migrations/34). A job started later closes it again.
+    await conn.query(
+      open ? 'UPDATE Ride SET Status = ?, ReopenedAt = NOW() WHERE RideID = ?' : 'UPDATE Ride SET Status = ? WHERE RideID = ?',
+      [open ? 'Open' : 'Maintenance', id],
+    );
     await audit(ctx, open ? 'RIDE_REOPEN' : 'RIDE_CLOSE', { table: 'Ride', rowKey: `Ride-${id}`, detail: { name: row.Name, reason } }, conn);
     await conn.commit();
   } catch (err) {
