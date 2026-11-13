@@ -2,6 +2,7 @@ import { route } from '../router.js';
 import { pool } from '../db.js';
 import { HttpError } from '../errors.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { clearPublicSiteCache } from './publicSite.js';
 
 // Maintenance data entry: list, get, add, edit, delete.
 // No framework: only route(), requireRole(), HttpError and the mysql2 pool.
@@ -215,6 +216,7 @@ route(
   '/api/maintenance',
   requireRole(...CAN_WRITE)(async (ctx) => {
     const id = await saveJob(parseJob(ctx.body), null);
+    clearPublicSiteCache(); // the homepage ride count follows maintenance jobs
     ctx.status = 201;
     return loadJob(pool, id);
   }),
@@ -227,6 +229,7 @@ route(
   requireRole(...CAN_WRITE)(async (ctx) => {
     const id = jobId(ctx);
     await saveJob(parseJob(ctx.body), id);
+    clearPublicSiteCache();
     return loadJob(pool, id);
   }),
 );
@@ -243,6 +246,7 @@ route(
       if (err.errno === 1451) throw new HttpError(409, 'This job is referenced by other records and cannot be deleted');
       throw err;
     }
+    clearPublicSiteCache();
     return { ok: true };
   }),
 );

@@ -11,10 +11,14 @@ import { pool } from '../db.js';
 
 const CACHE_MS = 15 * 1000; // anonymous and read-only, so a short cache protects the database
 let cache = { at: 0, data: null };
+let generation = 0; // bumps on every clear, so a load that started before a change cannot store its old answer
+let inflight = null;
 
 // Forget the cached answer. Called when something changes what the homepage shows (closing or reopening the park for
 // weather, and later rides being added or retired), so the change shows on the next request, not after the 15 s wait.
 export function clearPublicSiteCache() {
+  generation += 1;
+  inflight = null;
   cache = { at: 0, data: null };
 }
 
@@ -132,7 +136,15 @@ async function loadSite() {
 // GET /api/public/site
 route('GET', '/api/public/site', async () => {
   if (cache.data && Date.now() - cache.at < CACHE_MS) return cache.data;
-  const data = await loadSite();
-  cache = { at: Date.now(), data };
-  return data;
+  if (!inflight) {
+    const gen = generation;
+    const load = loadSite()
+      .then((data) => {
+        if (gen === generation) cache = { at: Date.now(), data }; // skip if something cleared the cache meanwhile
+        return data;
+      })
+      .finally(() => { if (inflight === load) inflight = null; });
+    inflight = load;
+  }
+  return inflight;
 });

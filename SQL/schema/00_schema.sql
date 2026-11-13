@@ -725,7 +725,7 @@ SELECT t.VisitDate,
 CREATE VIEW v_RideAvailability AS
 SELECT z.ZoneName, r.RideID, r.RideName,
        CASE WHEN r.IsActive = 0 THEN 'Closed - Retired'
-            WHEN r.Status = 'Maintenance' OR fn_UnderMaintenance('Ride', r.RideID, NOW()) THEN 'Closed - Maintenance'
+            WHEN fn_UnderMaintenance('Ride', r.RideID, NOW()) THEN 'Closed - Maintenance'
             WHEN r.IsIndoor = 0 AND EXISTS (
                  SELECT 1 FROM WeatherLog w
                   WHERE w.ClosesOutdoorRides = 1 AND NOW() >= w.StartedAt
