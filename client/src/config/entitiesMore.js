@@ -405,7 +405,7 @@ export const WEATHER = {
 export const FACILITIES = {
   title: 'Rides, Games & Venues',
   intro:
-    'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Press Reactivate on a deactivated one to turn it back on. Set a ride to Maintenance and save: MySQL adds a notice, a toast appears in the corner, and the notice stays on Promos & Notices.',
+    'The attractions of the park. Add a ride, game or venue, correct its details, or deactivate it. Deactivating keeps the record, because tickets, ride logs and repairs point at it. Press Reactivate on a deactivated one to turn it back on. Use Close ride to shut a ride now and Reopen ride to open it again (a reason is saved in the audit log); MySQL adds the notice. "Right now" is what guests see, so it also shows closures caused by weather or a maintenance job, which are changed on the Weather and Maintenance pages.',
   resource: 'facilities',
   idKey: 'FacilityKey',
   hideIds: true, // the page never shows internal keys
@@ -419,7 +419,12 @@ export const FACILITIES = {
   reasonChoices: {
     deactivate: ['Permanently retired', 'Closed for the season', 'Safety concern', 'Being replaced', 'Added by mistake'],
     reactivate: ['Repairs finished', 'Back in season', 'Safety check passed', 'Deactivated by mistake'],
+    close: ['Mechanical issue', 'Safety check', 'Staff shortage', 'Guest incident', 'Weather precaution'],
+    open: ['Repairs finished', 'Safety check passed', 'Staffed again', 'Closed by mistake'],
   },
+  // Rides only: Close ride / Reopen ride flips Ride.Status (Maintenance / Open), which is what guests see.
+  canCloseRow: (row) => row.Kind === 'Ride' && Number(row.IsActive) === 1 && row.RideStatus !== 'Maintenance',
+  canOpenRow: (row) => row.Kind === 'Ride' && Number(row.IsActive) === 1 && row.RideStatus === 'Maintenance',
   canDeleteRow: (row) => Number(row.IsActive) === 1,
   reactivateLabel: 'Reactivate',
   canReactivateRow: (row) => Number(row.IsActive) !== 1,
@@ -449,7 +454,7 @@ export const FACILITIES = {
     { key: 'Name', label: 'Name' },
     { key: 'ZoneName', label: 'Zone' },
     { key: 'Details', label: 'Details' },
-    { key: 'RideStatus', label: 'Operating status', format: (v) => v || '—' },
+    { key: 'LiveState', label: 'Right now', format: (v) => (v ? v.replace('Closed - ', 'Closed: ') : '—') },
     { key: 'IsActive', label: 'Active', format: (v) => (Number(v) ? 'Active' : 'Inactive') },
   ],
   fields: [

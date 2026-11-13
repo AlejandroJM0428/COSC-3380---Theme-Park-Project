@@ -212,6 +212,11 @@ export function reactivateRecord(resource, id, reason = '') {
   return http(`/${resource}/${id}/reactivate`, { method: 'POST', body: { reason } })
 }
 
+// Admin: close a ride now, or open it again (rides only). The reason is saved in the audit log.
+export function setRideOpen(resource, id, open, reason) {
+  return http(`/${resource}/${id}/${open ? 'reopen' : 'close'}`, { method: 'POST', body: { reason } })
+}
+
 // Employee portal (Maintenance Worker, Restaurant Worker): the server uses the EmployeeID of the session.
 export function getMyWork() {
   return http('/me/work')

@@ -48,6 +48,7 @@ function shape(kind, r) {
     IsIndoor: null,
     IsExpressEligible: null,
     RideStatus: null,
+    LiveState: null,
     PlayPrice: null,
     VenueType: null,
     ServiceType: null,
@@ -62,6 +63,7 @@ function shape(kind, r) {
       IsIndoor: r.IsIndoor,
       IsExpressEligible: r.IsExpressEligible,
       RideStatus: r.Status,
+      LiveState: r.LiveState ?? null, // what guests see right now: Open, Closed - Maintenance, Closed - Weather, Closed - Retired
       Details: `${r.RideType}, ${r.SeatCapacity} seats, ${r.Status}, ${r.MinHeightCm ? `min ${r.MinHeightCm} cm` : 'no height limit'}`,
     };
   }
@@ -78,8 +80,9 @@ function shape(kind, r) {
 
 const SELECT = {
   Ride: `SELECT r.RideID AS ID, r.ZoneID, z.ZoneName, r.RideName AS Name, r.RideType, r.SeatCapacity,
-                r.MinHeightCm, r.IsIndoor, r.IsExpressEligible, r.Status, r.IsActive
-           FROM Ride r JOIN Zone z ON z.ZoneID = r.ZoneID`,
+                r.MinHeightCm, r.IsIndoor, r.IsExpressEligible, r.Status, r.IsActive, a.CurrentState AS LiveState
+           FROM Ride r JOIN Zone z ON z.ZoneID = r.ZoneID
+           LEFT JOIN v_RideAvailability a ON a.RideID = r.RideID`,
   Game: `SELECT g.GameID AS ID, g.ZoneID, z.ZoneName, g.GameName AS Name, g.PlayPrice, g.IsActive
            FROM Game g JOIN Zone z ON z.ZoneID = g.ZoneID`,
   Venue: `SELECT v.VenueID AS ID, v.ZoneID, z.ZoneName, v.VenueName AS Name, v.VenueType, v.ServiceType, v.IsActive
@@ -194,6 +197,48 @@ async function setActive({ ctx, kind, id, active, reason, row }) {
   } finally {
     conn.release();
   }
+}
+
+// Sets Ride.Status (Open or Maintenance) and writes the AdminAudit row together. Rides only.
+// Status = 'Maintenance' closes the ride for guests at once (v_RideAvailability, SQL/migrations/33), and the existing
+// trigger trg_Ride_AU_Notify posts the "closed" or "available again" notice when the label changes.
+async function setRideOpen({ ctx, id, open, reason, row }) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query('UPDATE Ride SET Status = ? WHERE RideID = ?', [open ? 'Open' : 'Maintenance', id]);
+    await audit(ctx, open ? 'RIDE_REOPEN' : 'RIDE_CLOSE', { table: 'Ride', rowKey: `Ride-${id}`, detail: { name: row.Name, reason } }, conn);
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback().catch(() => {});
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
+// POST /api/facilities/Ride-5/close  { reason }   closes a ride now (it stays closed until it is reopened)
+// POST /api/facilities/Ride-5/reopen { reason }   opens it again. It can still show Closed if weather or an open
+// maintenance job also closes it: the returned LiveState says what guests see.
+for (const [action, open] of [['close', false], ['reopen', true]]) {
+  route(
+    'POST',
+    `/api/facilities/:id/${action}`,
+    requireRole(...CAN_USE)(async (ctx) => {
+      const { kind, id } = parseKey(ctx.params.id);
+      if (kind !== 'Ride') throw new HttpError(400, 'Only rides can be closed or reopened here');
+      const reason = needReason(ctx.body?.reason);
+      const row = await loadFacility(kind, id); // 404 if missing
+      if (!Number(row.IsActive)) throw new HttpError(409, 'This ride is deactivated. Use Reactivate first.');
+      try {
+        await setRideOpen({ ctx, id, open, reason, row });
+      } catch (err) {
+        throw friendlyDbError(err, FRIENDLY);
+      }
+      clearPublicSiteCache();
+      return loadFacility(kind, id);
+    }),
+  );
 }
 
 // GET /api/facilities?kind=Ride|Game|Venue&status=active|inactive (both optional). Sorted by kind, then name.

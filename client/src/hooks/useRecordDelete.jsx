@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { deleteRecord, reactivateRecord } from '../api'
+import { deleteRecord, reactivateRecord, setRideOpen } from '../api'
 import ReasonDialog from '../components/ReasonDialog.jsx'
 
 // The delete / void / reactivate flow for one entity (config/entities.js), moved out of RecordManager.
 // callbacks: clearErrors(), setNotice(text), setActionError(text), onReload() (refetch the list), onDeleted() (after a direct delete only)
 // returns: remove(row), reactivate(row), deleteLabel, deletePast, reasonDialog (an element to render, or null), cancelAsk() (close the reason dialog)
 export default function useRecordDelete(entity, { clearErrors, setNotice, setActionError, onReload, onDeleted }) {
-  const [asking, setAsking] = useState(null) // { row, action: 'deactivate' | 'reactivate' } while the reason dialog is open
+  const [asking, setAsking] = useState(null) // { row, action: 'deactivate' | 'reactivate' | 'close' | 'open' } while the reason dialog is open
   const [askBusy, setAskBusy] = useState(false)
   const [askError, setAskError] = useState('')
 
@@ -58,6 +58,12 @@ export default function useRecordDelete(entity, { clearErrors, setNotice, setAct
     }
   }
 
+  // Close a ride now / open it again (entity.canCloseRow / canOpenRow). Always asks for a reason, saved in the audit log.
+  function askOpenClose(row, action) {
+    setAskError('')
+    setAsking({ row, action })
+  }
+
   // The reason dialog's Confirm: send the change together with the reason, then close the dialog.
   async function confirmReason(reason) {
     const { row, action } = asking
@@ -67,6 +73,10 @@ export default function useRecordDelete(entity, { clearErrors, setNotice, setAct
       if (action === 'deactivate') {
         await deleteRecord(entity.resource, row[entity.idKey], { reason })
         setNotice(`${deletePast} ${entity.describe(row)}. Reason: ${reason}`)
+      } else if (action === 'close' || action === 'open') {
+        const saved = await setRideOpen(entity.resource, row[entity.idKey], action === 'open', reason)
+        const still = action === 'open' && saved?.LiveState && saved.LiveState !== 'Open' ? ` It still shows ${saved.LiveState.replace('Closed - ', 'Closed: ')} for guests.` : ''
+        setNotice(`${action === 'open' ? 'Reopened' : 'Closed'} ${entity.describe(row)}. Reason: ${reason}.${still}`)
       } else {
         await reactivateRecord(entity.resource, row[entity.idKey], reason)
         setNotice(`Reactivated ${entity.describe(row)}. Reason: ${reason}`)
@@ -84,17 +94,24 @@ export default function useRecordDelete(entity, { clearErrors, setNotice, setAct
     if (!askBusy) setAsking(null)
   }
 
+  const dialogLabel = (action) =>
+    action === 'deactivate' ? deleteLabel : action === 'close' ? 'Close ride' : action === 'open' ? 'Reopen ride' : (entity.reactivateLabel ?? 'Reactivate')
+
   const reasonDialog = asking ? (
     <ReasonDialog
-      title={`${asking.action === 'deactivate' ? deleteLabel : (entity.reactivateLabel ?? 'Reactivate')} ${entity.describe(asking.row)}?`}
+      title={`${dialogLabel(asking.action)} ${entity.describe(asking.row)}?`}
       message={
         asking.action === 'deactivate'
           ? (entity.deleteNote ?? 'The record is kept.')
-          : 'It will show as active again and guests can use it.'
+          : asking.action === 'close'
+            ? 'Guests will see the ride as Closed until it is reopened.'
+            : asking.action === 'open'
+              ? 'Guests will see the ride as Open again, unless weather or an open maintenance job also closes it.'
+              : 'It will show as active again and guests can use it.'
       }
       choices={entity.reasonChoices?.[asking.action] ?? []}
-      confirmLabel={asking.action === 'deactivate' ? deleteLabel : (entity.reactivateLabel ?? 'Reactivate')}
-      danger={asking.action === 'deactivate'}
+      confirmLabel={dialogLabel(asking.action)}
+      danger={asking.action === 'deactivate' || asking.action === 'close'}
       busy={askBusy}
       error={askError}
       onConfirm={confirmReason}
@@ -102,5 +119,5 @@ export default function useRecordDelete(entity, { clearErrors, setNotice, setAct
     />
   ) : null
 
-  return { remove, reactivate, deleteLabel, deletePast, reasonDialog, cancelAsk }
+  return { remove, reactivate, askOpenClose, deleteLabel, deletePast, reasonDialog, cancelAsk }
 }

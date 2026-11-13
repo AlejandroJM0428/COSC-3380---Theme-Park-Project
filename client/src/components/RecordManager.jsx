@@ -82,7 +82,7 @@ export default function RecordManager({ entity, refreshKey = 0, onChanged }) {
   }
 
   // Delete, void and reactivate (with their reason prompts) live in hooks/useRecordDelete.jsx.
-  const { remove, reactivate, deleteLabel, reasonDialog } = useRecordDelete(entity, {
+  const { remove, reactivate, askOpenClose, deleteLabel, reasonDialog } = useRecordDelete(entity, {
     clearErrors,
     setNotice,
     setActionError,
@@ -126,6 +126,16 @@ export default function RecordManager({ entity, refreshKey = 0, onChanged }) {
           {canEdit && entity.canReactivateRow?.(row) && (
             <button type="button" className="rm-reactivate" onClick={() => reactivate(row)} disabled={editor !== null}>
               {entity.reactivateLabel ?? 'Reactivate'}
+            </button>
+          )}
+          {canEdit && entity.canCloseRow?.(row) && (
+            <button type="button" className="rm-danger" onClick={() => askOpenClose(row, 'close')} disabled={editor !== null}>
+              Close ride
+            </button>
+          )}
+          {canEdit && entity.canOpenRow?.(row) && (
+            <button type="button" className="rm-reactivate" onClick={() => askOpenClose(row, 'open')} disabled={editor !== null}>
+              Reopen ride
             </button>
           )}
           {canDelete && (entity.canDeleteRow?.(row) ?? true) && (
